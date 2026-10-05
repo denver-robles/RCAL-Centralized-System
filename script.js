@@ -68,14 +68,3 @@ portalLoginForm.addEventListener("submit", function(event) {
         message.style.color = "green";
     }
 });
-
-// FORGOT PASSWORD
-document.getElementById("inlineForgot").addEventListener("click", function(event) {
-    event.preventDefault();
-    alert("Password reset instructions have been sent.");
-});
-
-document.getElementById("forgotPasswordBtn").addEventListener("click", function(event) {
-    event.preventDefault();
-    alert("Password reset instructions have been sent.");
-});
