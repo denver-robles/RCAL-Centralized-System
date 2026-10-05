@@ -1,0 +1,41 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# ---- Flask / instance data ----
+instance/
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# ---- Environment & secrets ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ---- Editors & OS ----
+.vscode/
+.idea/
+*.swp
+*.swo
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# ---- Logs ----
+*.log

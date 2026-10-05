@@ -1,0 +1,625 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #F7F0DF;
+    color: #000;
+    min-height: 100vh;
+    line-height: 1.5;
+    border: 2px solid #7b2cbf;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+
+/* VIEW */
+
+.view-container {
+    display: none;
+    width: 100%;
+    min-height: 100vh;
+}
+
+.view-container.active {
+    display: block;
+}
+
+
+/* HEADER */
+
+.site-header {
+    height: 105px;
+    background-color: white;
+    border-bottom: 5px solid #FFC800;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4%;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    text-decoration: none;
+    color: black;
+}
+
+.brand img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+}
+
+.brand-name {
+    font-family: Impact, sans-serif;
+    font-size: 34px;
+    line-height: 1.1;
+}
+
+nav {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+
+nav a {
+    color: black;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+nav a:hover {
+    opacity: 0.7;
+}
+
+.menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+}
+
+
+/* HERO */
+
+.hero {
+    display: grid;
+    grid-template-columns: 48% 52%;
+    align-items: center;
+    gap: 20px;
+    padding: 35px 4% 50px;
+}
+
+.hero-copy {
+    padding-right: 15px;
+}
+
+.hero h1 {
+    font-family: Impact, sans-serif;
+    font-size: 44px;
+    line-height: 1.1;
+    margin-bottom: 12px;
+}
+
+.hero .divider {
+    width: 100%;
+    height: 3px;
+    background-color: black;
+    margin-bottom: 16px;
+}
+
+.hero-copy p {
+    font-size: 16px;
+    font-weight: bold;
+    line-height: 1.5;
+    margin-bottom: 24px;
+    max-width: 540px;
+}
+
+.portal-btn {
+    background-color: #FFC800;
+    color: black;
+    border: none;
+    border-radius: 30px;
+    padding: 12px 40px;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.portal-btn:hover {
+    opacity: 0.8;
+}
+
+.hero-image-wrap {
+    height: 370px;
+    border-radius: 40px;
+    overflow: hidden;
+}
+
+.hero-image-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+
+/* SECTIONS */
+
+.section {
+    padding: 45px 4% 55px;
+}
+
+.section-heading {
+    font-family: Impact, sans-serif;
+    font-size: 55px;
+    text-align: center;
+    margin-bottom: 6px;
+}
+
+.section-line {
+    width: 380px;
+    max-width: 80%;
+    height: 3px;
+    background-color: black;
+    margin: 0 auto 35px;
+}
+
+
+/* ABOUT */
+
+.about-card-container {
+    max-width: 900px;
+    margin: auto;
+}
+
+.about-card {
+    background-color: white;
+    border-radius: 20px;
+    padding: 45px 50px;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+}
+
+.about-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 25px;
+}
+
+.church-icon {
+    width: 32px;
+    height: 32px;
+}
+
+.about-card-header h3 {
+    font-family: Impact, sans-serif;
+    font-size: 28px;
+}
+
+.about-card-body {
+    font-size: 16px;
+    font-weight: bold;
+    line-height: 1.6;
+    max-width: 780px;
+    margin: auto;
+}
+
+
+/* SERVICES */
+
+.service-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 25px;
+    max-width: 1050px;
+    margin: auto;
+}
+
+.service-item-card {
+    background-color: white;
+    border-radius: 20px;
+    padding: 35px 25px;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+}
+
+.service-item-card:hover {
+    transform: translateY(-3px);
+}
+
+.service-circle-icon {
+    width: 90px;
+    height: 90px;
+    background-color: #1DA1B2;
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.service-circle-icon svg {
+    width: 44px;
+    height: 44px;
+}
+
+.service-item-card h4 {
+    font-size: 22px;
+    margin-bottom: 10px;
+}
+
+.service-item-card p {
+    font-size: 14px;
+    color: #444;
+}
+
+
+/* ANALYTICS */
+
+.analytics-container {
+    max-width: 760px;
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+}
+
+.analytics-row {
+    display: flex;
+    gap: 25px;
+    justify-content: center;
+    width: 100%;
+}
+
+.stat-pill {
+    background-color: white;
+    border-radius: 35px;
+    padding: 10px 25px 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    width: 320px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+}
+
+.pill-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.green-icon {
+    background-color: #2E7D32;
+}
+
+.red-icon {
+    background-color: #D32F2F;
+}
+
+.slate-icon {
+    background-color: #546E7A;
+}
+
+.pill-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-grow: 1;
+    text-align: center;
+}
+
+.pill-label {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.pill-value {
+    font-size: 30px;
+    font-weight: bold;
+}
+
+
+/* LOGIN */
+
+.login-section {
+    padding-bottom: 65px;
+}
+
+.login-card {
+    background-color: white;
+    border-radius: 25px;
+    width: 640px;
+    max-width: 94%;
+    padding: 45px 50px;
+    margin: auto;
+    text-align: center;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.login-card h2 {
+    font-family: Impact, sans-serif;
+    font-size: 34px;
+    margin-bottom: 6px;
+}
+
+.login-card-line {
+    width: 85%;
+    height: 2px;
+    background-color: black;
+    margin: 0 auto 30px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    font-family: Impact, sans-serif;
+    font-size: 20px;
+    margin-bottom: 6px;
+}
+
+.pill-input {
+    width: 100%;
+    background-color: #DFDFDF;
+    border: none;
+    border-radius: 30px;
+    padding: 15px 25px;
+    font-size: 16px;
+    outline: none;
+}
+
+.pill-input:focus {
+    background-color: #D2D2D2;
+}
+
+.form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    margin: 15px 5px 30px;
+}
+
+.remember-me {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.forgot-link {
+    color: black;
+    font-weight: bold;
+}
+
+.submit-login-btn {
+    background-color: #FFC800;
+    border: none;
+    border-radius: 30px;
+    padding: 10px 50px;
+    font-family: Impact, sans-serif;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.submit-login-btn:hover {
+    opacity: 0.8;
+}
+
+.login-status-msg {
+    margin-top: 18px;
+    font-weight: bold;
+}
+
+
+/* FOOTER */
+
+.site-footer {
+    background-color: #050826;
+    color: white;
+    margin-top: 40px;
+}
+
+.footer-top-stripe {
+    height: 8px;
+    background-color: #C02626;
+}
+
+.footer-content {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1.2fr;
+    gap: 35px;
+    max-width: 1150px;
+    margin: auto;
+    padding: 35px 4% 45px;
+}
+
+.footer-col h4 {
+    color: #FFC800;
+    font-size: 18px;
+    margin-bottom: 12px;
+}
+
+.footer-col p {
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.links-col ul {
+    list-style: none;
+}
+
+.links-col li {
+    margin-bottom: 10px;
+}
+
+.links-col a {
+    color: white;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.links-col a:hover {
+    opacity: 0.7;
+}
+
+.contact-item {
+    display: flex;
+    gap: 10px;
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+
+
+/* LOGIN PORTAL */
+
+.login-header {
+    display: flex;
+    align-items: center;
+    padding: 25px 4%;
+}
+
+.back-btn {
+    background: none;
+    border: none;
+    font-family: Impact, sans-serif;
+    font-size: 22px;
+    cursor: pointer;
+}
+
+.back-btn:hover {
+    opacity: 0.7;
+}
+
+.login-brand {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin: auto;
+}
+
+.login-logo {
+    width: 65px;
+    height: 65px;
+    object-fit: contain;
+}
+
+.login-brand h1 {
+    font-family: Impact, sans-serif;
+    font-size: 34px;
+}
+
+.login-main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 120px);
+    padding: 30px 20px 60px;
+}
+
+
+/* MOBILE */
+
+@media (max-width: 900px) {
+
+    .hero {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+
+    .hero-copy {
+        padding-right: 0;
+    }
+
+    .hero-copy p {
+        margin: 0 auto 24px;
+    }
+
+    .service-cards-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .footer-content {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+@media (max-width: 650px) {
+
+    .menu-toggle {
+        display: block;
+    }
+
+    nav {
+        position: absolute;
+        top: 100px;
+        left: 0;
+        right: 0;
+        background-color: white;
+        flex-direction: column;
+        padding: 20px;
+        display: none;
+    }
+
+    nav.open {
+        display: flex;
+    }
+
+    .analytics-row {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .stat-pill {
+        width: 100%;
+        max-width: 320px;
+    }
+
+    .brand-name {
+        font-size: 25px;
+    }
+
+    .brand img {
+        width: 60px;
+        height: 60px;
+    }
+
+    .hero h1 {
+        font-size: 35px;
+    }
+
+    .section-heading {
+        font-size: 45px;
+    }
+
+    .about-card {
+        padding: 30px 20px;
+    }
+
+    .login-card {
+        padding: 30px 20px;
+    }
+
+}
