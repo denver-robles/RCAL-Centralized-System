@@ -1,0 +1,95 @@
+{% extends "portal_base.html" %}
+
+{% block title %}{{ person.titled_name }} - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<h1 class="portal-title">{{ person.titled_name }}</h1>
+<p class="muted">{{ person.sort_name }}</p>
+
+<div class="portal-grid">
+
+    <div class="portal-card">
+        <h2>PERSONNEL FILE</h2>
+        <div class="portal-card-line"></div>
+
+        <dl class="detail-list">
+            <dt>Title</dt>
+            <dd>{{ person.title.label }}</dd>
+
+            <dt>Name</dt>
+            <dd>{{ person.full_name }}</dd>
+
+            <dt>Sex</dt>
+            <dd>{{ person.sex.label }}</dd>
+
+            <dt>Date of birth</dt>
+            <dd>
+                {% if person.date_of_birth %}
+                {{ person.date_of_birth.strftime('%d %B %Y') }}
+                {% else %}—{% endif %}
+            </dd>
+
+            <dt>Ordained</dt>
+            <dd>
+                {% if person.ordination_date %}
+                {{ person.ordination_date.strftime('%d %B %Y') }}
+                {% else %}—{% endif %}
+            </dd>
+
+            <dt>Entries performed</dt>
+            <dd>{{ person.performed_records | length }}</dd>
+        </dl>
+    </div>
+
+    <div class="portal-card">
+        <h2>APPOINTMENTS</h2>
+        <div class="portal-card-line"></div>
+
+        {% for assignment in assignments %}
+        <div class="person-row">
+            <div>
+                <a href="{{ url_for('directory.parish_detail', parish_id=assignment.parish.id) }}"
+                   class="strong">{{ assignment.parish.name }}</a>
+                <div class="muted small">
+                    {{ assignment.role.label }} &middot;
+                    {{ assignment.assigned_from.strftime('%b %Y') }} –
+                    {% if assignment.is_current %}
+                    <span class="badge badge-ok">Current</span>
+                    {% else %}
+                    {{ assignment.assigned_to.strftime('%b %Y') }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <p class="muted">No appointments on file.</p>
+        {% endfor %}
+    </div>
+
+</div>
+
+{% if person.performed_records %}
+<div class="portal-card">
+    <h2>RECENT ENTRIES PERFORMED</h2>
+    <div class="portal-card-line"></div>
+
+    <table class="data-table">
+        <thead>
+            <tr><th>Register</th><th>Subject</th><th>Date</th><th>Citation</th></tr>
+        </thead>
+        <tbody>
+            {% for record in person.performed_records[-10:] | reverse %}
+            <tr>
+                <td>{{ record.sacrament_type.label }}</td>
+                <td>{{ record.person.full_name }}</td>
+                <td>{{ record.event_date.strftime('%d %b %Y') }}</td>
+                <td class="mono small">{{ record.citation }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -39,3 +39,11 @@ desktop.ini
 
 # ---- Logs ----
 *.log
+server.err
+server.out
+
+# ---- Local QA scratch ----
+# Browser-automation scripts and screenshots used while developing.
+qa_*.mjs
+shot_*.png
+_out_*.txt

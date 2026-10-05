@@ -1,0 +1,80 @@
+{% extends "portal_base.html" %}
+
+{% block title %}Accounts - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<div class="title-row">
+    <h1 class="portal-title">Accounts</h1>
+    <a href="{{ url_for('admin.create_user') }}" class="submit-login-btn as-link">NEW ACCOUNT</a>
+</div>
+
+<div class="portal-card">
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Home parish</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in pagination.items %}
+            <tr>
+                <td class="mono">{{ user.username }}</td>
+                <td>{{ user.display_name or "—" }}</td>
+                <td>{{ user.role.label }}</td>
+                <td>{{ user.home_parish.name if user.home_parish else "All" }}</td>
+                <td>
+                    {% if user.is_active %}
+                    <span class="badge badge-ok">Active</span>
+                    {% else %}
+                    <span class="badge badge-off">Deactivated</span>
+                    {% endif %}
+                </td>
+                <td class="actions">
+                    <a href="{{ url_for('admin.create_user', user_id=user.id) }}">Edit</a>
+
+                    <form method="post" action="{{ url_for('admin.reset_password', user_id=user.id) }}">
+                        {% include "_csrf.html" %}
+                        <button type="submit" class="link-btn">Reset password</button>
+                    </form>
+
+                    {% if user.id != current_user.id %}
+                    <form method="post" action="{{ url_for('admin.toggle_user', user_id=user.id) }}">
+                        {% include "_csrf.html" %}
+                        <button type="submit" class="link-btn">
+                            {{ "Deactivate" if user.is_active else "Activate" }}
+                        </button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="muted">No accounts yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if pagination.pages > 1 %}
+    <nav class="pagination">
+        {% for number in pagination.iter_pages() %}
+            {% if number %}
+            <a href="{{ url_for('admin.users', page=number) }}"
+               class="{{ 'current' if number == pagination.page else '' }}">{{ number }}</a>
+            {% else %}
+            <span>…</span>
+            {% endif %}
+        {% endfor %}
+    </nav>
+    {% endif %}
+
+</div>
+
+{% endblock %}

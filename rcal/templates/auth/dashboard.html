@@ -1,0 +1,118 @@
+{% extends "portal_base.html" %}
+
+{% block title %}Dashboard - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<h1 class="portal-title">Welcome, {{ current_user.display_name or current_user.username }}</h1>
+
+<div class="portal-grid">
+
+    <div class="portal-card">
+        <h2>YOUR ACCOUNT</h2>
+        <div class="portal-card-line"></div>
+
+        <dl class="detail-list">
+            <dt>Username</dt>
+            <dd>{{ current_user.username }}</dd>
+
+            <dt>Role</dt>
+            <dd>{{ current_user.role.label }}</dd>
+
+            <dt>Home parish</dt>
+            <dd>
+                {% if current_user.home_parish %}
+                {{ current_user.home_parish.name }}
+                {% else %}
+                <span class="muted">All parishes (archdiocese-wide)</span>
+                {% endif %}
+            </dd>
+
+            <dt>Scope</dt>
+            <dd>
+                {% if current_user.is_archdiocese_wide %}
+                May view records for every parish.
+                {% else %}
+                Limited to your own parish.
+                {% endif %}
+            </dd>
+
+            <dt>Certificates</dt>
+            <dd>
+                {% if current_user.can_issue_certificates %}
+                May verify and issue certified copies.
+                {% else %}
+                Read-only for sacramental records.
+                {% endif %}
+            </dd>
+        </dl>
+    </div>
+
+    <div class="portal-card">
+        <h2>QUICK LINKS</h2>
+        <div class="portal-card-line"></div>
+
+        <ul class="link-list">
+            <li><a href="{{ url_for('records.search') }}">Search the registers</a></li>
+            <li><a href="{{ url_for('records.create') }}">Record a register entry</a></li>
+            <li><a href="{{ url_for('certificates.index') }}">Certificate requests</a></li>
+            <li><a href="{{ url_for('directory.parishes') }}">Parish directory</a></li>
+            <li><a href="{{ url_for('directory.clergy') }}">Clergy directory</a></li>
+            <li><a href="{{ url_for('records.intentions') }}">Mass intentions</a></li>
+            <li><a href="{{ url_for('records.analytics') }}">Analytics</a></li>
+            <li><a href="{{ url_for('auth.change_password') }}">Change password</a></li>
+            {% if current_user.role.can_manage_users %}
+            <li><a href="{{ url_for('admin.users') }}">Manage accounts</a></li>
+            {% endif %}
+        </ul>
+
+        <form method="post" action="{{ url_for('auth.logout') }}" class="logout-form">
+            {% include "_csrf.html" %}
+            <button type="submit" class="submit-login-btn muted-btn">SIGN OUT</button>
+        </form>
+    </div>
+
+</div>
+
+<div class="portal-card">
+    <h2>RECENT REGISTER ENTRIES</h2>
+    <div class="portal-card-line"></div>
+
+    {% if recent %}
+    <table class="data-table">
+        <thead>
+            <tr><th>Subject</th><th>Register</th><th>Date</th><th>Parish</th></tr>
+        </thead>
+        <tbody>
+            {% for record in recent %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('records.detail', record_id=record.id) }}">
+                        {{ record.person.sort_name }}
+                    </a>
+                </td>
+                <td>{{ record.sacrament_type.label }}</td>
+                <td>{{ record.event_date.strftime('%d %b %Y') }}</td>
+                <td>{{ record.originating_parish.name }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="muted">
+        No register entries have been recorded yet.
+    </p>
+    {% endif %}
+</div>
+
+<div class="portal-card">
+    <h2>ABOUT THIS AREA</h2>
+    <div class="portal-card-line"></div>
+    <p class="muted">
+        Your dashboard shows what your account is permitted to do. The parish
+        directory, register search, and the certificate workflow are all
+        live; mass intentions can be requested but not yet scheduled.
+    </p>
+</div>
+
+{% endblock %}

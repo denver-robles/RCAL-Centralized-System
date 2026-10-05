@@ -1,0 +1,128 @@
+{% extends "portal_base.html" %}
+
+{% block title %}Analytics - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<h1 class="portal-title">Analytics</h1>
+<p class="muted">
+    {% if scoped_parish %}
+    Figures for {{ scoped_parish.name }}.
+    {% else %}
+    Figures for the whole archdiocese.
+    {% endif %}
+    Every number here is computed from the database.
+</p>
+
+<div class="stat-grid">
+
+    <div class="stat-card">
+        <span class="stat-value">{{ counts.parishes }}</span>
+        <span class="stat-label">Parishes</span>
+    </div>
+
+    <div class="stat-card">
+        <span class="stat-value">{{ counts.vicariates }}</span>
+        <span class="stat-label">Vicariates</span>
+    </div>
+
+    <div class="stat-card">
+        <span class="stat-value">{{ counts.municipalities }}</span>
+        <span class="stat-label">Cities &amp; municipalities</span>
+    </div>
+
+    <div class="stat-card">
+        <span class="stat-value">{{ counts.priests }}</span>
+        <span class="stat-label">Priests in post</span>
+    </div>
+
+    <div class="stat-card">
+        <span class="stat-value">{{ counts.records }}</span>
+        <span class="stat-label">Register entries</span>
+    </div>
+
+    <div class="stat-card">
+        <span class="stat-value">{{ counts.persons }}</span>
+        <span class="stat-label">Persons on file</span>
+    </div>
+
+</div>
+
+<div class="portal-grid">
+
+    <div class="portal-card">
+        <h2>ENTRIES BY REGISTER</h2>
+        <div class="portal-card-line"></div>
+
+        <table class="data-table">
+            <tbody>
+                {% for kind, count in sacraments.items() %}
+                <tr>
+                    <td>{{ kind.label }}</td>
+                    <td class="numeric">{{ count }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="portal-card">
+        <h2>CERTIFICATE QUEUE</h2>
+        <div class="portal-card-line"></div>
+
+        <table class="data-table">
+            <tbody>
+                <tr>
+                    <td>Awaiting action</td>
+                    <td class="numeric"><a href="{{ url_for('certificates.index', open=1) }}">{{ certificates.open
+                            }}</a></td>
+                </tr>
+                {% for status, count in certificates.items() %}
+                {% if status != 'open' %}
+                <tr>
+                    <td>{{ status.label }}</td>
+                    <td class="numeric">
+                        <a href="{{ url_for('certificates.index', status=status.value) }}">{{ count }}</a>
+                    </td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<div class="portal-card">
+    <h2>PARISHES BY ENTRIES RECORDED</h2>
+    <div class="portal-card-line"></div>
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Parish</th>
+                <th>Vicariate</th>
+                <th class="numeric">Entries</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for parish, count in activity %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('directory.parish_detail', parish_id=parish.id) }}">
+                        {{ parish.name }}
+                    </a>
+                </td>
+                <td>{{ parish.vicariate.name }}</td>
+                <td class="numeric">{{ count }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="3" class="muted">No register entries have been recorded yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends "portal_base.html" %}
+{% from "_fields.html" import field, dict_select, textarea %}
+
+{% block title %}Mass intentions - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<h1 class="portal-title">Mass Intentions</h1>
+
+<div class="portal-grid">
+
+    <div class="portal-card">
+        <h2>REQUEST AN INTENTION</h2>
+        <div class="portal-card-line"></div>
+
+        {% if not parishes %}
+        <p class="muted">
+            Your account has no parish assigned. Ask the chancery to set your
+            home parish before filing an intention.
+        </p>
+        {% else %}
+
+        <form method="post" novalidate>
+            {% include "_csrf.html" %}
+
+            {{ textarea('intended_for', form, 'Intention', form.intended_for, rows=2,
+            hint='e.g. "for the repose of the soul of Ana Bautista"') }}
+
+            {{ field('requester_name', form, 'Requested by', value=form.requester_name, required=true) }}
+            {{ field('requester_contact', form, 'Contact', value=form.requester_contact) }}
+            {{ dict_select('parish_id', form, 'Parish', parishes,
+            form.parish_id or (parishes.keys() | list | first)) }}
+            {{ textarea('notes', form, 'Notes', form.notes, rows=2) }}
+
+            <button type="submit" class="submit-login-btn">SUBMIT INTENTION</button>
+        </form>
+
+        {% endif %}
+    </div>
+
+    <div class="portal-card">
+        <h2>BY STATUS</h2>
+        <div class="portal-card-line"></div>
+
+        <table class="data-table">
+            <tbody>
+                {% for status, count in stats.items() %}
+                <tr>
+                    <td>{{ status.label }}</td>
+                    <td class="numeric">{{ count }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<div class="portal-card">
+    <h2>RECENTLY REQUESTED</h2>
+    <div class="portal-card-line"></div>
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Intention</th>
+                <th>Requested by</th>
+                <th>Parish</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in intentions %}
+            <tr>
+                <td>{{ item.intended_for }}</td>
+                <td>{{ item.requester_name }}</td>
+                <td>{{ item.parish.name }}</td>
+                <td><span class="badge badge-{{ item.status.value }}">{{ item.status.label }}</span></td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" class="muted">No intentions have been requested yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

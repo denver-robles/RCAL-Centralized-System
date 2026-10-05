@@ -1,0 +1,41 @@
+{% extends "portal_base.html" %}
+{% from "_fields.html" import field, dict_select %}
+
+{% block title %}{{ "Edit parish" if editing else "Add parish" }} - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<h1 class="portal-title">{{ "Edit parish" if editing else "Add a parish" }}</h1>
+
+<div class="portal-card narrow">
+
+    <form method="post" novalidate>
+        {% include "_csrf.html" %}
+
+        {{ field('name', form, 'Parish name', value=form.name or (parish.name if parish else ''), required=true) }}
+
+        {{ dict_select('vicariate_id', form, 'Vicariate', vicariates,
+            selected=(form.vicariate_id or (parish.vicariate_id|string if parish else none))) }}
+
+        {{ field('municipality', form, 'City / Municipality',
+            value=form.municipality or (parish.municipality if parish else '')) }}
+
+        {{ field('address', form, 'Address',
+            value=form.address or (parish.address if parish else '')) }}
+
+        {{ field('phone', form, 'Telephone',
+            value=form.phone or (parish.phone if parish else '')) }}
+
+        {{ field('email', form, 'Email', type='email',
+            value=form.email or (parish.email if parish else '')) }}
+
+        <button type="submit" class="submit-login-btn">
+            {{ "SAVE CHANGES" if editing else "ADD PARISH" }}
+        </button>
+        <a href="{{ url_for('directory.parish_detail', parish_id=parish.id) if parish
+                    else url_for('directory.parishes') }}" class="link-btn">Cancel</a>
+    </form>
+
+</div>
+
+{% endblock %}

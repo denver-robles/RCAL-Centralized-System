@@ -1,13 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 
+{% from "_fields.html" import password_input %}
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Archdiocese of Lipa - Centralized Information System</title>
 
-    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='password_toggle.css') }}">
 </head>
 
 <body>
@@ -17,7 +27,7 @@
         <header class="site-header">
 
             <a href="#home" class="brand">
-                <img src="logo.png" alt="Archdiocese of Lipa">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Archdiocese of Lipa">
 
                 <div class="brand-name">
                     ARCHDIOCESE OF<br>LIPA
@@ -31,7 +41,7 @@
                 <a href="#about">About Us</a>
                 <a href="#services">Parish Services</a>
                 <a href="#analytics">Analytics</a>
-                <a href="#login">Login</a>
+                <a href="{{ url_for('auth.login') }}">Login</a>
             </nav>
 
         </header>
@@ -61,10 +71,6 @@
                         Access the Portal
                     </button>
 
-                </div>
-
-                <div class="hero-image-wrap">
-                    <img src="church.png" alt="Church">
                 </div>
 
             </section>
@@ -195,7 +201,7 @@
 
                             <div class="pill-text">
                                 <span class="pill-label">Churches:</span>
-                                <strong class="pill-value">64</strong>
+                                <strong class="pill-value">{{ counts.parishes }}</strong>
                             </div>
                         </div>
 
@@ -204,7 +210,7 @@
 
                             <div class="pill-text">
                                 <span class="pill-label">Priests:</span>
-                                <strong class="pill-value">216</strong>
+                                <strong class="pill-value">{{ counts.priests }}</strong>
                             </div>
                         </div>
 
@@ -220,11 +226,34 @@
                                     Cities/Municipalities
                                 </span>
 
-                                <strong class="pill-value">34</strong>
+                                <strong class="pill-value">
+                                    {{ counts.municipalities }}
+                                </strong>
+                            </div>
+                        </div>
+
+                        <div class="stat-pill">
+                            <div class="pill-icon green-icon"></div>
+
+                            <div class="pill-text">
+                                <span class="pill-label">
+                                    Register Entries
+                                </span>
+
+                                <strong class="pill-value">
+                                    {{ counts.records }}
+                                </strong>
                             </div>
                         </div>
 
                     </div>
+
+                    <p class="analytics-footnote">
+                        {{ counts.vicariates }} vicariates &middot;
+                        {{ counts.records }} register
+                        {{ "entry" if counts.records == 1 else "entries" }}
+                        on file
+                    </p>
 
                 </div>
 
@@ -243,7 +272,8 @@
 
                     <div class="login-card-line"></div>
 
-                    <form id="inlineLoginForm">
+                    <form id="inlineLoginForm" action="{{ url_for('auth.login') }}" method="post">
+                        {% include "_csrf.html" %}
 
                         <div class="form-group">
 
@@ -254,7 +284,9 @@
                             <input
                                 type="text"
                                 id="inlineUsername"
+                                name="identifier"
                                 class="pill-input"
+                                autocomplete="username"
                                 required
                             >
 
@@ -267,12 +299,8 @@
                                 PASSWORD:
                             </label>
 
-                            <input
-                                type="password"
-                                id="inlinePassword"
-                                class="pill-input"
-                                required
-                            >
+                            {{ password_input('password', id='inlinePassword',
+                                              autocomplete='current-password') }}
 
                         </div>
 
@@ -310,7 +338,7 @@
 
                     <h4>System Links:</h4>
 
-                    <a href="#login">Access Portal</a>
+                    <a href="{{ url_for('auth.login') }}">Access Portal</a>
 
                 </div>
 
@@ -347,7 +375,7 @@
 
             <div class="login-brand">
 
-                <img src="logo.png" class="login-logo">
+                <img src="{{ url_for('static', filename='logo.png') }}" class="login-logo">
 
                 <h1>LOGIN PORTAL</h1>
 
@@ -364,7 +392,8 @@
 
                 <div class="login-card-line"></div>
 
-                <form id="portalLoginForm">
+                <form id="portalLoginForm" action="{{ url_for('auth.login') }}" method="post">
+                    {% include "_csrf.html" %}
 
                     <div class="form-group">
 
@@ -373,29 +402,27 @@
                         </label>
 
                         <input
-                            type="text"
-                            id="loginUsername"
-                            class="pill-input"
-                            required
-                        >
+                                                        type="text"
+                                                        id="loginUsername"
+                                                        name="identifier"
+                                                        class="pill-input"
+                                                        autocomplete="username"
+                                                        required
+                                                    >
 
                     </div>
 
 
                     <div class="form-group">
 
-                        <label for="loginPassword">
-                            PASSWORD:
-                        </label>
+                                                <label for="loginPassword">
+                                                    PASSWORD:
+                                                </label>
 
-                        <input
-                            type="password"
-                            id="loginPassword"
-                            class="pill-input"
-                            required
-                        >
+                                                {{ password_input('password', id='loginPassword',
+                                                                  autocomplete='current-password') }}
 
-                    </div>
+                                            </div>
 
 
                     <button type="submit" class="submit-login-btn">
@@ -413,7 +440,8 @@
     </div>
 
 
-    <script src="script.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='password_toggle.js') }}"></script>
 
 </body>
 </html>

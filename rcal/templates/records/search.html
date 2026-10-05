@@ -1,0 +1,107 @@
+{% extends "portal_base.html" %}
+{% from "_fields.html" import pagination_nav, select_field %}
+
+{% block title %}Search registers - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<div class="title-row">
+    <h1 class="portal-title">Search the Registers</h1>
+    {% if current_user.role.value in ('admin', 'chancery', 'parish_staff', 'clergy') %}
+    <a href="{{ url_for('records.create') }}" class="submit-login-btn as-link">RECORD AN ENTRY</a>
+    {% endif %}
+</div>
+
+<p class="muted">
+    {% if current_user.is_archdiocese_wide %}
+    Every parish register in the archdiocese.
+    {% else %}
+    The registers of {{ current_user.home_parish.name }}.
+    {% endif %}
+    Names are matched against both parties of a marriage.
+</p>
+
+<form method="get" action="{{ url_for('records.search') }}" class="search-bar wide">
+    <input
+        type="text"
+        name="name"
+        value="{{ name }}"
+        placeholder="Surname or first name"
+        class="pill-input"
+    >
+    {{ select_field('type', form, 'Register', sacraments.labels(), sacrament_type) }}
+    {{ select_field('parish', form, 'Parish', parish_choices, parish_id|string if parish_id else none, blank='All parishes') }}
+    <input
+        type="number"
+        name="year"
+        value="{{ year or '' }}"
+        placeholder="Year"
+        min="1600"
+        max="2100"
+        class="pill-input year-input"
+    >
+    <button type="submit" class="submit-login-btn as-button">SEARCH</button>
+</form>
+
+<div class="portal-card">
+
+    <p class="muted">
+        {{ pagination.total }} {{ "entry" if pagination.total == 1 else "entries" }} found.
+    </p>
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Subject</th>
+                <th>Register</th>
+                <th>Date</th>
+                <th>Parish</th>
+                <th>Citation</th>
+                <th>Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in pagination.items %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('records.detail', record_id=record.id) }}">
+                        {{ record.person.sort_name }}
+                    </a>
+                    {% if record.spouse %}
+                    <div class="muted small">spouse: {{ record.spouse.sort_name }}</div>
+                    {% endif %}
+                </td>
+                <td>{{ record.sacrament_type.label }}</td>
+                <td>{{ record.event_date.strftime('%d %b %Y') }}</td>
+                <td>{{ record.originating_parish.name }}</td>
+                <td class="mono small">{{ record.citation }}</td>
+                <td>
+                    {% set notes = record.annotations | length %}
+                    {% if notes %}
+                    <span class="badge badge-notes">{{ notes }}</span>
+                    {% else %}
+                    <span class="muted">—</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="muted">
+                    {% if name or sacrament_type or parish_id or year %}
+                    No register entry matches that search.
+                    {% else %}
+                    No entries have been recorded yet.
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {{ pagination_nav(pagination, 'records.search', {
+        'name': name, 'type': sacrament_type,
+        'parish': parish_id, 'year': year}) }}
+
+</div>
+
+{% endblock %}

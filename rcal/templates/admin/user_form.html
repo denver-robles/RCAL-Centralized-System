@@ -1,0 +1,97 @@
+{% extends "portal_base.html" %}
+
+{% block title %}{{ "Edit account" if editing else "New account" }} - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<h1 class="portal-title">{{ "Edit account" if editing else "New account" }}</h1>
+
+<div class="portal-card narrow">
+
+    <form method="post" novalidate>
+        {% include "_csrf.html" %}
+
+        <div class="form-group">
+            <label for="username">USERNAME:</label>
+            <input
+                type="text"
+                id="username"
+                name="username"
+                class="pill-input"
+                value="{{ form.username or (user.username if user else '') }}"
+                required
+            >
+            {% if form.errors.username %}
+            <span class="field-error">{{ form.errors.username }}</span>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="display_name">DISPLAY NAME:</label>
+            <input
+                type="text"
+                id="display_name"
+                name="display_name"
+                class="pill-input"
+                value="{{ form.display_name or (user.display_name if user else '') }}"
+            >
+            {% if form.errors.display_name %}
+            <span class="field-error">{{ form.errors.display_name }}</span>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="email">EMAIL:</label>
+            <input
+                type="email"
+                id="email"
+                name="email"
+                class="pill-input"
+                value="{{ form.email or (user.email if user else '') }}"
+            >
+            {% if form.errors.email %}
+            <span class="field-error">{{ form.errors.email }}</span>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="role">ROLE:</label>
+            <select id="role" name="role" class="pill-input">
+                {% for role in roles %}
+                <option
+                    value="{{ role.value }}"
+                    {{ 'selected' if (form.role or (user.role.value if user else '')) == role.value }}
+                >
+                    {{ role.label }}
+                </option>
+                {% endfor %}
+            </select>
+            {% if form.errors.role %}
+            <span class="field-error">{{ form.errors.role }}</span>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="password">PASSWORD:</label>
+            <input
+                type="password"
+                id="password"
+                name="password"
+                class="pill-input"
+                autocomplete="new-password"
+            >
+            <span class="field-hint">
+                {{ "Leave blank to keep the current password." if editing else "At least 8 characters." }}
+            </span>
+            {% if form.errors.password %}
+            <span class="field-error">{{ form.errors.password }}</span>
+            {% endif %}
+        </div>
+
+        <button type="submit" class="submit-login-btn">SAVE ACCOUNT</button>
+        <a href="{{ url_for('admin.users') }}" class="link-btn">Cancel</a>
+    </form>
+
+</div>
+
+{% endblock %}

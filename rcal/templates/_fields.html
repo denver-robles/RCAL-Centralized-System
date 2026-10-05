@@ -1,0 +1,156 @@
+{# Shared form-field markup.
+
+   Imported with "{% from '_fields.html' import field, text_field, select_field,
+   textarea, search_bar %}". Keeping these in one place is what makes the
+   dozens of forms below consistent, and means a change to how an error is
+   shown lands everywhere at once. #}
+
+{% macro field(name, form, label, type='text', value=None, placeholder='', hint=None, required=false, extra='') %}
+<div class="form-group">
+    <label for="{{ name }}">{{ label }}:</label>
+    <input
+        type="{{ type }}"
+        id="{{ name }}"
+        name="{{ name }}"
+        class="pill-input"
+        {% if value is not none %}value="{{ value }}"{% endif %}
+        {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+        {% if required %}required{% endif %}
+        {{ extra }}
+    >
+    {% if hint %}<span class="field-hint">{{ hint }}</span>{% endif %}
+    {% if form.errors[name] %}<span class="field-error">{{ form.errors[name] }}</span>{% endif %}
+</div>
+{% endmacro %}
+
+
+{% macro select_field(name, form, label, choices, selected=None, hint=None, blank=None) %}
+<div class="form-group">
+    <label for="{{ name }}">{{ label }}:</label>
+    <select id="{{ name }}" name="{{ name }}" class="pill-input">
+        {% if blank %}<option value="">{{ blank }}</option>{% endif %}
+        {% for value, text in choices.items() %}
+        <option value="{{ value }}" {{ 'selected' if selected == value }}>{{ text }}</option>
+        {% endfor %}
+    </select>
+    {% if hint %}<span class="field-hint">{{ hint }}</span>{% endif %}
+    {% if form.errors[name] %}<span class="field-error">{{ form.errors[name] }}</span>{% endif %}
+</div>
+{% endmacro %}
+
+
+{# A password input with a Show/Hide toggle beside it.
+
+   The toggle is wired up by static/password_toggle.js purely from the
+   data-password-for attribute, so nothing here needs initialising.
+   Shared by the landing-page card, the standalone portal login, and the
+   change-password page so all three stay in step. #}
+{% macro password_input(name, id=None, autocomplete='', value='', placeholder='') %}
+{% set field_id = id or name %}
+<div class="rcal-password-field">
+    <input
+        type="password"
+        id="{{ field_id }}"
+        name="{{ name }}"
+        class="pill-input"
+        value="{{ value }}"
+        {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+        {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+    >
+    <button
+        type="button"
+        class="rcal-password-toggle"
+        data-password-for="{{ field_id }}"
+        aria-pressed="false"
+        aria-label="Show password"
+    >Show</button>
+</div>
+{% endmacro %}
+
+
+{# Choices as id -> parish name are rendered straight from the dict. #}
+{% macro dict_select(name, form, label, choices, selected=None, blank=None) %}
+{{ select_field(name, form, label, choices, selected, blank=blank) }}
+{% endmacro %}
+
+
+{% macro textarea(name, form, label, value=None, rows=3, hint=None) %}
+<div class="form-group">
+    <label for="{{ name }}">{{ label }}:</label>
+    <textarea
+        id="{{ name }}"
+        name="{{ name }}"
+        class="pill-input"
+        rows="{{ rows }}"
+    >{{ value if value is not none else '' }}</textarea>
+    {% if hint %}<span class="field-hint">{{ hint }}</span>{% endif %}
+    {% if form.errors[name] %}<span class="field-error">{{ form.errors[name] }}</span>{% endif %}
+</div>
+{% endmacro %}
+
+
+{# The search bar above every listing. Keeps the current filters in the
+   hidden fields so paging does not drop them. #}
+{% macro search_bar(action, placeholder, fields, query='') %}
+<form method="get" action="{{ action }}" class="search-bar">
+    <input
+        type="text"
+        name="q"
+        value="{{ query }}"
+        placeholder="{{ placeholder }}"
+        class="pill-input"
+    >
+    {{ fields | safe }}
+    <button type="submit" class="submit-login-btn as-button">SEARCH</button>
+</form>
+{% endmacro %}
+
+
+{% macro pagination_nav(pagination, endpoint, extra={}) %}
+{% if pagination and pagination.pages > 1 %}
+<nav class="pagination">
+    {% if pagination.has_prev %}
+    <a href="{{ url_for(endpoint, page=pagination.prev_num, **extra) }}">Previous</a>
+    {% endif %}
+    {% for number in pagination.iter_pages() %}
+        {% if number %}
+        <a
+            href="{{ url_for(endpoint, page=number, **extra) }}"
+            class="{{ 'current' if number == pagination.page else '' }}"
+        >{{ number }}</a>
+        {% else %}
+        <span>…</span>
+        {% endif %}
+    {% endfor %}
+    {% if pagination.has_next %}
+    <a href="{{ url_for(endpoint, page=pagination.next_num, **extra) }}">Next</a>
+    {% endif %}
+</nav>
+{% endif %}
+{% endmacro %}
+
+
+{# A filter dropdown for an enum, driven by the enum rather than by hand,
+   so a new status cannot be forgotten in the markup. #}
+{% macro enum_filter(name, enum, selected, blank='All', extra='') %}
+<div class="form-group inline-group">
+    <label for="{{ name }}">STATUS:</label>
+    <select id="{{ name }}" name="{{ name }}" class="pill-input">
+        <option value="">{{ blank }}</option>
+        {% for member in enum %}
+        <option value="{{ member.value }}" {{ 'selected' if selected == member.value }}>
+            {{ member.label }}
+        </option>
+        {% endfor %}
+    </select>
+    {{ extra | safe }}
+</div>
+{% endmacro %}
+
+
+{# A workflow badge. Colour is driven by the status, not set by hand, so a
+   certificate can never be shown as 'issued' in green while the database
+   says it is pending. #}
+{% macro status_badge(status) %}
+<span class="badge badge-{{ status.value }}">{{ status.label }}</span>
+{% endmacro %}

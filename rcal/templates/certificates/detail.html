@@ -1,0 +1,167 @@
+{% extends "portal_base.html" %}
+{% from "_fields.html" import status_badge, textarea %}
+
+{% block title %}Certificate request #{{ item.id }} - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<div class="title-row">
+    <div>
+        <h1 class="portal-title">
+            {{ item.certificate_number or "Request #" ~ item.id }}
+        </h1>
+        <p class="muted">
+            {{ status_badge(item.status) }}
+            &middot; filed {{ item.created_at.strftime('%d %B %Y') }}
+        </p>
+    </div>
+    {% if item.status.value == 'issued' %}
+    <a href="{{ url_for('certificates.print_certificate', request_id=item.id) }}"
+       class="submit-login-btn as-link" target="_blank">VIEW CERTIFICATE</a>
+    {% endif %}
+</div>
+
+<div class="portal-grid">
+
+    <div class="portal-card">
+        <h2>REQUEST</h2>
+        <div class="portal-card-line"></div>
+
+        <dl class="detail-list">
+            <dt>Requested by</dt>
+            <dd>{{ item.requester_name }}</dd>
+
+            <dt>Contact</dt>
+            <dd>{{ item.requester_contact or "—" }}</dd>
+
+            <dt>Purpose</dt>
+            <dd>{{ item.purpose or "—" }}</dd>
+
+            <dt>Register entry</dt>
+            <dd>
+                <a href="{{ url_for('records.detail', record_id=item.record.id) }}">
+                    {{ item.record.sacrament_type.label }} &mdash;
+                    {{ item.record.person.full_name }}
+                </a>
+            </dd>
+
+            <dt>Citation</dt>
+            <dd class="mono small">
+                {{ item.record.originating_parish.name }},
+                {{ item.record.citation }}
+            </dd>
+        </dl>
+    </div>
+
+    <div class="portal-card">
+        <h2>AUDIT TRAIL</h2>
+        <div class="portal-card-line"></div>
+
+        {% set steps = [
+            ('Filed', item.requester_user, item.created_at, item.requester_name),
+            ('Verified', item.verified_by_user, item.verified_at, None),
+            ('Approved', item.approved_by_user, item.approved_at, None),
+            ('Issued', item.issued_by_user, item.issued_at, None),
+        ] %}
+        {% if item.rejected_at %}
+        {% set steps = steps + [('Closed', item.rejected_by_user, item.rejected_at, None)] %}
+        {% endif %}
+
+        <table class="data-table">
+            <thead><tr><th>Step</th><th>By</th><th>When</th></tr></thead>
+            <tbody>
+                {% for label, actor, when, fallback in steps %}
+                <tr>
+                    <td>{{ label }}</td>
+                    <td>
+                        {% if actor %}
+                        {{ actor.display_name or actor.username }}
+                        {% elif fallback %}
+                        {{ fallback }}
+                        {% else %}
+                        <span class="muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="small">
+                        {% if when %}{{ when.strftime('%d %b %Y %H:%M') }}{% else %}
+                        <span class="muted">Not yet</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if item.rejection_reason %}
+        <p class="field-hint">{{ item.rejection_reason }}</p>
+        {% endif %}
+    </div>
+
+</div>
+
+<div class="portal-card">
+    <h2>NEXT STEPS</h2>
+    <div class="portal-card-line"></div>
+
+    {% if item.status.is_closed %}
+    <p class="muted">
+        This request is {{ item.status.label.lower() }} and can take no further
+        steps. The record of what happened is kept above.
+    </p>
+    {% elif not can_certify %}
+    <p class="muted">
+        Your account may file and follow a request but may not certify one.
+        The parish holding the register will verify it.
+    </p>
+    {% else %}
+
+    <div class="btn-row wrap">
+        {% if 'verify' in step_actions %}
+        <form method="post" action="{{ url_for('certificates.transition', request_id=item.id, action='verify') }}">
+            {% include "_csrf.html" %}
+            <button type="submit" class="submit-login-btn as-button">VERIFY AGAINST REGISTER</button>
+        </form>
+        {% endif %}
+
+        {% if 'approve' in step_actions and can_approve %}
+        <form method="post" action="{{ url_for('certificates.transition', request_id=item.id, action='approve') }}">
+            {% include "_csrf.html" %}
+            <button type="submit" class="submit-login-btn as-button">APPROVE FOR ISSUE</button>
+        </form>
+        {% endif %}
+
+        {% if 'issue' in step_actions %}
+        <form method="post" action="{{ url_for('certificates.transition', request_id=item.id, action='issue') }}">
+            {% include "_csrf.html" %}
+            <button type="submit" class="submit-login-btn as-button">ISSUE CERTIFICATE</button>
+        </form>
+        {% endif %}
+
+        {% if 'cancel' in step_actions and can_approve %}
+        <form method="post" action="{{ url_for('certificates.transition', request_id=item.id, action='cancel') }}">
+            {% include "_csrf.html" %}
+            <button type="submit" class="submit-login-btn as-button muted-btn">CANCEL</button>
+        </form>
+        {% endif %}
+    </div>
+
+    <details class="details-block">
+        <summary>Reject this request</summary>
+
+        <form method="post" action="{{ url_for('certificates.transition', request_id=item.id, action='reject') }}">
+            {% include "_csrf.html" %}
+            {{ textarea('reason', reject_form, 'Reason', rows=3,
+                hint='A rejection must state why; the reason is kept on file.') }}
+            <button type="submit" class="submit-login-btn muted-btn">REJECT REQUEST</button>
+        </form>
+    </details>
+
+    <p class="field-hint">
+        A request cannot skip a step: it must be verified before it is
+        approved, and approved before it is issued.
+    </p>
+
+    {% endif %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,166 @@
+{% extends "portal_base.html" %}
+
+{% block title %}{{ record.person.full_name }} - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<div class="title-row">
+    <div>
+        <h1 class="portal-title">
+            {{ record.sacrament_type.label }} &mdash; {{ record.person.full_name }}
+        </h1>
+        <p class="muted">
+            {{ record.originating_parish.name }} &middot;
+            <span class="mono">{{ record.citation }}</span>
+        </p>
+    </div>
+    {% if can_write %}
+    <a href="{{ url_for('records.annotate', record_id=record.id) }}"
+       class="submit-login-btn as-link">ADD MARGIN NOTE</a>
+    {% endif %}
+</div>
+
+<div class="portal-card">
+    <div class="immutability-note">
+        <strong>This entry is permanent.</strong>
+        A register entry is never edited or deleted. When something later
+        happens to this person, it is recorded as a margin note below, and
+        the entry above stays exactly as it was written.
+    </div>
+</div>
+
+<div class="portal-grid">
+
+    <div class="portal-card">
+        <h2>AS RECORDED IN THE REGISTER</h2>
+        <div class="portal-card-line"></div>
+
+        <dl class="detail-list">
+            <dt>Subject</dt>
+            <dd>{{ record.person.full_name }}</dd>
+
+            <dt>Sex</dt>
+            <dd>{{ record.person.sex.label }}</dd>
+
+            <dt>Date of birth</dt>
+            <dd>
+                {% if record.person.date_of_birth %}
+                {{ record.person.date_of_birth.strftime('%d %B %Y') }}
+                {% else %}Not recorded{% endif %}
+            </dd>
+
+            <dt>Date of event</dt>
+            <dd>{{ record.event_date.strftime('%d %B %Y') }}</dd>
+
+            {% if record.spouse %}
+            <dt>Spouse</dt>
+            <dd>{{ record.spouse.full_name }}</dd>
+            {% endif %}
+
+            <dt>Officiating clergy</dt>
+            <dd>
+                {% if record.performed_by_clergy %}
+                {{ record.performed_by_clergy.titled_name }}
+                {% else %}Not recorded{% endif %}
+            </dd>
+
+            {% if record.legitimacy %}
+            <dt>Legitimacy</dt>
+            <dd>{{ record.legitimacy.label }}</dd>
+            {% endif %}
+
+            {% if record.godparents %}
+            <dt>Godparents</dt>
+            <dd>{{ record.godparents }}</dd>
+            {% endif %}
+
+            {% if record.witnesses %}
+            <dt>Witnesses</dt>
+            <dd>{{ record.witnesses }}</dd>
+            {% endif %}
+
+            {% if record.place_of_event %}
+            <dt>Place</dt>
+            <dd>{{ record.place_of_event }}</dd>
+            {% endif %}
+
+            {% if record.register_notes %}
+            <dt>Register notes</dt>
+            <dd>{{ record.register_notes }}</dd>
+            {% endif %}
+
+            <dt>Transcribed</dt>
+            <dd>{{ record.created_at.strftime('%d %B %Y %H:%M') }} UTC</dd>
+        </dl>
+    </div>
+
+    <div class="portal-card">
+        <h2>CERTIFICATES FROM THIS ENTRY</h2>
+        <div class="portal-card-line"></div>
+
+        {% if requests %}
+        <table class="data-table">
+            <thead><tr><th>Number</th><th>Status</th><th>Issued</th></tr></thead>
+            <tbody>
+                {% for item in requests %}
+                <tr>
+                    <td class="mono small">
+                        <a href="{{ url_for('certificates.detail', request_id=item.id) }}">
+                            {{ item.certificate_number or "—" }}
+                        </a>
+                    </td>
+                    <td><span class="badge badge-{{ item.status.value }}">{{ item.status.label }}</span></td>
+                    <td class="small">
+                        {% if item.issued_at %}{{ item.issued_at.strftime('%d %b %Y') }}{% else %}—{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="muted">No certificate has been issued from this entry.</p>
+        {% endif %}
+
+        <a href="{{ url_for('certificates.create') }}" class="link-btn spaced">
+            Request a certified copy
+        </a>
+    </div>
+
+</div>
+
+<div class="portal-card">
+    <h2>MARGIN NOTES ({{ record.annotations | length }})</h2>
+    <div class="portal-card-line"></div>
+
+    {% for note in record.annotations %}
+    <div class="annotation">
+        <div class="annotation-head">
+            <span class="badge badge-{{ note.annotation_type.value }}">{{ note.annotation_type.label }}</span>
+            {% if note.event_date %}
+            <span class="muted small">{{ note.event_date.strftime('%d %B %Y') }}</span>
+            {% endif %}
+        </div>
+        <p>{{ note.note_text }}</p>
+        <div class="muted small">
+            Added {{ note.created_at.strftime('%d %b %Y') }}
+            {% if note.annotated_by_user %}
+            by {{ note.annotated_by_user.display_name or note.annotated_by_user.username }}
+            {% endif %}
+            {% if note.reference_record %}
+            &middot; see
+            <a href="{{ url_for('records.detail', record_id=note.reference_record.id) }}">
+                {{ note.reference_record.sacrament_type.label }},
+                {{ note.reference_record.citation }}
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <p class="muted">
+        No margin notes. Notes are added when this person marries, is
+        ordained, enters religion, or is corrected.
+    </p>
+    {% endfor %}
+</div>
+
+{% endblock %}

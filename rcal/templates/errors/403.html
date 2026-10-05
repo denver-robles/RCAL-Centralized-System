@@ -1,0 +1,16 @@
+{% extends "portal_base.html" %}
+
+{% block title %}Not permitted - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<div class="portal-card narrow">
+    <h1 class="portal-title">403 — Not permitted</h1>
+    <p>
+        Your account does not have permission to view this page. If you believe
+        that is wrong, contact the Chancery office.
+    </p>
+    <a href="{{ url_for('pages.home') }}" class="link-btn">Return to the home page</a>
+</div>
+
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "portal_base.html" %}
+{% from "_fields.html" import field, dict_select %}
+
+{% block title %}Request a certificate - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<h1 class="portal-title">Request a certified copy</h1>
+
+<div class="portal-card narrow">
+
+    {% if not records %}
+    <p class="muted">
+        There are no register entries you may read. Search the registers
+        first, or ask the parish holding the record to file the request.
+    </p>
+    <a href="{{ url_for('records.search') }}" class="link-btn">Search the registers</a>
+    {% else %}
+
+    <p class="muted">
+        A certified copy is issued only after the record has been verified
+        against the bound register and approved by the chancery.
+    </p>
+
+    <form method="post" novalidate>
+        {% include "_csrf.html" %}
+
+        {{ dict_select('record_id', form, 'Register entry', records, form.record_id,
+        blank='Choose a register entry…') }}
+
+        {{ field('requester_name', form, 'Requested by',
+        value=form.requester_name or (current_user.display_name or current_user.username),
+        required=true,
+        hint='The person the certificate is for, if it is not you.') }}
+
+        {{ field('requester_contact', form, 'Contact', value=form.requester_contact) }}
+
+        {{ field('purpose', form, 'Purpose', value=form.purpose,
+        hint='e.g. marriage documentation, school requirement.') }}
+
+        <button type="submit" class="submit-login-btn">FILE REQUEST</button>
+        <a href="{{ url_for('certificates.index') }}" class="link-btn">Cancel</a>
+    </form>
+
+    {% endif %}
+</div>
+
+{% endblock %}

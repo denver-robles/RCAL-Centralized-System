@@ -1,0 +1,138 @@
+{% extends "portal_base.html" %}
+
+{% block title %}{{ parish.name }} - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<div class="title-row">
+    <div>
+        <h1 class="portal-title">{{ parish.name }}</h1>
+        <p class="muted">
+            {{ parish.vicariate.name }}
+            {% if parish.municipality %} &middot; {{ parish.municipality }}{% endif %}
+            {% if not parish.is_active %}
+            &middot; <span class="badge badge-off">Inactive</span>
+            {% endif %}
+        </p>
+    </div>
+    {% if can_edit %}
+    <div class="btn-row">
+        <a href="{{ url_for('directory.assign_clergy', parish_id=parish.id) }}"
+           class="submit-login-btn as-link">ASSIGN CLERGY</a>
+        <a href="{{ url_for('directory.edit_parish', parish_id=parish.id) }}"
+           class="submit-login-btn as-link outline">EDIT</a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="portal-grid">
+
+    <div class="portal-card">
+        <h2>DETAILS</h2>
+        <div class="portal-card-line"></div>
+
+        <dl class="detail-list">
+            <dt>Vicariate</dt>
+            <dd>{{ parish.vicariate.name }}</dd>
+
+            <dt>Address</dt>
+            <dd>{{ parish.address or "—" }}</dd>
+
+            <dt>City / Municipality</dt>
+            <dd>{{ parish.municipality or "—" }}</dd>
+
+            <dt>Telephone</dt>
+            <dd>{{ parish.phone or "—" }}</dd>
+
+            <dt>Email</dt>
+            <dd>{{ parish.email or "—" }}</dd>
+
+            <dt>Register entries</dt>
+            <dd>
+                {% if record_count %}
+                <a href="{{ url_for('records.search', parish=parish.id) }}">{{ record_count }}</a>
+                {% else %}
+                0
+                {% endif %}
+            </dd>
+        </dl>
+
+        {% if can_edit %}
+        <form method="post" action="{{ url_for('directory.toggle_parish', parish_id=parish.id) }}">
+            {% include "_csrf.html" %}
+            <button type="submit" class="submit-login-btn muted-btn">
+                {{ "DEACTIVATE PARISH" if parish.is_active else "REACTIVATE PARISH" }}
+            </button>
+        </form>
+        <p class="field-hint">
+            A parish is deactivated rather than deleted, so its register
+            citations stay resolvable.
+        </p>
+        {% endif %}
+    </div>
+
+    <div class="portal-card">
+        <h2>CURRENT CLERGY ({{ assignments | length }})</h2>
+        <div class="portal-card-line"></div>
+
+        {% for assignment in assignments %}
+        <div class="person-row">
+            <div>
+                <a href="{{ url_for('directory.clergy_detail', clergy_id=assignment.clergy.id) }}"
+                   class="strong">{{ assignment.clergy.titled_name }}</a>
+                <div class="muted small">
+                    {{ assignment.role.label }} &middot; since {{ assignment.assigned_from.strftime('%b %Y') }}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <p class="muted">
+            No clergy currently hold a post here. {{ "Assign one" if can_edit else "Ask the chancery to assign one." }}
+        </p>
+        {% endfor %}
+
+        {% if past_assignments %}
+        <h3 class="sub-heading">Past appointments</h3>
+        {% for assignment in past_assignments %}
+        <div class="person-row">
+            <div>
+                <span>{{ assignment.clergy.titled_name }}</span>
+                <div class="muted small">
+                    {{ assignment.role.label }} &middot;
+                    {{ assignment.assigned_from.strftime('%b %Y') }} –
+                    {{ assignment.assigned_to.strftime('%b %Y') }}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+
+</div>
+
+<div class="portal-card">
+    <h2>ACCOUNTS BASED HERE</h2>
+    <div class="portal-card-line"></div>
+
+    {% set staff = parish.users | selectattr('is_active') | list %}
+    {% if staff %}
+    <table class="data-table">
+        <thead>
+            <tr><th>Username</th><th>Name</th><th>Role</th></tr>
+        </thead>
+        <tbody>
+            {% for account in staff %}
+            <tr>
+                <td class="mono">{{ account.username }}</td>
+                <td>{{ account.display_name or "—" }}</td>
+                <td>{{ account.role.label }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="muted">No active accounts are based at this parish.</p>
+    {% endif %}
+</div>
+
+{% endblock %}

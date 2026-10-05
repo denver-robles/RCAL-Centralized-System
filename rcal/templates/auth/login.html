@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+{% from "_fields.html" import password_input %}
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Sign in - {{ config['APP_NAME'] }}</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='portal.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='password_toggle.css') }}">
+</head>
+
+<body class="portal-body">
+
+    <main class="portal-main">
+
+        <div class="portal-brand">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Archdiocese of Lipa">
+            <h1>LOGIN PORTAL</h1>
+            <p class="portal-brand-sub">{{ config['ORGANISATION'] }}</p>
+        </div>
+
+
+        <div class="portal-card">
+
+            <h2>SECURE AUTHENTICATION</h2>
+            <div class="portal-card-line"></div>
+
+            {% include "_flashes.html" %}
+
+            <form method="post" novalidate>
+
+                {% include "_csrf.html" %}
+
+                <div class="form-group">
+                    <label for="identifier">USERNAME OR EMAIL:</label>
+                    <input
+                        type="text"
+                        id="identifier"
+                        name="identifier"
+                        class="pill-input"
+                        value="{{ form.identifier or '' }}"
+                        autocomplete="username"
+                        autofocus
+                        required
+                    >
+                    {% if form.errors.identifier %}
+                    <span class="field-error">{{ form.errors.identifier }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="password">PASSWORD:</label>
+                    {{ password_input('password', id='password', autocomplete='current-password') }}
+                    {% if form.errors.password %}
+                    <span class="field-error">{{ form.errors.password }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="form-options">
+                    <label class="remember-me">
+                        <input type="checkbox" name="remember" value="1" checked>
+                        <span>Remember me on this computer</span>
+                    </label>
+                </div>
+
+                <button type="submit" class="submit-login-btn">LOGIN</button>
+
+            </form>
+
+            <p class="portal-note">
+                Access is limited to authorized parish, chancery and clergy
+                accounts. Records held here are personal data protected under
+                RA 10173.
+            </p>
+
+        </div>
+
+    </main>
+
+    <script src="{{ url_for('static', filename='password_toggle.js') }}"></script>
+
+</body>
+
+</html>

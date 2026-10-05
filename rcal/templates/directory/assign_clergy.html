@@ -1,0 +1,57 @@
+{% extends "portal_base.html" %}
+{% from "_fields.html" import field, select_field %}
+
+{% block title %}Assign clergy - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<h1 class="portal-title">Assign clergy to {{ parish.name }}</h1>
+
+<div class="portal-card narrow">
+
+    {% if not clergy_list %}
+    <p class="muted">
+        No clergy are on file yet, so there is nobody to assign.
+    </p>
+    {% else %}
+
+    <form method="post" novalidate>
+        {% include "_csrf.html" %}
+
+        <div class="form-group">
+            <label for="clergy_id">MEMBER OF THE CLERGY:</label>
+            <select id="clergy_id" name="clergy_id" class="pill-input" required>
+                <option value="">Choose…</option>
+                {% for person in clergy_list %}
+                <option value="{{ person.id }}">
+                    {{ person.titled_name }}{% if person.assignments | selectattr('is_current') | list %} (currently assigned){% endif %}
+                </option>
+                {% endfor %}
+            </select>
+            {% if form.errors.clergy_id %}
+            <span class="field-error">{{ form.errors.clergy_id }}</span>
+            {% endif %}
+        </div>
+
+        {{ select_field('role', form, 'Appointment', roles.labels(), form.role or 'parish_priest') }}
+
+        {{ field('assigned_from', form, 'From', type='date',
+            value=form.assigned_from or '1970-01-01', required=true) }}
+
+        {{ field('assigned_to', form, 'To', type='date', value=form.assigned_to,
+            hint='Leave blank while the appointment is in force.') }}
+
+        <p class="field-hint">
+            Any post the cleric already holds will be closed on the start date
+            above, so their career history stays on file.
+        </p>
+
+        <button type="submit" class="submit-login-btn">ASSIGN</button>
+        <a href="{{ url_for('directory.parish_detail', parish_id=parish.id) }}"
+           class="link-btn">Cancel</a>
+    </form>
+
+    {% endif %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{% block title %}{{ config['APP_NAME'] }}{% endblock %}</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='portal.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='portal_nav.css') }}">
+</head>
+
+<body class="portal-body">
+
+    <header class="portal-header">
+        <a href="{{ url_for('pages.home') }}" class="portal-brand-link">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Archdiocese of Lipa">
+            <span>ARCHDIOCESE OF LIPA</span>
+        </a>
+
+        {% if current_user.is_authenticated %}
+        <div class="portal-header-user">
+            <span>{{ current_user.display_name or current_user.username }}</span>
+            <form method="post" action="{{ url_for('auth.logout') }}">
+                {% include "_csrf.html" %}
+                <button type="submit" class="link-btn">Sign out</button>
+            </form>
+        </div>
+        {% else %}
+        <a href="{{ url_for('auth.login') }}" class="link-btn">Sign in</a>
+        {% endif %}
+    </header>
+
+    {# The nav is a sibling of the header, not a child: inside the header's
+       flex row it would sit beside the brand and wrap onto two lines. #}
+    <nav class="portal-nav">
+        {% if current_user.is_authenticated %}
+        <a href="{{ url_for('records.search') }}">Registers</a>
+        <a href="{{ url_for('directory.parishes') }}">Parishes</a>
+        <a href="{{ url_for('directory.clergy') }}">Clergy</a>
+        <a href="{{ url_for('certificates.index') }}">Certificates</a>
+        <a href="{{ url_for('records.intentions') }}">Intentions</a>
+        {% if current_user.role.value in ('admin', 'chancery', 'parish_staff', 'clergy') %}
+        <a href="{{ url_for('records.analytics') }}">Analytics</a>
+        {% endif %}
+        {% if current_user.role.can_manage_users %}
+        <a href="{{ url_for('admin.users') }}">Accounts</a>
+        {% endif %}
+        {% endif %}
+    </nav>
+
+    <main class="portal-content">
+        {# Shown on every portal page, because a successful action usually
+           redirects and the message has to survive that redirect. #}
+        {% include "_flashes.html" %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="portal-footer">
+        <p>{{ config['ORGANISATION'] }} — Centralized Records System</p>
+    </footer>
+
+</body>
+
+</html>

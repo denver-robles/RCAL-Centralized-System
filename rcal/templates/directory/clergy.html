@@ -1,0 +1,80 @@
+{% extends "portal_base.html" %}
+{% from "_fields.html" import pagination_nav %}
+
+{% block title %}Clergy - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<h1 class="portal-title">Clergy</h1>
+
+<p class="muted">
+    {{ pagination.total }} {{ "member" if pagination.total == 1 else "members" }} of the clergy.
+</p>
+
+<form method="get" action="{{ url_for('directory.clergy') }}" class="search-bar">
+    <input
+        type="text"
+        name="q"
+        value="{{ query }}"
+        placeholder="First or surname"
+        class="pill-input"
+    >
+    <button type="submit" class="submit-login-btn as-button">SEARCH</button>
+</form>
+
+<div class="portal-card">
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Title</th>
+                <th>Ordained</th>
+                <th>Current post</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for person in pagination.items %}
+            {% set current = person.assignments | selectattr('is_current') | list %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('directory.clergy_detail', clergy_id=person.id) }}">
+                        {{ person.sort_name }}
+                    </a>
+                </td>
+                <td>{{ person.title.label }}</td>
+                <td>
+                    {% if person.ordination_date %}
+                    {{ person.ordination_date.strftime('%d %b %Y') }}
+                    {% else %}
+                    <span class="muted">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if current | length %}
+                    {{ current[0].parish.name }}
+                    <div class="muted small">{{ current[0].role.label }}</div>
+                    {% else %}
+                    <span class="muted">Unassigned</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" class="muted">
+                    {% if query %}
+                    No cleric matches that search.
+                    {% else %}
+                    No clergy have been entered yet.
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {{ pagination_nav(pagination, 'directory.clergy', {'q': query}) }}
+
+</div>
+
+{% endblock %}

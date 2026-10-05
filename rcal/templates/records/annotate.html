@@ -1,0 +1,59 @@
+{% extends "portal_base.html" %}
+{% from "_fields.html" import field, select_field, textarea %}
+
+{% block title %}Add margin note - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<h1 class="portal-title">Add a margin note</h1>
+<p class="muted">
+    {{ record.sacrament_type.label }} &middot;
+    {{ record.person.full_name }} &middot;
+    <span class="mono">{{ record.citation }}</span>
+</p>
+
+<div class="portal-card narrow">
+
+    <div class="immutability-note">
+        This adds a note to the margin of the register entry. The entry
+        itself is not altered.
+    </div>
+
+    <form method="post" novalidate>
+        {% include "_csrf.html" %}
+
+        {{ select_field('annotation_type', form, 'Kind of note', annotation_types.labels(),
+            form.annotation_type or 'marriage') }}
+
+        {{ textarea('note_text', form, 'Note', form.note_text, rows=4,
+            hint='What a reader of this register in fifty years needs to know.') }}
+
+        {{ field('event_date', form, 'Date of the event', type='date', value=form.event_date,
+            hint='When the event this note refers to happened.') }}
+
+        <div class="form-group">
+            <label for="reference_record_id">RELATED REGISTER ENTRY:</label>
+            <input
+                type="number"
+                id="reference_record_id"
+                name="reference_record_id"
+                class="pill-input"
+                value="{{ form.reference_record_id or '' }}"
+            >
+            <span class="field-hint">
+                The id of the entry this note points at &mdash; for example the
+                marriage record a baptismal entry is annotated with. Leave
+                blank only for a note that references no other entry.
+            </span>
+            {% if form.errors.reference_record_id %}
+            <span class="field-error">{{ form.errors.reference_record_id }}</span>
+            {% endif %}
+        </div>
+
+        <button type="submit" class="submit-login-btn">ADD NOTE</button>
+        <a href="{{ url_for('records.detail', record_id=record.id) }}" class="link-btn">Cancel</a>
+    </form>
+
+</div>
+
+{% endblock %}

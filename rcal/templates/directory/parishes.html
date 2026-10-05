@@ -1,0 +1,94 @@
+{% extends "portal_base.html" %}
+{% from "_fields.html" import pagination_nav, dict_select %}
+
+{% block title %}Parish directory - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<div class="title-row">
+    <h1 class="portal-title">Parish Directory</h1>
+    {% if current_user.role.value in ('admin', 'chancery') %}
+    <a href="{{ url_for('directory.create_parish') }}" class="submit-login-btn as-link">ADD PARISH</a>
+    {% endif %}
+</div>
+
+<p class="muted">
+    {{ pagination.total }} {{ "parish" if pagination.total == 1 else "parishes" }}
+    {% if current_user.is_archdiocese_wide %}
+    across the archdiocese.
+    {% else %}
+    visible to your account.
+    {% endif %}
+</p>
+
+<form method="get" action="{{ url_for('directory.parishes') }}" class="search-bar">
+    <input
+        type="text"
+        name="q"
+        value="{{ query }}"
+        placeholder="Parish, municipality or address"
+        class="pill-input"
+    >
+    {{ dict_select('vicariate', form, 'Vicariate', vicariate_choices,
+        selected_vicariate|string if selected_vicariate else none, blank='All vicariates') }}
+    <button type="submit" class="submit-login-btn as-button">SEARCH</button>
+</form>
+
+<div class="portal-card">
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Parish</th>
+                <th>Vicariate</th>
+                <th>City / Municipality</th>
+                <th>Clergy</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for parish in pagination.items %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('directory.parish_detail', parish_id=parish.id) }}">
+                        {{ parish.name }}
+                    </a>
+                    {% if parish.address %}<div class="muted small">{{ parish.address }}</div>{% endif %}
+                </td>
+                <td>{{ parish.vicariate.name }}</td>
+                <td>{{ parish.municipality or "—" }}</td>
+                <td>
+                    {% set current = parish.clergy_assignments | selectattr('is_current') | list %}
+                    {% if current | length %}
+                        {{ current | length }} serving
+                    {% else %}
+                        <span class="muted">None assigned</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if parish.is_active %}
+                    <span class="badge badge-ok">Active</span>
+                    {% else %}
+                    <span class="badge badge-off">Inactive</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="muted">
+                    {% if query or selected_vicariate %}
+                    No parish matches that search.
+                    {% else %}
+                    No parishes have been added yet.
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {{ pagination_nav(pagination, 'directory.parishes', {'q': query, 'vicariate': selected_vicariate}) }}
+
+</div>
+
+{% endblock %}

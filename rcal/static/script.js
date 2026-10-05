@@ -39,7 +39,8 @@ navLinks.forEach(function(link) {
     });
 });
 
-// INLINE LOGIN
+// INLINE LOGIN — submits to the real /login endpoint instead of faking a
+// welcome message, so the form is handled by the server's auth logic.
 const inlineLoginForm = document.getElementById("inlineLoginForm");
 
 inlineLoginForm.addEventListener("submit", function(event) {
@@ -48,13 +49,16 @@ inlineLoginForm.addEventListener("submit", function(event) {
     const username = document.getElementById("inlineUsername").value;
     const message = document.getElementById("inlineLoginMsg");
 
-    if (username != "") {
-        message.textContent = "Welcome, " + username + "! Login successful.";
-        message.style.color = "green";
+    if (username == "") {
+        message.textContent = "Please enter your username or email.";
+        message.style.color = "red";
+        return;
     }
+
+    inlineLoginForm.submit();
 });
 
-// LOGIN PORTAL
+// LOGIN PORTAL — same endpoint, full page.
 const portalLoginForm = document.getElementById("portalLoginForm");
 
 portalLoginForm.addEventListener("submit", function(event) {
@@ -63,8 +67,11 @@ portalLoginForm.addEventListener("submit", function(event) {
     const username = document.getElementById("loginUsername").value;
     const message = document.getElementById("portalLoginMsg");
 
-    if (username != "") {
-        message.textContent = "Welcome, " + username + "! Login successful.";
-        message.style.color = "green";
+    if (username == "") {
+        message.textContent = "Please enter your username or email.";
+        message.style.color = "red";
+        return;
     }
+
+    portalLoginForm.submit();
 });

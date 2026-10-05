@@ -5,7 +5,7 @@
 }
 
 body {
-    font-family: Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Figtree', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     background-color: #F7F0DF;
     color: #000;
     min-height: 100vh;
@@ -60,8 +60,8 @@ html {
 }
 
 .brand-name {
-    font-family: Impact, sans-serif;
-    font-size: 34px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Figtree', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-size: 30px;
     line-height: 1.1;
 }
 
@@ -99,6 +99,12 @@ nav a:hover {
     align-items: center;
     gap: 20px;
     padding: 35px 4% 50px;
+    background:
+        linear-gradient(
+            rgba(5, 8, 38, 0.45),
+            rgba(5, 8, 38, 0.55)
+        ),
+        url('church.png') center / cover no-repeat;
 }
 
 .hero-copy {
@@ -106,23 +112,26 @@ nav a:hover {
 }
 
 .hero h1 {
-    font-family: Impact, sans-serif;
-    font-size: 44px;
-    line-height: 1.1;
+    font-family: -apple-system, BlinkMacSystemFont, 'Figtree', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-size: 42px;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    color: white;
     margin-bottom: 12px;
 }
 
 .hero .divider {
     width: 100%;
     height: 3px;
-    background-color: black;
+    background-color: #FFC800;
     margin-bottom: 16px;
 }
 
 .hero-copy p {
     font-size: 16px;
-    font-weight: bold;
+    font-weight: 600;
     line-height: 1.5;
+    color: rgba(255, 255, 255, 0.9);
     margin-bottom: 24px;
     max-width: 540px;
 }
@@ -142,19 +151,6 @@ nav a:hover {
     opacity: 0.8;
 }
 
-.hero-image-wrap {
-    height: 370px;
-    border-radius: 40px;
-    overflow: hidden;
-}
-
-.hero-image-wrap img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-
 /* SECTIONS */
 
 .section {
@@ -162,8 +158,9 @@ nav a:hover {
 }
 
 .section-heading {
-    font-family: Impact, sans-serif;
-    font-size: 55px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Figtree', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-size: 48px;
+    letter-spacing: -0.01em;
     text-align: center;
     margin-bottom: 6px;
 }
@@ -206,8 +203,8 @@ nav a:hover {
 }
 
 .about-card-header h3 {
-    font-family: Impact, sans-serif;
-    font-size: 28px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Figtree', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-size: 26px;
 }
 
 .about-card-body {
@@ -355,8 +352,9 @@ nav a:hover {
 }
 
 .login-card h2 {
-    font-family: Impact, sans-serif;
-    font-size: 34px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Figtree', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-size: 30px;
+    letter-spacing: -0.01em;
     margin-bottom: 6px;
 }
 
@@ -374,8 +372,10 @@ nav a:hover {
 
 .form-group label {
     display: block;
-    font-family: Impact, sans-serif;
-    font-size: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Figtree', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
     margin-bottom: 6px;
 }
 
@@ -417,8 +417,10 @@ nav a:hover {
     border: none;
     border-radius: 30px;
     padding: 10px 50px;
-    font-family: Impact, sans-serif;
-    font-size: 24px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Figtree', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
     cursor: pointer;
 }
 
@@ -502,8 +504,10 @@ nav a:hover {
 .back-btn {
     background: none;
     border: none;
-    font-family: Impact, sans-serif;
-    font-size: 22px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Figtree', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
     cursor: pointer;
 }
 
@@ -525,8 +529,9 @@ nav a:hover {
 }
 
 .login-brand h1 {
-    font-family: Impact, sans-serif;
-    font-size: 34px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Figtree', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-size: 30px;
+    letter-spacing: -0.01em;
 }
 
 .login-main {
@@ -597,7 +602,7 @@ nav a:hover {
     }
 
     .brand-name {
-        font-size: 25px;
+        font-size: 22px;
     }
 
     .brand img {
@@ -606,11 +611,11 @@ nav a:hover {
     }
 
     .hero h1 {
-        font-size: 35px;
+        font-size: 32px;
     }
 
     .section-heading {
-        font-size: 45px;
+        font-size: 40px;
     }
 
     .about-card {

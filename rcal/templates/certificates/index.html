@@ -1,0 +1,90 @@
+{% extends "portal_base.html" %}
+{% from "_fields.html" import pagination_nav, status_badge, enum_filter %}
+
+{% block title %}Certificate requests - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<div class="title-row">
+    <h1 class="portal-title">Certificate Requests</h1>
+    <a href="{{ url_for('certificates.create') }}" class="submit-login-btn as-link">NEW REQUEST</a>
+</div>
+
+<div class="stat-grid compact">
+    <div class="stat-card">
+        <span class="stat-value">{{ stats.open }}</span>
+        <span class="stat-label">Awaiting action</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value">{{ stats.issued }}</span>
+        <span class="stat-label">Issued</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value">{{ stats.pending }}</span>
+        <span class="stat-label">Pending</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value">{{ stats.rejected }}</span>
+        <span class="stat-label">Rejected</span>
+    </div>
+</div>
+
+<form method="get" action="{{ url_for('certificates.index') }}" class="search-bar">
+    {{ enum_filter('status', statuses, selected_status) }}
+    <label class="remember-me">
+        <input type="checkbox" name="open" value="1" {{ 'checked' if open_only }}>
+        <span>Only those still open</span>
+    </label>
+    <button type="submit" class="submit-login-btn as-button">FILTER</button>
+</form>
+
+<div class="portal-card">
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Number</th>
+                <th>For</th>
+                <th>Register entry</th>
+                <th>Parish</th>
+                <th>Status</th>
+                <th>Filed</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in pagination.items %}
+            <tr>
+                <td class="mono small">
+                    <a href="{{ url_for('certificates.detail', request_id=item.id) }}">
+                        {{ item.certificate_number or "#" ~ item.id }}
+                    </a>
+                </td>
+                <td>{{ item.requester_name }}</td>
+                <td class="small">
+                    {{ item.record.sacrament_type.label }} &middot;
+                    {{ item.record.person.full_name }}
+                </td>
+                <td class="small">{{ item.record.originating_parish.name }}</td>
+                <td>{{ status_badge(item.status) }}</td>
+                <td class="small">{{ item.created_at.strftime('%d %b %Y') }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="muted">
+                    {% if selected_status or open_only %}
+                    No request matches that filter.
+                    {% else %}
+                    No certificate has been requested yet.
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {{ pagination_nav(pagination, 'certificates.index',
+        {'status': selected_status, 'open': '1' if open_only else ''}) }}
+
+</div>
+
+{% endblock %}

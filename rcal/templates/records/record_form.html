@@ -1,0 +1,96 @@
+{% extends "portal_base.html" %}
+{% from "_fields.html" import field, select_field, textarea %}
+
+{% block title %}Record an entry - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<h1 class="portal-title">Transcribe a register entry</h1>
+
+<div class="portal-card">
+
+    <div class="immutability-note">
+        <strong>This entry cannot be edited later.</strong>
+        Transcribe exactly what the bound register says. If you make a
+        mistake, do not amend this form &mdash; record a margin note
+        afterwards instead, so the original transcription survives.
+    </div>
+
+    {% if not parishes %}
+    <p class="muted">
+        Your account has no parish assigned, so there is no register to
+        transcribe into. Ask the chancery to set your home parish.
+    </p>
+    {% else %}
+
+    <form method="post" novalidate>
+        {% include "_csrf.html" %}
+
+        <fieldset class="fieldset">
+            <legend>The person</legend>
+
+            {{ field('first_name', form, 'First name', value=form.first_name, required=true) }}
+            {{ field('middle_name', form, 'Middle name', value=form.middle_name) }}
+            {{ field('last_name', form, 'Surname', value=form.last_name, required=true) }}
+            {{ field('suffix', form, 'Suffix', value=form.suffix) }}
+            {{ select_field('sex', form, 'Sex', sex_labels, form.sex) }}
+            {{ field('date_of_birth', form, 'Date of birth', type='date', value=form.date_of_birth) }}
+        </fieldset>
+
+        <fieldset class="fieldset">
+            <legend>The register entry</legend>
+
+            {{ select_field('sacrament_type', form, 'Register', sacraments.labels(), form.sacrament_type or 'baptism') }}
+
+            {% if form.sacrament_type == 'marriage' %}
+            {{ field('spouse_first_name', form, "Spouse's first name", value=form.spouse_first_name) }}
+            {{ field('spouse_name', form, "Spouse's surname", value=form.spouse_name) }}
+            {% endif %}
+
+            {{ field('event_date', form, 'Date of event', type='date', value=form.event_date, required=true) }}
+
+            {{ select_field('originating_parish_id', form, 'Parish holding this register', parishes,
+                form.originating_parish_id or (parishes.keys() | list | first)) }}
+        </fieldset>
+
+        <fieldset class="fieldset">
+            <legend>The citation</legend>
+            <p class="field-hint">
+                The book, page and entry number exactly as written in the bound
+                register. This citation is what makes the record legally
+                checkable, and it must be unique within the parish.
+            </p>
+
+            {{ field('book_number', form, 'Book', type='number', value=form.book_number, required=true) }}
+            {{ field('page_number', form, 'Page', type='number', value=form.page_number, required=true) }}
+            {{ field('entry_number', form, 'Entry', type='number', value=form.entry_number, required=true) }}
+        </fieldset>
+
+        <fieldset class="fieldset">
+            <legend>As written in the register</legend>
+
+            {{ select_field('performed_by_clergy_id', form, 'Officiating clergy', clergy_choices,
+                form.performed_by_clergy_id, blank='Not recorded') }}
+
+            {% if form.sacrament_type == 'baptism' %}
+            {{ select_field('legitimacy', form, 'Legitimacy', legitimacy_labels, form.legitimacy,
+                blank='Not recorded') }}
+            {{ textarea('godparents', form, 'Godparents', form.godparents, rows=2) }}
+            {% endif %}
+
+            {% if form.sacrament_type == 'marriage' %}
+            {{ textarea('witnesses', form, 'Witnesses', form.witnesses, rows=2) }}
+            {% endif %}
+
+            {{ field('place_of_event', form, 'Place of event', value=form.place_of_event) }}
+            {{ textarea('register_notes', form, 'Register notes', form.register_notes, rows=3) }}
+        </fieldset>
+
+        <button type="submit" class="submit-login-btn">RECORD ENTRY</button>
+        <a href="{{ url_for('records.search') }}" class="link-btn">Cancel</a>
+    </form>
+
+    {% endif %}
+</div>
+
+{% endblock %}
