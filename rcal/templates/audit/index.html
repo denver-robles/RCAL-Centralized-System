@@ -1,0 +1,154 @@
+{% extends "portal_base.html" %}
+{% from "_fields.html" import pagination_nav, enum_filter %}
+
+{% block title %}Audit trail - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<div class="title-row">
+    <div>
+        <h1 class="portal-title">Audit Trail</h1>
+        <p class="muted">
+            Every recorded action, in order. Entries are append-only; nothing
+            here can be edited or removed.
+        </p>
+    </div>
+    <a href="{{ url_for('audit.export_csv',
+                        action=selected_action, user=selected_user,
+                        mutations='1' if mutations_only else '') }}"
+       class="submit-login-btn as-link">EXPORT CSV</a>
+</div>
+
+<div class="stat-grid compact">
+    <div class="stat-card">
+        <span class="stat-value">{{ stats.mutations }}</span>
+        <span class="stat-label">Changes to data</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value">{{ stats.view }}</span>
+        <span class="stat-label">Views</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value">{{ stats.login_failed }}</span>
+        <span class="stat-label">Failed sign-ins</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value">{{ stats.print }}</span>
+        <span class="stat-label">Prints</span>
+    </div>
+</div>
+
+<form method="get" action="{{ url_for('audit.index') }}" class="search-bar">
+    {{ enum_filter('action', actions, selected_action) }}
+
+    <div class="form-group inline-group">
+        <label for="user">BY ACCOUNT:</label>
+        <select id="user" name="user" class="pill-input">
+            <option value="">Anyone</option>
+            {% for account in accounts %}
+            <option value="{{ account.id }}" {{ 'selected' if selected_user == account.id }}>
+                {{ account.username }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="form-group inline-group">
+        <label for="subject">SUBJECT:</label>
+        <select id="subject" name="subject" class="pill-input">
+            <option value="">Any kind</option>
+            {% for kind in subject_types %}
+            <option value="{{ kind }}" {{ 'selected' if selected_subject == kind }}>
+                {{ kind }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="form-group inline-group">
+        <label for="days">PERIOD:</label>
+        <select id="days" name="days" class="pill-input">
+            <option value="">All time</option>
+            {% for option in [1, 7, 30, 90] %}
+            <option value="{{ option }}" {{ 'selected' if selected_days == option }}>
+                Last {{ option }} {{ "day" if option == 1 else "days" }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <label class="remember-me">
+        <input type="checkbox" name="mutations" value="1" {{ 'checked' if mutations_only }}>
+        <span>Only changes</span>
+    </label>
+
+    <button type="submit" class="submit-login-btn as-button">FILTER</button>
+</form>
+
+<div class="portal-card">
+
+    <p class="muted">{{ pagination.total }} entries.</p>
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>When (UTC)</th>
+                <th>Who</th>
+                <th>Action</th>
+                <th>Subject</th>
+                <th>From</th>
+                <th>Note</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in pagination.items %}
+            <tr>
+                <td class="small mono">
+                    {{ entry.created_at.strftime('%d %b %Y %H:%M:%S') }}
+                </td>
+                <td class="small">
+                    {% if entry.user %}
+                    {{ entry.user.username }}
+                    {% else %}
+                    <span class="muted">{{ entry.actor_username or "—" }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="badge badge-{{ 'ok' if not entry.action.is_mutation else 'pending' }}">
+                        {{ entry.action.label }}
+                    </span>
+                </td>
+                <td class="small">
+                    <a href="{{ url_for('audit.detail', entry_id=entry.id) }}">
+                        {{ entry.subject_type or "—" }}
+                        {% if entry.subject_label %}
+                        <div class="muted">{{ entry.subject_label }}</div>
+                        {% elif entry.subject_id %}
+                        <div class="muted">#{{ entry.subject_id }}</div>
+                        {% endif %}
+                    </a>
+                </td>
+                <td class="small mono">{{ entry.ip_address or "—" }}</td>
+                <td class="small">{{ entry.note or "—" }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="muted">
+                    Nothing has been recorded yet
+                    {%- if selected_action or selected_user or mutations_only or selected_days %}
+                    matching those filters
+                    {%- endif %}.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {{ pagination_nav(pagination, 'audit.index', {
+        'action': selected_action, 'user': selected_user,
+        'subject': selected_subject, 'days': selected_days,
+        'mutations': '1' if mutations_only else ''}) }}
+
+</div>
+
+{% endblock %}

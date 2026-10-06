@@ -40,7 +40,8 @@
         <fieldset class="fieldset">
             <legend>The register entry</legend>
 
-            {{ select_field('sacrament_type', form, 'Register', sacraments.labels(), form.sacrament_type or 'baptism') }}
+            {{ select_field('sacrament_type', form, 'Register', sacraments.labels(), form.sacrament_type or 'baptism')
+            }}
 
             {% if form.sacrament_type == 'marriage' %}
             {{ field('spouse_first_name', form, "Spouse's first name", value=form.spouse_first_name) }}
@@ -50,7 +51,7 @@
             {{ field('event_date', form, 'Date of event', type='date', value=form.event_date, required=true) }}
 
             {{ select_field('originating_parish_id', form, 'Parish holding this register', parishes,
-                form.originating_parish_id or (parishes.keys() | list | first)) }}
+            form.originating_parish_id or (parishes.keys() | list | first)) }}
         </fieldset>
 
         <fieldset class="fieldset">
@@ -70,11 +71,11 @@
             <legend>As written in the register</legend>
 
             {{ select_field('performed_by_clergy_id', form, 'Officiating clergy', clergy_choices,
-                form.performed_by_clergy_id, blank='Not recorded') }}
+            form.performed_by_clergy_id, blank='Not recorded') }}
 
             {% if form.sacrament_type == 'baptism' %}
             {{ select_field('legitimacy', form, 'Legitimacy', legitimacy_labels, form.legitimacy,
-                blank='Not recorded') }}
+            blank='Not recorded') }}
             {{ textarea('godparents', form, 'Godparents', form.godparents, rows=2) }}
             {% endif %}
 

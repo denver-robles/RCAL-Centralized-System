@@ -8,114 +8,114 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='certificate.css') }}">
 
     {# Printable output: no navigation, and the browser's print dialog is
-       the only action. The page is generated from the register entry and
-       its citation, so what is printed is checkable against the book. #}
+    the only action. The page is generated from the register entry and
+    its citation, so what is printed is checkable against the book. #}
 </head>
 
 <body>
 
-<article class="certificate">
+    <article class="certificate">
 
-    <header class="certificate-head">
-        <img src="{{ url_for('static', filename='logo.png') }}" alt="" class="seal">
-        <div>
-            <h1>{{ config['ORGANISATION'] }}</h1>
-            <p class="certificate-sub">{{ item.record.originating_parish.vicariate.name }}</p>
-            <p class="certificate-parish">{{ item.record.originating_parish.name }}</p>
-        </div>
-    </header>
+        <header class="certificate-head">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="" class="seal">
+            <div>
+                <h1>{{ config['ORGANISATION'] }}</h1>
+                <p class="certificate-sub">{{ item.record.originating_parish.vicariate.name }}</p>
+                <p class="certificate-parish">{{ item.record.originating_parish.name }}</p>
+            </div>
+        </header>
 
-    <h2 class="certificate-title">CERTIFIED TRUE COPY</h2>
-    <p class="certificate-type">{{ item.record.sacrament_type.label }}</p>
+        <h2 class="certificate-title">CERTIFIED TRUE COPY</h2>
+        <p class="certificate-type">{{ item.record.sacrament_type.label }}</p>
 
-    <section class="certificate-body">
-        <p>
-            This is to certify that according to the
-            {{ item.record.sacrament_type.label.lower() }} register of
-            <strong>{{ item.record.originating_parish.name }}</strong>,
-            {{ item.record.citation }},
-        </p>
+        <section class="certificate-body">
+            <p>
+                This is to certify that according to the
+                {{ item.record.sacrament_type.label.lower() }} register of
+                <strong>{{ item.record.originating_parish.name }}</strong>,
+                {{ item.record.citation }},
+            </p>
 
-        <p class="certificate-name">{{ item.record.person.full_name }}</p>
+            <p class="certificate-name">{{ item.record.person.full_name }}</p>
 
-        {% if item.record.spouse %}
-        <p>was united in marriage with <strong>{{ item.record.spouse.full_name }}</strong>.</p>
-        {% endif %}
+            {% if item.record.spouse %}
+            <p>was united in marriage with <strong>{{ item.record.spouse.full_name }}</strong>.</p>
+            {% endif %}
 
-        <p>
-            on the
-            <strong>{{ item.record.event_date.strftime('%d day of %B, %Y') }}</strong>
-            {%- if item.record.place_of_event %}
-            at {{ item.record.place_of_event }}
-            {%- endif %}
-            {%- if item.record.performed_by_clergy %},
-            by {{ item.record.performed_by_clergy.titled_name }}
-            {%- endif %}.
-        </p>
+            <p>
+                on the
+                <strong>{{ item.record.event_date.strftime('%d day of %B, %Y') }}</strong>
+                {%- if item.record.place_of_event %}
+                at {{ item.record.place_of_event }}
+                {%- endif %}
+                {%- if item.record.performed_by_clergy %},
+                by {{ item.record.performed_by_clergy.titled_name }}
+                {%- endif %}.
+            </p>
 
-        {% if item.record.godparents %}
-        <p>The godparents were {{ item.record.godparents }}.</p>
-        {% endif %}
+            {% if item.record.godparents %}
+            <p>The godparents were {{ item.record.godparents }}.</p>
+            {% endif %}
 
-        {% if item.record.witnesses %}
-        <p>The witnesses were {{ item.record.witnesses }}.</p>
-        {% endif %}
+            {% if item.record.witnesses %}
+            <p>The witnesses were {{ item.record.witnesses }}.</p>
+            {% endif %}
 
-        {% if item.record.annotations %}
-        <section class="certificate-notes">
-            <h3>Margin notes on this entry</h3>
-            <ul>
-                {% for note in item.record.annotations %}
-                <li>
-                    <em>{{ note.annotation_type.label }}</em>
-                    {% if note.event_date %} ({{ note.event_date.strftime('%d %B %Y') }}){% endif %}:
-                    {{ note.note_text }}
-                </li>
-                {% endfor %}
-            </ul>
-            <p class="field-hint">
-                These notes are part of the record. A copy that omitted them
-                would misrepresent it.
+            {% if item.record.annotations %}
+            <section class="certificate-notes">
+                <h3>Margin notes on this entry</h3>
+                <ul>
+                    {% for note in item.record.annotations %}
+                    <li>
+                        <em>{{ note.annotation_type.label }}</em>
+                        {% if note.event_date %} ({{ note.event_date.strftime('%d %B %Y') }}){% endif %}:
+                        {{ note.note_text }}
+                    </li>
+                    {% endfor %}
+                </ul>
+                <p class="field-hint">
+                    These notes are part of the record. A copy that omitted them
+                    would misrepresent it.
+                </p>
+            </section>
+            {% endif %}
+
+            <p class="certificate-purpose">
+                Issued at the request of <strong>{{ item.requester_name }}</strong>
+                {%- if item.purpose %}, for {{ item.purpose|lower }}{% endif %}.
             </p>
         </section>
-        {% endif %}
 
-        <p class="certificate-purpose">
-            Issued at the request of <strong>{{ item.requester_name }}</strong>
-            {%- if item.purpose %}, for {{ item.purpose|lower }}{% endif %}.
+        <footer class="certificate-foot">
+
+            <div class="certificate-signature">
+                <span class="signature-rule"></span>
+                {% if item.issued_by_user %}
+                {{ item.issued_by_user.display_name or item.issued_by_user.username }}
+                <div class="muted small">Authorized to issue certified copies</div>
+                {% else %}
+                <span class="muted">Not yet issued</span>
+                {% endif %}
+            </div>
+
+            <div class="certificate-number">
+                <span class="muted small">CERTIFICATE NUMBER</span>
+                <strong class="mono">{{ item.certificate_number }}</strong>
+                <span class="muted small">
+                    Issued {{ item.issued_at.strftime('%d %B %Y') if item.issued_at else '—' }}
+                </span>
+            </div>
+
+        </footer>
+
+        <p class="certificate-verify">
+            This copy is verifiable. Quote the certificate number and the
+            citation above at {{ item.record.originating_parish.name }};
+            the entry will be found in the register at the book, page and entry
+            shown, together with any margin notes above.
         </p>
-    </section>
 
-    <footer class="certificate-foot">
-
-        <div class="certificate-signature">
-            <span class="signature-rule"></span>
-            {% if item.issued_by_user %}
-            {{ item.issued_by_user.display_name or item.issued_by_user.username }}
-            <div class="muted small">Authorized to issue certified copies</div>
-            {% else %}
-            <span class="muted">Not yet issued</span>
-            {% endif %}
-        </div>
-
-        <div class="certificate-number">
-            <span class="muted small">CERTIFICATE NUMBER</span>
-            <strong class="mono">{{ item.certificate_number }}</strong>
-            <span class="muted small">
-                Issued {{ item.issued_at.strftime('%d %B %Y') if item.issued_at else '—' }}
-            </span>
-        </div>
-
-    </footer>
-
-    <p class="certificate-verify">
-        This copy is verifiable. Quote the certificate number and the
-        citation above at {{ item.record.originating_parish.name }};
-        the entry will be found in the register at the book, page and entry
-        shown, together with any margin notes above.
-    </p>
-
-</article>
+    </article>
 
 </body>
 

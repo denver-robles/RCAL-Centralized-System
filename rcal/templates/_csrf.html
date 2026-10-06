@@ -1,7 +1,7 @@
 {# Renders the CSRF hidden field.
 
-   Flask-WTF's csrf_token() returns only the token *value*, so it must be
-   placed inside an <input> by hand. Kept in one file so every form that
-   posts to the server uses the same field name Flask-WTF expects.
-   Renders empty (and is therefore ignored) when CSRF is disabled. #}
+Flask-WTF's csrf_token() returns only the token *value*, so it must be
+placed inside an <input> by hand. Kept in one file so every form that
+posts to the server uses the same field name Flask-WTF expects.
+Renders empty (and is therefore ignored) when CSRF is disabled. #}
 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

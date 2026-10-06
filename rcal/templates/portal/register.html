@@ -1,0 +1,82 @@
+{% from "_fields.html" import field, textarea, password_input %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Create an account - {{ config['APP_NAME'] }}</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='portal.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='password_toggle.css') }}">
+</head>
+
+<body class="portal-body">
+
+    <main class="portal-main">
+
+        <div class="portal-brand">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Archdiocese of Lipa">
+            <h1>PARISHIONER PORTAL</h1>
+            <p class="portal-brand-sub">{{ config['ORGANISATION'] }}</p>
+        </div>
+
+        <div class="portal-card">
+
+            <h2>CREATE AN ACCOUNT</h2>
+            <div class="portal-card-line"></div>
+
+            {% include "_flashes.html" %}
+
+            <p class="muted small">
+                An account lets you request a certificate and follow its
+                progress. Parish records themselves are never shown here.
+            </p>
+
+            <form method="post" novalidate>
+                {% include "_csrf.html" %}
+
+                {{ field('first_name', form, 'First name', value=form.first_name, required=true) }}
+                {{ field('last_name', form, 'Surname', value=form.last_name, required=true) }}
+                {{ field('email', form, 'Email address', type='email', value=form.email,
+                required=true, hint='This becomes your username.') }}
+                {{ field('phone', form, 'Mobile number', value=form.phone,
+                hint='Used for status notifications.') }}
+                {{ textarea('address', form, 'Home address', form.address, rows=2,
+                hint='Where a document should be delivered, if you choose delivery.') }}
+
+                <div class="form-group">
+                    <label for="password">PASSWORD:</label>
+                    {{ password_input('password', id='password', autocomplete='new-password') }}
+                    <span class="field-hint">At least 8 characters.</span>
+                    {% if form.errors.password %}
+                    <span class="field-error">{{ form.errors.password }}</span>
+                    {% endif %}
+                </div>
+
+                <button type="submit" class="submit-login-btn">CREATE ACCOUNT</button>
+            </form>
+
+            <p class="portal-note">
+                By creating an account you agree that the archdiocese may hold
+                the details above in order to process your request, under
+                RA 10173.
+            </p>
+
+            <p class="portal-note">
+                Already have an account?
+                <a href="{{ url_for('auth.login') }}" class="link-btn">Sign in</a>
+            </p>
+
+        </div>
+
+    </main>
+
+    <script src="{{ url_for('static', filename='password_toggle.js') }}"></script>
+
+</body>
+
+</html>

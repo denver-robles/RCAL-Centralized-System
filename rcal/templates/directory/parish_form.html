@@ -15,19 +15,19 @@
         {{ field('name', form, 'Parish name', value=form.name or (parish.name if parish else ''), required=true) }}
 
         {{ dict_select('vicariate_id', form, 'Vicariate', vicariates,
-            selected=(form.vicariate_id or (parish.vicariate_id|string if parish else none))) }}
+        selected=(form.vicariate_id or (parish.vicariate_id|string if parish else none))) }}
 
         {{ field('municipality', form, 'City / Municipality',
-            value=form.municipality or (parish.municipality if parish else '')) }}
+        value=form.municipality or (parish.municipality if parish else '')) }}
 
         {{ field('address', form, 'Address',
-            value=form.address or (parish.address if parish else '')) }}
+        value=form.address or (parish.address if parish else '')) }}
 
         {{ field('phone', form, 'Telephone',
-            value=form.phone or (parish.phone if parish else '')) }}
+        value=form.phone or (parish.phone if parish else '')) }}
 
         {{ field('email', form, 'Email', type='email',
-            value=form.email or (parish.email if parish else '')) }}
+        value=form.email or (parish.email if parish else '')) }}
 
         <button type="submit" class="submit-login-btn">
             {{ "SAVE CHANGES" if editing else "ADD PARISH" }}

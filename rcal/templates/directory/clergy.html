@@ -12,13 +12,7 @@
 </p>
 
 <form method="get" action="{{ url_for('directory.clergy') }}" class="search-bar">
-    <input
-        type="text"
-        name="q"
-        value="{{ query }}"
-        placeholder="First or surname"
-        class="pill-input"
-    >
+    <input type="text" name="q" value="{{ query }}" placeholder="First or surname" class="pill-input">
     <button type="submit" class="submit-login-btn as-button">SEARCH</button>
 </form>
 

@@ -65,10 +65,17 @@ What exists:
     intentions, staff analytics
   - `certificates.py` — the requested → verified → approved → issued workflow
     and the printable certified true copy
+  - `audit.py` — the audit-trail service; the only way an `AuditLog` row is
+    written, so every entry carries an actor, a time, an origin and the
+    values before and after a change
+  - `audit_views.py` — the trail viewer and CSV export, chancery-only
+  - `portal.py` — the parishioner portal: registration, document requests,
+    consent capture, and progress tracking
   - the full data model: vicariates, parishes, clergy with parish
-    assignments, persons, sacramental records with a unique
-    (book, page, entry) citation, append-only annotations, the certificate
-    request workflow, mass intentions, and a record access log
+    assignments, persons with parent links, sacramental records with a
+    unique (book, page, entry) citation, append-only annotations, the
+    certificate request workflow, parishioner document requests, mass
+    intentions, a record access log, and the audit trail
   - `flask init-db [--seed]` CLI: creates the schema and the initial admin
   - `flask seed-demo` CLI: fills an **empty** database with representative
     development data (refuses to run alongside real records)
@@ -99,6 +106,9 @@ What exists:
 | `/intentions` | any signed-in | Mass intentions |
 | `/certificates`, `/certificates/new`, `/certificates/<id>` | any signed-in | the certified-copy workflow |
 | `/certificates/<id>/certificate` | staff, chancery, admin | printable certified true copy |
+| `/audit`, `/audit/<id>`, `/audit/export.csv` | chancery, admin | audit trail, entry detail, CSV export |
+| `/portal/register` | public | parishioner sign-up |
+| `/portal`, `/portal/requests/new`, `/portal/requests/<id>` | parishioner | own requests and tracking |
 | `/admin/users`, `/admin/users/new`, `/admin/users/<id>/edit` | admin | account administration |
 
 ### Running it
@@ -125,7 +135,58 @@ Run the tests with `python -m unittest discover -s tests -v`.
 - [x] Implement sacramental record entry and search
 - [x] Implement the certificate request → verify → issue workflow
 - [x] Replace hardcoded analytics with database-driven counts
+- [x] Audit trail with before/after values, IP address and origin (FR-1.4)
+- [x] Parishioner portal: registration, document requests, consent, tracking (FR-1.2, FR-3.1–3.3)
+- [x] Role-based isolation between the parish office and the public (FR-1.3)
+- [ ] Parish scheduling with clergy and venue conflict detection (FR-2.1–2.3)
+- [ ] Staff review queue for portal submissions, KYC upload, cross-matching (FR-2.9–2.11)
+- [ ] Reporting exports and charts (FR-2.7–2.8)
+- [ ] Certificate templating from an uploaded template (FR-2.6)
+- [ ] Integration seams for notification, payment and delivery
+- [ ] Move the default database to PostgreSQL (required by NFR-1.4)
 - [ ] Seed the real parish and clergy data
+
+### Requirements coverage
+
+Against the Modernized PIMS specification. **Phase 1 is complete**; the
+remaining phases are listed below it.
+
+| Ref | Requirement | State |
+|---|---|---|
+| FR-1.1 | Staff authentication | Done — `auth.py` |
+| FR-1.2 | Parishioner registration and sign-in | Done — `portal.py`, `/portal/register` |
+| FR-1.3 | Role-based access control | Done — `Role.is_staff`, `register_role_isolation()` |
+| FR-1.4 | Audit trail with old/new values, IP, user | Done — `audit.py`, `AuditLog`, `/audit` |
+| FR-2.5 | Search by parents' names and officiating minister | Partly — parent links added; minister filter still to do |
+| FR-2.9 | Request queue and extended statuses | Partly — statuses added to `RequestStatus`; queue UI still to do |
+| FR-3.2 | Data privacy consent capture | Done — timestamped consent on `DocumentRequest` |
+| FR-2.1–2.3 | Scheduling, conflict detection, activity log | Not started |
+| FR-2.6 | Certificate templating from .docx/.png | Not started |
+| FR-2.7–2.8 | Reporting and analytics export | Partly — counts and CSV export of the trail; charts and Excel still to do |
+| FR-2.10–2.11 | KYC upload, cross-matching | Not started |
+| FR-3.1, FR-3.3 | Portal submission and tracking | Done — `/portal/requests/new`, `/portal` |
+| NFR-1.1–1.4 | Server, cloud database, encryption, availability | Deployment concerns, not application code — see below |
+
+### What the specification asks for that this repository cannot provide
+
+Stated plainly, because a gap that is not written down is a gap that gets
+mistaken for done.
+
+- **Third-party integrations** — SMS/Gmail OTP, payment gateway, courier.
+  These need merchant accounts and credentials that do not exist yet. What
+  can be built without them is the *seam*: a provider interface and a
+  queued outbox with a development adapter. Not built yet.
+- **NFR-1.1 to NFR-1.4** are deployment requirements, not code. TLS in
+  transit, AES-256 at rest, daily backups and point-in-time recovery are
+  configured at the server and managed-database layer. **The application
+  currently runs on SQLite by default**, which is single-writer and cannot
+  satisfy NFR-1.4 under real concurrency; a move to PostgreSQL or MySQL is
+  required before deployment.
+- **FR-2.6** — reading a `.docx` as a template is feasible; deriving a
+  template from a `.png` implies OCR and is not a reliable feature. Needs a
+  scope decision before it is built.
+- **The parish and clergy data is not real.** `flask seed-demo` inserts
+  illustrative stand-ins.
 
 ### Domain rules enforced in code
 
@@ -178,7 +239,10 @@ Run the tests with `python -m unittest discover -s tests -v`.
 │   ├── extensions.py   # db, login_manager, csrf singletons
 │   ├── services.py     # parish scoping, record search, aggregate counts
 │   ├── forms.py        # lightweight form validation
-│   ├── auth.py         # sign-in, sign-out, account administration
+│   ├── auth.py         # sign-in, sign-out, account administration, role isolation
+│   ├── audit.py        # the audit-trail service (the only writer of AuditLog)
+│   ├── audit_views.py  # audit trail viewer and CSV export
+│   ├── portal.py       # the parishioner portal
 │   ├── directory.py    # parish and clergy directory
 │   ├── records.py      # register entry, search, annotations, intentions
 │   ├── certificates.py # certified-copy workflow
@@ -201,6 +265,8 @@ Run the tests with `python -m unittest discover -s tests -v`.
 │   │   ├── directory/       # parishes, clergy, appointments
 │   │   ├── records/         # search, entry, detail, annotate, analytics
 │   │   ├── certificates/    # queue, request, workflow, printable copy
+│   │   ├── audit/           # trail list and entry detail
+│   │   ├── portal/          # parishioner registration, requests, tracking
 │   │   └── errors/          # 403
 │   └── models/
 │       ├── __init__.py # re-exports everything
@@ -212,8 +278,9 @@ Run the tests with `python -m unittest discover -s tests -v`.
 │       ├── person.py   # persons named in the registers
 │       ├── record.py   # sacramental records + append-only annotations
 │       ├── request.py  # certificate request workflow
+│       ├── document_request.py  # parishioner document requests
 │       ├── mass.py     # mass intentions
-│       └── audit.py    # record access log
+│       └── audit.py    # record access log + comprehensive audit trail
 ├── tests/              # smoke, auth, and feature tests
 └── README.md
 ```

@@ -1,0 +1,118 @@
+{% extends "portal/portal_base.html" %}
+{% from "_fields.html" import field %}
+
+{% block title %}New request - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<h1 class="portal-title">Request a Church Document</h1>
+
+<div class="portal-card">
+
+    <p class="muted">
+        Give the details as they appear on the record. The parish will check
+        them against the register before preparing anything, so an
+        approximate date is more useful than a guess.
+    </p>
+
+    <form method="post" novalidate>
+        {% include "_csrf.html" %}
+
+        <fieldset class="fieldset">
+            <legend>What you need</legend>
+
+            <div class="form-group">
+                <label for="sacrament_type">DOCUMENT:</label>
+                <select id="sacrament_type" name="sacrament_type" class="pill-input" required>
+                    <option value="">Choose…</option>
+                    {% for kind in sacraments %}
+                    <option value="{{ kind.value }}" {{ 'selected' if form.sacrament_type==kind.value }}>
+                        {{ kind.label }} Certificate
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if form.errors.sacrament_type %}
+                <span class="field-error">{{ form.errors.sacrament_type }}</span>
+                {% endif %}
+            </div>
+
+            {{ field('purpose', form, 'Purpose of the request', value=form.purpose,
+            hint='e.g. marriage requirement, school, employment, reference.') }}
+
+            <div class="form-group">
+                <label for="targeted_parish_id">PARISH HOLDING THE RECORD:</label>
+                <select id="targeted_parish_id" name="targeted_parish_id" class="pill-input">
+                    <option value="">I am not sure</option>
+                    {% for parish in parishes %}
+                    <option value="{{ parish.id }}">{{ parish.name }}</option>
+                    {% endfor %}
+                </select>
+                <span class="field-hint">
+                    Leave blank if you do not know. This only helps route the
+                    request to the right office.
+                </span>
+            </div>
+        </fieldset>
+
+        <fieldset class="fieldset">
+            <legend>The record</legend>
+
+            {{ field('name_on_record', form, 'Full name on the record', value=form.name_on_record,
+            required=true) }}
+
+            {{ field('date_of_birth', form, 'Date of birth', type='date',
+            value=form.date_of_birth) }}
+
+            {{ field('date_of_sacrament', form, 'Date of the sacrament', type='date',
+            value=form.date_of_sacrament) }}
+
+            {{ field('place_of_sacrament', form, 'Church where it took place',
+            value=form.place_of_sacrament) }}
+
+            {{ field('parents_or_spouse', form, "Parents' or spouse's full names",
+            value=form.parents_or_spouse) }}
+        </fieldset>
+
+        <fieldset class="fieldset">
+            <legend>Data privacy consent</legend>
+
+            <div class="consent-notice">
+                <p>
+                    <strong>What we do with your information.</strong>
+                    The details above, and your account details, will be used
+                    to locate the record you have asked for, to confirm your
+                    identity, and to contact you about this request. They are
+                    held under the Data Privacy Act of 2012 (RA 10173).
+                </p>
+                <p>
+                    Your request is seen by the parish office handling it.
+                    Parish records themselves are not shown to you or to
+                    anyone else through this portal.
+                </p>
+                <p>
+                    You may ask the parish to correct or delete your account
+                    details at any time.
+                </p>
+            </div>
+
+            <div class="form-group">
+                <label class="remember-me consent-check">
+                    <input type="checkbox" name="consent" value="1" required>
+                    <span>
+                        I have read and accept the data privacy notice above,
+                        and I confirm the details I have given are mine to give.
+                    </span>
+                </label>
+                {% if form.errors.consent %}
+                <span class="field-error">{{ form.errors.consent }}</span>
+                {% endif %}
+            </div>
+        </fieldset>
+
+        <button type="submit" class="submit-login-btn">SUBMIT REQUEST</button>
+        <a href="{{ url_for('portal.dashboard') }}" class="link-btn">Cancel</a>
+    </form>
+
+</div>
+
+{% endblock %}

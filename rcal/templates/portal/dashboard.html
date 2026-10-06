@@ -1,0 +1,76 @@
+{% extends "portal/portal_base.html" %}
+
+{% block title %}My requests - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<div class="title-row">
+    <div>
+        <h1 class="portal-title">My Requests</h1>
+        <p class="muted">
+            {{ open_count }} still being processed
+            {%- if requests | length > open_count %},
+            {{ requests | length - open_count }} finished
+            {%- endif %}.
+        </p>
+    </div>
+    <a href="{{ url_for('portal.new_request') }}" class="submit-login-btn as-link">
+        NEW REQUEST
+    </a>
+</div>
+
+<div class="portal-card">
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Document</th>
+                <th>Name on record</th>
+                <th>Status</th>
+                <th>Submitted</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in requests %}
+            <tr>
+                <td>{{ item.sacrament_type.label }}</td>
+                <td>
+                    {{ item.name_on_record }}
+                    {% if item.date_of_sacrament %}
+                    <div class="muted small">
+                        {{ item.date_of_sacrament.strftime('%d %b %Y') }}
+                    </div>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="badge badge-{{ 'ok' if item.status.is_closed else 'pending' }}">
+                        {{ item.status.label }}
+                    </span>
+                </td>
+                <td class="small">{{ item.created_at.strftime('%d %b %Y') }}</td>
+                <td>
+                    <a href="{{ url_for('portal.request_detail', request_id=item.id) }}">
+                        View
+                    </a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="muted">
+                    You have not requested a document yet.
+                    <a href="{{ url_for('portal.new_request') }}">Request one</a>.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+
+<p class="muted small">
+    A request is checked against the parish register before anything is
+    prepared. If the record cannot be found, the request will say so.
+</p>
+
+{% endblock %}

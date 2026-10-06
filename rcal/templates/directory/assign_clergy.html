@@ -24,7 +24,8 @@
                 <option value="">Choose…</option>
                 {% for person in clergy_list %}
                 <option value="{{ person.id }}">
-                    {{ person.titled_name }}{% if person.assignments | selectattr('is_current') | list %} (currently assigned){% endif %}
+                    {{ person.titled_name }}{% if person.assignments | selectattr('is_current') | list %} (currently
+                    assigned){% endif %}
                 </option>
                 {% endfor %}
             </select>
@@ -36,10 +37,10 @@
         {{ select_field('role', form, 'Appointment', roles.labels(), form.role or 'parish_priest') }}
 
         {{ field('assigned_from', form, 'From', type='date',
-            value=form.assigned_from or '1970-01-01', required=true) }}
+        value=form.assigned_from or '1970-01-01', required=true) }}
 
         {{ field('assigned_to', form, 'To', type='date', value=form.assigned_to,
-            hint='Leave blank while the appointment is in force.') }}
+        hint='Leave blank while the appointment is in force.') }}
 
         <p class="field-hint">
             Any post the cleric already holds will be closed on the start date
@@ -47,8 +48,7 @@
         </p>
 
         <button type="submit" class="submit-login-btn">ASSIGN</button>
-        <a href="{{ url_for('directory.parish_detail', parish_id=parish.id) }}"
-           class="link-btn">Cancel</a>
+        <a href="{{ url_for('directory.parish_detail', parish_id=parish.id) }}" class="link-btn">Cancel</a>
     </form>
 
     {% endif %}

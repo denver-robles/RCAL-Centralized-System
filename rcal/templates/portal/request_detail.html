@@ -1,0 +1,101 @@
+{% extends "portal/portal_base.html" %}
+
+{% block title %}Request - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<h1 class="portal-title">{{ item.sacrament_type.label }} Certificate</h1>
+<p class="muted">
+    Submitted {{ item.created_at.strftime('%d %B %Y') }}
+    &middot;
+    <span class="badge badge-{{ 'ok' if item.status.is_closed else 'pending' }}">
+        {{ item.status.label }}
+    </span>
+</p>
+
+<div class="portal-grid">
+
+    <div class="portal-card">
+        <h2>WHAT YOU ASKED FOR</h2>
+        <div class="portal-card-line"></div>
+
+        <dl class="detail-list">
+            <dt>Document</dt>
+            <dd>{{ item.sacrament_type.label }} certificate</dd>
+
+            <dt>Name on record</dt>
+            <dd>{{ item.name_on_record }}</dd>
+
+            <dt>Date of birth</dt>
+            <dd>
+                {% if item.date_of_birth %}
+                {{ item.date_of_birth.strftime('%d %B %Y') }}
+                {% else %}Not given{% endif %}
+            </dd>
+
+            <dt>Date of sacrament</dt>
+            <dd>
+                {% if item.date_of_sacrament %}
+                {{ item.date_of_sacrament.strftime('%d %B %Y') }}
+                {% else %}Not given{% endif %}
+            </dd>
+
+            <dt>Church</dt>
+            <dd>{{ item.place_of_sacrament or "Not given" }}</dd>
+
+            <dt>Parents or spouse</dt>
+            <dd>{{ item.parents_or_spouse or "Not given" }}</dd>
+
+            <dt>Purpose</dt>
+            <dd>{{ item.purpose or "Not given" }}</dd>
+        </dl>
+    </div>
+
+    <div class="portal-card">
+        <h2>PROGRESS</h2>
+        <div class="portal-card-line"></div>
+
+        {% if item.status.value == 'record_not_found' %}
+        <p>
+            The parish could not find a record matching these details. This
+            usually means a slightly different spelling or date. You may
+            submit a new request with the corrected details.
+        </p>
+        {% elif item.status.value == 'rejected' %}
+        <p>
+            This request could not be processed.
+            {% if item.rejection_reason %}
+            <br><strong>Reason:</strong> {{ item.rejection_reason }}
+            {% endif %}
+        </p>
+        {% elif item.status.value == 'completed' %}
+        <p>
+            Your document is complete. Please contact the parish office to
+            arrange collection, quoting your request reference.
+        </p>
+        {% else %}
+        <p>
+            Your request is with the parish office. Nothing further is
+            needed from you at this stage; this page will show the status
+            as it changes.
+        </p>
+        {% endif %}
+
+        <dl class="detail-list">
+            <dt>Reference</dt>
+            <dd class="mono">RCAL-DR-{{ '%05d' % item.id }}</dd>
+
+            <dt>Consent given</dt>
+            <dd>
+                {% if item.consent_given_at %}
+                {{ item.consent_given_at.strftime('%d %B %Y at %H:%M') }} UTC
+                {% else %}Not recorded{% endif %}
+            </dd>
+        </dl>
+    </div>
+
+</div>
+
+<a href="{{ url_for('portal.dashboard') }}" class="link-btn">Back to my requests</a>
+
+{% endblock %}

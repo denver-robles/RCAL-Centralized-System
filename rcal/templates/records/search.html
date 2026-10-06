@@ -22,24 +22,12 @@
 </p>
 
 <form method="get" action="{{ url_for('records.search') }}" class="search-bar wide">
-    <input
-        type="text"
-        name="name"
-        value="{{ name }}"
-        placeholder="Surname or first name"
-        class="pill-input"
-    >
+    <input type="text" name="name" value="{{ name }}" placeholder="Surname or first name" class="pill-input">
     {{ select_field('type', form, 'Register', sacraments.labels(), sacrament_type) }}
-    {{ select_field('parish', form, 'Parish', parish_choices, parish_id|string if parish_id else none, blank='All parishes') }}
-    <input
-        type="number"
-        name="year"
-        value="{{ year or '' }}"
-        placeholder="Year"
-        min="1600"
-        max="2100"
-        class="pill-input year-input"
-    >
+    {{ select_field('parish', form, 'Parish', parish_choices, parish_id|string if parish_id else none, blank='All
+    parishes') }}
+    <input type="number" name="year" value="{{ year or '' }}" placeholder="Year" min="1600" max="2100"
+        class="pill-input year-input">
     <button type="submit" class="submit-login-btn as-button">SEARCH</button>
 </form>
 
@@ -99,8 +87,8 @@
     </table>
 
     {{ pagination_nav(pagination, 'records.search', {
-        'name': name, 'type': sacrament_type,
-        'parish': parish_id, 'year': year}) }}
+    'name': name, 'type': sacrament_type,
+    'parish': parish_id, 'year': year}) }}
 
 </div>
 

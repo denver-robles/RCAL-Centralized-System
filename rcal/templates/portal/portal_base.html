@@ -15,9 +15,9 @@
 <body class="portal-body">
 
     <header class="portal-header">
-        <a href="{{ url_for('pages.home') }}" class="portal-brand-link">
+        <a href="{{ url_for('portal.dashboard') }}" class="portal-brand-link">
             <img src="{{ url_for('static', filename='logo.png') }}" alt="Archdiocese of Lipa">
-            <span>ARCHDIOCESE OF LIPA</span>
+            <span>PARISHIONER PORTAL</span>
         </a>
 
         {% if current_user.is_authenticated %}
@@ -33,37 +33,26 @@
         {% endif %}
     </header>
 
-    {# The nav is a sibling of the header, not a child: inside the header's
-       flex row it would sit beside the brand and wrap onto two lines. #}
+    {# A separate nav from the staff one. The whole point of the
+    public/office split is that a parishioner has only these links. #}
     <nav class="portal-nav">
         {% if current_user.is_authenticated %}
-        <a href="{{ url_for('records.search') }}">Registers</a>
-        <a href="{{ url_for('directory.parishes') }}">Parishes</a>
-        <a href="{{ url_for('directory.clergy') }}">Clergy</a>
-        <a href="{{ url_for('certificates.index') }}">Certificates</a>
-        <a href="{{ url_for('records.intentions') }}">Intentions</a>
-        {% if current_user.role.value in ('admin', 'chancery', 'parish_staff', 'clergy') %}
-        <a href="{{ url_for('records.analytics') }}">Analytics</a>
-        {% endif %}
-        {% if current_user.role.can_view_audit_log %}
-        <a href="{{ url_for('audit.index') }}">Audit</a>
-        {% endif %}
-        {% if current_user.role.can_manage_users %}
-        <a href="{{ url_for('admin.users') }}">Accounts</a>
-        {% endif %}
+        <a href="{{ url_for('portal.dashboard') }}">My requests</a>
+        <a href="{{ url_for('portal.new_request') }}">New request</a>
         {% endif %}
     </nav>
 
     <main class="portal-content">
-        {# Shown on every portal page, because a successful action usually
-           redirects and the message has to survive that redirect. #}
         {% include "_flashes.html" %}
-
         {% block content %}{% endblock %}
     </main>
 
     <footer class="portal-footer">
-        <p>{{ config['ORGANISATION'] }} — Centralized Records System</p>
+        <p>{{ config['ORGANISATION'] }} — Parishioner Portal</p>
+        <p class="muted small">
+            Personal data is held under RA 10173. Parish registers are never
+            shown in this portal.
+        </p>
     </footer>
 
 </body>

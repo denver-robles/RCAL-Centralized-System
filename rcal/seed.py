@@ -256,13 +256,46 @@ def seed_demo_command() -> None:
     for index, parish in enumerate(parishes[:3]):
         account = User(
             username=f"parish{index + 1}",
-            display_name=f"{parish.name} Secretary",
             email=f"parish{index + 1}@example.ph",
+            display_name=f"{parish.name} Secretary",
             role=Role.PARISH_STAFF,
             home_parish=parish,
         )
         account.set_password("parishpw")
         db.session.add(account)
+
+    # A parishioner account for the public portal, so the isolation between
+    # the office and the public can be seen without registering one by hand.
+    parishioner = User(
+        username="juan@example.ph",
+        email="juan@example.ph",
+        display_name="Juan Dela Cruz",
+        role=Role.PARISHIONER,
+        phone="0917 000 0000",
+        postal_address="Brgy. Poblacion, Lipa City, Batangas",
+    )
+    parishioner.set_password("parishpw")
+    db.session.add(parishioner)
+    db.session.flush()
+
+    # One submitted request, so the parishioner dashboard and the staff
+    # queue both have something in them on first run.
+    from .models import DocumentRequest
+    from .models.enums import DocumentRequestStatus
+
+    db.session.add(
+        DocumentRequest(
+            parishioner=parishioner,
+            sacrament_type=SacramentType.BAPTISM,
+            name_on_record="Juan Dela Cruz",
+            date_of_birth=date(1990, 1, 1),
+            date_of_sacrament=date(1995, 2, 18),
+            place_of_sacrament=parishes[0].name,
+            parents_or_spouse="Pedro and Maria Dela Cruz",
+            purpose="Marriage requirement",
+            status=DocumentRequestStatus.SUBMITTED,
+        )
+    )
 
     db.session.commit()
 
@@ -272,6 +305,7 @@ def seed_demo_command() -> None:
         f"{len(people) + 1} register entries."
     )
     click.echo(
-        "Accounts: parish1/parish2/parish3 with password 'parishpw' "
-        "(plus the admin from init-db --seed)."
+        "Accounts: parish1/parish2/parish3 (staff, password 'parishpw'), "
+        "juan@example.ph (parishioner, password 'parishpw'), "
+        "plus the admin from init-db --seed."
     )

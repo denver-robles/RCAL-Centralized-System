@@ -49,8 +49,8 @@
         {% for assignment in assignments %}
         <div class="person-row">
             <div>
-                <a href="{{ url_for('directory.parish_detail', parish_id=assignment.parish.id) }}"
-                   class="strong">{{ assignment.parish.name }}</a>
+                <a href="{{ url_for('directory.parish_detail', parish_id=assignment.parish.id) }}" class="strong">{{
+                    assignment.parish.name }}</a>
                 <div class="muted small">
                     {{ assignment.role.label }} &middot;
                     {{ assignment.assigned_from.strftime('%b %Y') }} –
@@ -76,7 +76,12 @@
 
     <table class="data-table">
         <thead>
-            <tr><th>Register</th><th>Subject</th><th>Date</th><th>Citation</th></tr>
+            <tr>
+                <th>Register</th>
+                <th>Subject</th>
+                <th>Date</th>
+                <th>Citation</th>
+            </tr>
         </thead>
         <tbody>
             {% for record in person.performed_records[-10:] | reverse %}

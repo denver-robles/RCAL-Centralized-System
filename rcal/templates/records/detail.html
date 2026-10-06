@@ -15,8 +15,8 @@
         </p>
     </div>
     {% if can_write %}
-    <a href="{{ url_for('records.annotate', record_id=record.id) }}"
-       class="submit-login-btn as-link">ADD MARGIN NOTE</a>
+    <a href="{{ url_for('records.annotate', record_id=record.id) }}" class="submit-login-btn as-link">ADD MARGIN
+        NOTE</a>
     {% endif %}
 </div>
 
@@ -100,7 +100,13 @@
 
         {% if requests %}
         <table class="data-table">
-            <thead><tr><th>Number</th><th>Status</th><th>Issued</th></tr></thead>
+            <thead>
+                <tr>
+                    <th>Number</th>
+                    <th>Status</th>
+                    <th>Issued</th>
+                </tr>
+            </thead>
             <tbody>
                 {% for item in requests %}
                 <tr>

@@ -644,4 +644,30 @@
     .certificate-number {
         text-align: left;
     }
+}/* --- audit trail before/after values --------------------------------- */
+.value-old {
+    color: #8a1c1c;
+    background-color: #fdecea;
+    padding: 1px 6px;
+    border-radius: 4px;
+    word-break: break-word;
+}
+
+.value-new {
+    color: #1e5b2e;
+    background-color: #e6f4ea;
+    padding: 1px 6px;
+    border-radius: 4px;
+    word-break: break-word;
+}
+
+/* The audit table carries long labels and IPs, so let cells wrap rather
+   than forcing a horizontal scroll that hides the timestamp. */
+.data-table td,
+.data-table th {
+    vertical-align: top;
+}
+
+.data-table .mono.small {
+    word-break: break-all;
 }

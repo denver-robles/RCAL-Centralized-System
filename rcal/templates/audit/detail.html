@@ -1,0 +1,131 @@
+{% extends "portal_base.html" %}
+
+{% block title %}Audit entry #{{ entry.id }} - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<h1 class="portal-title">{{ entry.action.label }}</h1>
+<p class="muted">
+    {{ entry.created_at.strftime('%d %B %Y at %H:%M:%S') }} UTC
+    {% if entry.user %} &middot; {{ entry.user.username }}
+    {% elif entry.actor_username %} &middot; {{ entry.actor_username }} (not signed in)
+    {% endif %}
+</p>
+
+<div class="portal-grid">
+
+    <div class="portal-card">
+        <h2>WHAT HAPPENED</h2>
+        <div class="portal-card-line"></div>
+
+        <dl class="detail-list">
+            <dt>Action</dt>
+            <dd>{{ entry.action.label }}</dd>
+
+            <dt>Account</dt>
+            <dd>
+                {% if entry.user %}
+                {{ entry.user.display_name or entry.user.username }}
+                <span class="muted small">({{ entry.user.username }})</span>
+                {% else %}
+                <span class="muted">{{ entry.actor_username or "unknown" }}</span>
+                {% endif %}
+            </dd>
+
+            <dt>Subject</dt>
+            <dd>
+                {{ entry.subject_type or "—" }}
+                {% if entry.subject_id %}#{{ entry.subject_id }}{% endif %}
+                {% if entry.subject_label %}
+                <div class="muted small">{{ entry.subject_label }}</div>
+                {% endif %}
+            </dd>
+
+            <dt>Origin</dt>
+            <dd class="mono small">{{ entry.ip_address or "—" }}</dd>
+
+            <dt>Request</dt>
+            <dd class="mono small">
+                {{ entry.request_method or "—" }} {{ entry.request_path or "" }}
+            </dd>
+
+            {% if entry.user_agent %}
+            <dt>Client</dt>
+            <dd class="small muted">{{ entry.user_agent }}</dd>
+            {% endif %}
+
+            {% if entry.note %}
+            <dt>Note</dt>
+            <dd>{{ entry.note }}</dd>
+            {% endif %}
+        </dl>
+    </div>
+
+    <div class="portal-card">
+        <h2>VALUE CHANGES</h2>
+        <div class="portal-card-line"></div>
+
+        {% if old_values or new_values %}
+        <table class="data-table">
+            <thead>
+                <tr><th>Field</th><th>Before</th><th>After</th></tr>
+            </thead>
+            <tbody>
+                {% set fields = (new_values or old_values).keys() %}
+                {% for name in fields %}
+                <tr>
+                    <td class="mono small">{{ name }}</td>
+                    <td class="small">
+                        {% if old_values and old_values.get(name) is not none %}
+                        <span class="value-old">{{ old_values.get(name) }}</span>
+                        {% else %}
+                        <span class="muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="small">
+                        {% if new_values and new_values.get(name) is not none %}
+                        <span class="value-new">{{ new_values.get(name) }}</span>
+                        {% else %}
+                        <span class="muted">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="muted">
+            This action did not change any stored value. A view or a print
+            records that something was seen, not that anything was altered.
+        </p>
+        {% endif %}
+    </div>
+
+</div>
+
+{% if related %}
+<div class="portal-card">
+    <h2>OTHER ENTRIES FOR THIS SUBJECT</h2>
+    <div class="portal-card-line"></div>
+
+    <table class="data-table">
+        <thead><tr><th>When</th><th>Who</th><th>Action</th><th></th></tr></thead>
+        <tbody>
+            {% for other in related %}
+            <tr>
+                <td class="small mono">{{ other.created_at.strftime('%d %b %Y %H:%M:%S') }}</td>
+                <td class="small">{{ other.actor_username or "—" }}</td>
+                <td class="small">{{ other.action.label }}</td>
+                <td>
+                    <a href="{{ url_for('audit.detail', entry_id=other.id) }}">Open</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<a href="{{ url_for('audit.index') }}" class="link-btn">Back to the trail</a>
+
+{% endblock %}
