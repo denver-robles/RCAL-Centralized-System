@@ -32,11 +32,30 @@ class User(UserMixin, db.Model, TimestampMixin):
     #: The person in the clergy register this account belongs to, if any.
     clergy_id = db.Column(db.Integer, db.ForeignKey("clergy.id"), nullable=True)
 
+    # --- parishioner contact details (portal accounts) ------------------
+    #: Collected at registration so a document request can be traced back
+    #: to a reachable person, which is what FR-3.2 requires before staff
+    #: may release a canonical record. Null for staff accounts.
+    phone = db.Column(db.String(30))
+    postal_address = db.Column(db.Text)
+    #: Set by the OTP flow (FR-3.1 of the integration list). Always False
+    #: until that exists, so staff can see the account is unverified
+    #: rather than assuming it was checked.
+    email_verified = db.Column(db.Boolean, nullable=False, default=False)
+    phone_verified = db.Column(db.Boolean, nullable=False, default=False)
+    last_login_at = db.Column(db.DateTime(timezone=True))
+
     home_parish = db.relationship("Parish", back_populates="users")
     clergy_record = db.relationship("Clergy", back_populates="user_accounts")
 
     #: Records this user has read (access accountability).
     access_logs = db.relationship("AccessLog", back_populates="user")
+    #: Everything this user has done, for the comprehensive trail (FR-1.4).
+    audit_entries = db.relationship("AuditLog", back_populates="user")
+    #: Document requests this account filed through the public portal.
+    document_requests = db.relationship(
+        "DocumentRequest", back_populates="parishioner"
+    )
     #: Margin notes this user has written.
     annotations_made = db.relationship("Annotation", back_populates="annotated_by_user")
 
@@ -63,8 +82,21 @@ class User(UserMixin, db.Model, TimestampMixin):
     )
 
     def set_password(self, password: str) -> None:
-        """Store *password* as a salted hash (never the plain text)."""
-        self.password_hash = generate_password_hash(password)
+        """Store *password* as a salted hash (never the plain text).
+
+        The hash method comes from configuration so that tests can use a
+        deliberately cheap one; production keeps Werkzeug's default.
+        """
+        from flask import current_app
+
+        method = "scrypt"
+        try:
+            method = current_app.config.get("PASSWORD_HASH_METHOD", "scrypt")
+        except RuntimeError:
+            # No application context (e.g. a standalone script); the
+            # default is the safe choice.
+            pass
+        self.password_hash = generate_password_hash(password, method=method)
 
     def check_password(self, password: str) -> bool:
         """Verify *password* against the stored hash."""

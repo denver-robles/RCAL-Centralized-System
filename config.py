@@ -25,6 +25,13 @@ class Config:
     APP_NAME = "RCAL Centralized System"
     ORGANISATION = "Roman Catholic Archdiocese of Lipa"
 
+    # --- Password hashing -----------------------------------------------
+    # Werkzeug's default is scrypt, which costs ~0.14s per hash. That is the
+    # right choice in production and a painful one in tests, where every
+    # setUp creates accounts. The testing config overrides this; production
+    # never should.
+    PASSWORD_HASH_METHOD = os.environ.get("PASSWORD_HASH_METHOD", "scrypt")
+
     # --- Security -------------------------------------------------------
     # Overridden by SECRET_KEY in .env. The fallback is deliberately
     # obvious so nobody ships it by accident.
@@ -66,6 +73,10 @@ class TestingConfig(Config):
     TESTING = True
     WTF_CSRF_ENABLED = False
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    # A fast, deliberately weak hash. Tests assert on behaviour, not on the
+    # strength of the hashing algorithm, and scrypt makes a suite that
+    # creates an account per test take a minute instead of seconds.
+    PASSWORD_HASH_METHOD = "pbkdf2:sha256:1000"
 
 
 class ProductionConfig(Config):
