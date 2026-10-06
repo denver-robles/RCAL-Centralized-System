@@ -1,244 +1,217 @@
-/* Signed-in portal styling.
-   Reuses the public site's palette (gold #FFC800 on the archdiocesan
-   blue) and the .pill-input / .submit-login-btn classes from style.css, so
-   the sign-in card looks like the landing page it is linked from. */
+/* ==========================================================================
+   MODERNIZED PIMS — PORTAL & DASHBOARD STYLES (FIGMA EDITION)
+   Fonts: DM Sans & Newsreader
+   Colors: Slate-950, Slate-50, Amber-400, Amber-50, Emerald, Blue
+   ========================================================================== */
+
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&display=swap");
+
+:root {
+    --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-display: 'Newsreader', Georgia, 'Times New Roman', serif;
+
+    --color-slate-950: #020617;
+    --color-slate-900: #0F172A;
+    --color-slate-800: #1E293B;
+    --color-slate-700: #334155;
+    --color-slate-600: #475569;
+    --color-slate-500: #64748B;
+    --color-slate-400: #94A3B8;
+    --color-slate-300: #CBD5E1;
+    --color-slate-200: #E2E8F0;
+    --color-slate-100: #F1F5F9;
+    --color-slate-50: #F8FAFC;
+    --color-white: #FFFFFF;
+
+    --color-amber-500: #F59E0B;
+    --color-amber-400: #FBBF24;
+    --color-amber-300: #FCD34D;
+    --color-amber-200: #FDE68A;
+    --color-amber-100: #FEF3C7;
+    --color-amber-50: #FFFBEB;
+    --color-amber-700: #B45309;
+
+    --color-emerald-500: #10B981;
+    --color-emerald-50: #ECFDF5;
+    --color-emerald-700: #047857;
+    --color-blue-500: #3B82F6;
+    --color-blue-50: #EFF6FF;
+    --color-blue-700: #1D4ED8;
+    --color-rose-500: #F43F5E;
+    --color-rose-50: #FFF1F2;
+    --color-rose-700: #BE123C;
+
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+    --shadow-amber: 0 10px 25px -5px rgba(245, 158, 11, 0.35);
+
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --radius-full: 9999px;
+
+    --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
 
 .portal-body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Figtree', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    background-color: #f4f5f7;
-    color: #1f2933;
+    min-width: 320px;
+    background-color: var(--color-slate-50);
+    font-family: var(--font-sans);
+    color: var(--color-slate-900);
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-/* --- login screen --------------------------------------------------- */
-.portal-main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 40px 4%;
-    gap: 28px;
-}
+/* ==========================================================================
+   PORTAL HEADER & BRANDING
+   ========================================================================== */
 
-.portal-brand {
-    text-align: center;
-}
-
-.portal-brand img {
-    width: 88px;
-}
-
-.portal-brand h1 {
-    margin: 12px 0 4px;
-    letter-spacing: 4px;
-    font-size: 26px;
-}
-
-.portal-brand-sub {
-    margin: 0;
-    font-size: 13px;
-    letter-spacing: 1px;
-    color: #52606d;
-}
-
-/* --- cards ----------------------------------------------------------- */
-.portal-card {
-    background-color: white;
-    border-radius: 10px;
-    padding: 30px 34px;
-    box-shadow: 0 2px 10px rgba(31, 41, 51, 0.08);
-    margin-bottom: 22px;
-}
-
-.portal-card.narrow {
-    max-width: 460px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.portal-card h2 {
-    margin: 0;
-    text-align: center;
-    letter-spacing: 2px;
-    font-size: 18px;
-}
-
-.portal-card-line {
-    width: 60%;
-    height: 2px;
-    background-color: #FFC800;
-    margin: 14px auto 22px;
-}
-
-.portal-note {
-    font-size: 12px;
-    color: #52606d;
-    text-align: center;
-    margin: 22px 0 0;
-}
-
-/* --- fields ---------------------------------------------------------- */
-.pill-input {
-    border: 1px solid #cbd2d9;
-    border-radius: 20px;
-    padding: 12px 16px;
-    font-size: 15px;
-}
-
-.field-error {
-    display: block;
-    margin-top: 6px;
-    color: #c62828;
-    font-size: 13px;
-}
-
-.field-hint {
-    display: block;
-    margin-top: 6px;
-    color: #7b8794;
-    font-size: 12px;
-}
-
-.form-options {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    font-size: 13px;
-}
-
-.remember-me {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: normal;
-}
-
-.submit-login-btn {
-    width: 100%;
-    background-color: #FFC800;
-    color: #1f2933;
-    border: none;
-    border-radius: 22px;
-    padding: 13px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    cursor: pointer;
-}
-
-.submit-login-btn:hover {
-    opacity: 0.85;
-}
-
-.submit-login-btn.muted-btn {
-    background-color: #52606d;
-    color: white;
-}
-
-/* --- header / footer -------------------------------------------------- */
 .portal-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 4%;
-    background-color: #12325c;
-    color: white;
+    padding: 14px 5%;
+    background-color: var(--color-slate-950);
+    color: var(--color-white);
+    border-bottom: 4px solid var(--color-amber-400);
+    position: sticky;
+    top: 0;
+    z-index: 90;
+    box-shadow: 0 4px 20px rgba(2, 6, 23, 0.25);
 }
 
 .portal-brand-link {
     display: flex;
     align-items: center;
-    gap: 12px;
-    color: white;
+    gap: 14px;
+    color: var(--color-white);
     text-decoration: none;
-    letter-spacing: 2px;
-    font-weight: 700;
+    letter-spacing: -0.01em;
+    font-weight: 800;
+    font-size: 16px;
+    transition: var(--transition);
 }
 
 .portal-brand-link img {
-    width: 42px;
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    border-radius: var(--radius-full);
+    border: 2px solid var(--color-amber-400);
+    background-color: var(--color-slate-950);
+    padding: 2px;
+}
+
+.portal-brand-link span {
+    display: inline-block;
 }
 
 .portal-header-user {
     display: flex;
     align-items: center;
-    gap: 14px;
-    font-size: 14px;
+    gap: 16px;
+    font-size: 13.5px;
+    font-weight: 600;
 }
 
-.portal-footer {
-    padding: 18px 4%;
-    text-align: center;
-    font-size: 12px;
-    color: #52606d;
-    background-color: white;
-}
-
-.link-btn {
-    background: none;
-    border: none;
-    color: #12325c;
-    text-decoration: underline;
-    cursor: pointer;
-    font-size: 13px;
-    padding: 0;
+.portal-header-user span {
+    color: var(--color-slate-200);
 }
 
 .portal-header .link-btn {
-    color: white;
+    color: var(--color-slate-950);
+    background-color: var(--color-amber-400);
+    border: none;
+    padding: 8px 18px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: var(--shadow-sm);
+    text-decoration: none;
 }
 
-/* --- flash messages ---------------------------------------------------- */
-.flashes {
-    margin-bottom: 18px;
+.portal-header .link-btn:hover {
+    background-color: var(--color-amber-300);
+    transform: translateY(-1px);
 }
 
-.flash {
-    padding: 11px 14px;
-    border-radius: 6px;
-    margin-bottom: 8px;
-    font-size: 14px;
+.portal-footer {
+    padding: 24px 5%;
+    text-align: center;
+    font-size: 13px;
+    color: var(--color-slate-400);
+    background-color: var(--color-white);
+    border-top: 1px solid var(--color-slate-200);
+    margin-top: auto;
 }
 
-.flash-success {
-    background-color: #e6f4ea;
-    color: #1e5b2e;
-}
-
-.flash-error {
-    background-color: #fdecea;
-    color: #8a1c1c;
-}
-
-.flash-warning {
-    background-color: #fff6e0;
-    color: #7a5b00;
-}
+/* ==========================================================================
+   PORTAL MAIN CONTENT & CARDS
+   ========================================================================== */
 
 .portal-content {
-    /* Side padding so cards are not flush against the viewport edge, and a
-       max width so a wide table stays readable on a large monitor. */
     flex: 1;
     width: 100%;
-    max-width: 1100px;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 30px 24px 40px;
+    padding: 36px 24px 60px;
 }
 
-/* --- dashboard / tables ------------------------------------------------ */
 .portal-title {
-    font-size: 24px;
-    margin: 8px 0 20px;
+    font-family: var(--font-display);
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--color-slate-950);
+    margin: 4px 0 24px;
+    letter-spacing: -0.02em;
+}
+
+.portal-card {
+    background-color: var(--color-white);
+    border-radius: var(--radius-xl);
+    padding: 36px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 24px;
+    border: 1px solid var(--color-slate-200);
+    transition: var(--transition);
+}
+
+.portal-card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.portal-card.narrow {
+    max-width: 500px;
+    margin: 0 auto 24px;
+}
+
+.portal-card h2 {
+    font-family: var(--font-sans);
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: var(--color-slate-950);
+    text-align: center;
+}
+
+.portal-card-line {
+    width: 48px;
+    height: 3px;
+    background-color: var(--color-amber-400);
+    margin: 12px auto 26px;
+    border-radius: 2px;
 }
 
 .portal-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 22px;
+    grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+    gap: 24px;
     align-items: start;
 }
 
@@ -247,34 +220,29 @@
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-}
-
-.title-row .submit-login-btn {
-    width: auto;
-    padding: 11px 22px;
-    text-decoration: none;
-    font-size: 13px;
+    margin-bottom: 24px;
 }
 
 .detail-list {
     display: grid;
-    grid-template-columns: 130px 1fr;
-    gap: 10px 16px;
+    grid-template-columns: 140px 1fr;
+    gap: 12px 18px;
     margin: 0;
-    font-size: 14px;
+    font-size: 14.5px;
 }
 
 .detail-list dt {
     font-weight: 700;
-    color: #52606d;
+    color: var(--color-slate-500);
 }
 
 .detail-list dd {
     margin: 0;
+    color: var(--color-slate-900);
 }
 
 .muted {
-    color: #7b8794;
+    color: var(--color-slate-500);
 }
 
 .mono {
@@ -288,32 +256,74 @@
 }
 
 .link-list li {
-    padding: 8px 0;
-    border-bottom: 1px solid #e4e7eb;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--color-slate-100);
 }
 
-.logout-form {
-    margin-top: 8px;
+.link-list a {
+    color: var(--color-slate-800);
+    text-decoration: none;
+    font-weight: 600;
+    transition: var(--transition);
 }
+
+.link-list a:hover {
+    color: var(--color-amber-700);
+    padding-left: 4px;
+}
+
+/* ==========================================================================
+   DATA TABLES (FIGMA PIMS)
+   ========================================================================== */
 
 .data-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     font-size: 14px;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--color-slate-200);
+    background-color: var(--color-white);
 }
 
 .data-table th,
 .data-table td {
     text-align: left;
-    padding: 10px 12px;
-    border-bottom: 1px solid #e4e7eb;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--color-slate-100);
 }
 
 .data-table th {
-    color: #52606d;
+    background-color: var(--color-slate-50);
+    color: var(--color-slate-700);
     font-size: 12px;
-    letter-spacing: 1px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
+}
+
+.data-table tr:last-child td {
+    border-bottom: none;
+}
+
+.data-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.data-table tbody tr:hover {
+    background-color: var(--color-slate-50);
+}
+
+.data-table a {
+    color: var(--color-slate-900);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.data-table a:hover {
+    color: var(--color-amber-700);
+    text-decoration: underline;
 }
 
 .data-table td.actions {
@@ -322,103 +332,149 @@
     align-items: center;
 }
 
+/* ==========================================================================
+   STATUS BADGES / PILLS (FIGMA PIMS)
+   ========================================================================== */
+
 .badge {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
     padding: 3px 10px;
-    border-radius: 12px;
+    border-radius: var(--radius-full);
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    border: 1px solid transparent;
 }
 
+.badge-pending,
+.badge-scheduled {
+    background-color: var(--color-amber-50);
+    color: var(--color-amber-700);
+    border-color: rgba(245, 158, 11, 0.2);
+}
+
+.badge-verified,
+.badge-approved,
+.badge-active {
+    background-color: var(--color-blue-50);
+    color: var(--color-blue-700);
+    border-color: rgba(59, 130, 246, 0.2);
+}
+
+.badge-issued,
+.badge-completed,
 .badge-ok {
-    background-color: #e6f4ea;
-    color: #1e5b2e;
+    background-color: var(--color-emerald-50);
+    color: var(--color-emerald-700);
+    border-color: rgba(16, 185, 129, 0.2);
 }
 
+.badge-rejected,
+.badge-cancelled,
 .badge-off {
-    background-color: #fdecea;
-    color: #8a1c1c;
+    background-color: var(--color-rose-50);
+    color: var(--color-rose-700);
+    border-color: rgba(244, 63, 94, 0.2);
 }
 
-.pagination {
-    margin-top: 18px;
-    display: flex;
-    gap: 8px;
+.badge-notes {
+    background-color: var(--color-slate-100);
+    color: var(--color-slate-600);
+    border-color: var(--color-slate-200);
 }
 
-.pagination a,
-.pagination span {
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 14px;
+/* ==========================================================================
+   BUTTONS & FORMS
+   ========================================================================== */
+
+.pill-input {
+    width: 100%;
+    background-color: var(--color-slate-50);
+    border: 1.5px solid var(--color-slate-200);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    font-size: 14.5px;
+    font-family: inherit;
+    color: var(--color-slate-900);
+    outline: none;
+    transition: var(--transition);
 }
 
-.pagination a.current {
-    background-color: #12325c;
-    color: white;
+.pill-input:focus {
+    background-color: var(--color-white);
+    border-color: var(--color-amber-500);
+    box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.25);
 }
 
-@media (max-width: 640px) {
-    .portal-brand-link span {
-        display: none;
-    }
-
-    .data-table {
-        font-size: 13px;
-    }
-}/* --- shared portal components --------------------------------------- */
-.strong {
+.field-error {
+    display: block;
+    margin-top: 6px;
+    color: var(--color-rose-700);
+    font-size: 13px;
     font-weight: 600;
 }
 
-.small {
-    font-size: 12px;
-}
-
-.numeric {
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-}
-
-.spaced {
-    display: inline-block;
-    margin-top: 14px;
-}
-
-.sub-heading {
+.field-hint {
+    display: block;
+    margin-top: 6px;
+    color: var(--color-slate-500);
     font-size: 13px;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: #52606d;
-    margin: 24px 0 8px;
 }
 
-.person-row {
-    padding: 10px 0;
-    border-bottom: 1px solid #e4e7eb;
-}
-
-/* --- buttons as links and button rows --------------------------------- */
-.submit-login-btn.as-link {
+.submit-login-btn {
+    width: 100%;
+    background-color: var(--color-amber-400);
+    color: var(--color-slate-950);
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 12px 24px;
+    font-family: var(--font-sans);
+    font-size: 14.5px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
     display: inline-block;
-    width: auto;
-    padding: 11px 22px;
-    text-decoration: none;
-    font-size: 13px;
     text-align: center;
 }
 
-.submit-login-btn.as-link.outline {
-    background-color: white;
-    color: #12325c;
-    border: 2px solid #12325c;
+.submit-login-btn:hover {
+    background-color: var(--color-amber-300);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-amber);
 }
 
-.submit-login-btn.as-button {
+.submit-login-btn.as-link {
+    display: inline-block;
     width: auto;
-    padding: 12px 26px;
-    font-size: 13px;
-    white-space: nowrap;
+    padding: 10px 20px;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.submit-login-btn.as-link.outline {
+    background-color: var(--color-white);
+    color: var(--color-slate-700);
+    border: 1px solid var(--color-slate-200);
+    box-shadow: var(--shadow-sm);
+}
+
+.submit-login-btn.as-link.outline:hover {
+    background-color: var(--color-slate-50);
+    color: var(--color-slate-950);
+}
+
+.submit-login-btn.muted-btn {
+    background-color: var(--color-slate-100);
+    color: var(--color-slate-700);
+    box-shadow: none;
+}
+
+.submit-login-btn.muted-btn:hover {
+    background-color: var(--color-slate-200);
+    color: var(--color-slate-950);
 }
 
 .btn-row {
@@ -429,49 +485,129 @@
 
 .btn-row.wrap {
     flex-wrap: wrap;
-    margin-bottom: 18px;
+    margin-bottom: 22px;
 }
 
-.btn-row form {
-    margin: 0;
+/* ==========================================================================
+   STATISTIC CARDS (FIGMA StatCard)
+   ========================================================================== */
+
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
 }
 
-/* --- search bars ------------------------------------------------------- */
+.stat-grid.compact {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    background-color: var(--color-white);
+    border-radius: var(--radius-xl);
+    padding: 22px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-slate-200);
+    transition: var(--transition);
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.stat-label {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--color-slate-500);
+    margin-bottom: 6px;
+}
+
+.stat-value {
+    display: block;
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--color-slate-950);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+}
+
+/* ==========================================================================
+   FLASH ALERTS
+   ========================================================================== */
+
+.flashes {
+    margin-bottom: 22px;
+}
+
+.flash {
+    padding: 14px 18px;
+    border-radius: var(--radius-md);
+    margin-bottom: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: var(--shadow-sm);
+}
+
+.flash-success {
+    background-color: var(--color-emerald-50);
+    color: var(--color-emerald-700);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.flash-error {
+    background-color: var(--color-rose-50);
+    color: var(--color-rose-700);
+    border: 1px solid rgba(244, 63, 94, 0.2);
+}
+
+.flash-warning {
+    background-color: var(--color-amber-50);
+    color: var(--color-amber-700);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+/* ==========================================================================
+   SEARCH BARS & FILTERS
+   ========================================================================== */
+
 .search-bar {
     display: flex;
-    gap: 12px;
+    gap: 14px;
     align-items: flex-end;
     flex-wrap: wrap;
-    background-color: white;
-    padding: 18px 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(31, 41, 51, 0.06);
-    margin-bottom: 22px;
+    background-color: var(--color-white);
+    padding: 20px 24px;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 24px;
+    border: 1px solid var(--color-slate-200);
 }
 
 .search-bar .form-group {
     margin: 0;
-    min-width: 190px;
+    min-width: 180px;
 }
 
 .search-bar.wide .form-group {
-    min-width: 165px;
+    min-width: 160px;
 }
 
 .search-bar input.pill-input {
     width: 100%;
 }
 
-/* The name box is the primary field; without a cap it stretches to the
-   full row width and unbalances the filters beside it. */
 .search-bar input[type=text],
 .search-bar input[type=search] {
     flex: 1 1 260px;
-    max-width: 340px;
+    max-width: 360px;
 }
 
 .year-input {
-    max-width: 110px;
+    max-width: 120px;
 }
 
 .form-group.inline-group {
@@ -480,48 +616,55 @@
     margin-bottom: 0;
 }
 
-/* --- fieldsets on the long record form --------------------------------- */
+/* ==========================================================================
+   FIELDSETS & NOTES
+   ========================================================================== */
+
 .fieldset {
-    border: 1px solid #e4e7eb;
-    border-radius: 8px;
-    padding: 18px 20px 6px;
-    margin: 0 0 20px;
+    border: 1px solid var(--color-slate-200);
+    border-radius: var(--radius-lg);
+    padding: 22px 24px 10px;
+    margin: 0 0 24px;
+    background-color: var(--color-slate-50);
 }
 
 .fieldset legend {
     font-size: 12px;
-    letter-spacing: 1.5px;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #12325c;
-    font-weight: 700;
-    padding: 0 6px;
+    color: var(--color-slate-700);
+    font-weight: 800;
+    padding: 0 8px;
+    background-color: var(--color-white);
+    border-radius: 4px;
+    border: 1px solid var(--color-slate-200);
 }
 
-/* --- the permanence notice ---------------------------------------------- */
 .immutability-note {
-    background-color: #fff6e0;
-    border-left: 4px solid #ffc800;
-    padding: 14px 18px;
-    border-radius: 4px;
+    background-color: var(--color-amber-50);
+    border-left: 4px solid var(--color-amber-400);
+    padding: 16px 20px;
+    border-radius: var(--radius-sm);
     font-size: 14px;
-    color: #5c4700;
-    margin-bottom: 22px;
+    color: var(--color-amber-900);
+    margin-bottom: 24px;
+    border: 1px solid var(--color-amber-200);
+    border-left-width: 4px;
 }
 
 .immutability-note p {
     margin: 0;
 }
 
-/* --- annotation notes --------------------------------------------------- */
 .annotation {
-    border-left: 3px solid #cbd2d9;
+    border-left: 3px solid var(--color-amber-400);
     padding: 12px 0 12px 16px;
-    margin-bottom: 6px;
-    border-bottom: 1px solid #f4f5f7;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--color-slate-100);
 }
 
 .annotation p {
-    margin: 8px 0 6px;
+    margin: 6px 0;
 }
 
 .annotation-head {
@@ -530,139 +673,63 @@
     align-items: center;
 }
 
-.details-block {
-    margin: 18px 0;
-    padding: 14px 16px;
-    border: 1px solid #e4e7eb;
-    border-radius: 6px;
+/* ==========================================================================
+   PAGINATION
+   ========================================================================== */
+
+.pagination {
+    margin-top: 24px;
+    display: flex;
+    gap: 8px;
+    justify-content: center;
 }
 
-.details-block summary {
-    cursor: pointer;
+.pagination a,
+.pagination span {
+    padding: 8px 14px;
+    border-radius: var(--radius-md);
+    font-size: 13.5px;
     font-weight: 600;
-    font-size: 14px;
+    text-decoration: none;
+    color: var(--color-slate-600);
+    background-color: var(--color-white);
+    border: 1px solid var(--color-slate-200);
+    transition: var(--transition);
 }
 
-/* --- status badges ------------------------------------------------------ */
-.badge {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 700;
-    white-space: nowrap;
+.pagination a:hover {
+    border-color: var(--color-amber-400);
+    color: var(--color-slate-950);
 }
 
-.badge-pending,
-.badge-scheduled {
-    background-color: #fff6e0;
-    color: #7a5b00;
+.pagination a.current {
+    background-color: var(--color-slate-950);
+    color: var(--color-white);
+    border-color: var(--color-slate-950);
 }
 
-.badge-verified,
-.badge-approved,
-.badge-active {
-    background-color: #e3f0fb;
-    color: #14507f;
-}
+/* ==========================================================================
+   AUDIT VALUES
+   ========================================================================== */
 
-.badge-issued,
-.badge-completed,
-.badge-ok {
-    background-color: #e6f4ea;
-    color: #1e5b2e;
-}
-
-.badge-rejected,
-.badge-cancelled,
-.badge-off {
-    background-color: #fdecea;
-    color: #8a1c1c;
-}
-
-.badge-notes {
-    background-color: #eef0f3;
-    color: #52606d;
-}
-
-/* --- statistic tiles ----------------------------------------------------- */
-.stat-grid {
-    display: grid;
-    /* 300px against the 1100px content width gives three columns, so six
-       tiles land as two even rows of three rather than four plus an
-       orphan pair. */
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 16px;
-    margin-bottom: 24px;
-}
-
-.stat-grid.compact {
-    /* Four queue figures fit one row without wrapping. */
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    margin-bottom: 18px;
-}
-
-.stat-card {
-    background-color: white;
-    border-radius: 10px;
-    padding: 20px 18px;
-    box-shadow: 0 2px 10px rgba(31, 41, 51, 0.06);
-    text-align: center;
-}
-
-.stat-value {
-    display: block;
-    font-size: 32px;
-    font-weight: 800;
-    color: #12325c;
-    line-height: 1.1;
-}
-
-.stat-label {
-    display: block;
-    margin-top: 6px;
-    font-size: 12px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: #52606d;
-}
-
-/* --- landing page analytics footnote ------------------------------------- */
-.analytics-footnote {
-    text-align: center;
-    font-size: 13px;
-    color: #52606d;
-    margin-top: 18px;
-}
-
-@media (max-width: 640px) {
-    .search-bar .form-group {
-        min-width: 100%;
-    }
-
-    .certificate-signature,
-    .certificate-number {
-        text-align: left;
-    }
-}/* --- audit trail before/after values --------------------------------- */
 .value-old {
-    color: #8a1c1c;
-    background-color: #fdecea;
-    padding: 1px 6px;
-    border-radius: 4px;
+    color: var(--color-rose-700);
+    background-color: var(--color-rose-50);
+    padding: 2px 8px;
+    border-radius: 6px;
     word-break: break-word;
+    font-weight: 600;
 }
 
 .value-new {
-    color: #1e5b2e;
-    background-color: #e6f4ea;
-    padding: 1px 6px;
-    border-radius: 4px;
+    color: var(--color-emerald-700);
+    background-color: var(--color-emerald-50);
+    padding: 2px 8px;
+    border-radius: 6px;
     word-break: break-word;
+    font-weight: 600;
 }
 
-/* The audit table carries long labels and IPs, so let cells wrap rather
-   than forcing a horizontal scroll that hides the timestamp. */
 .data-table td,
 .data-table th {
     vertical-align: top;
@@ -672,6 +739,7 @@
     word-break: break-all;
 }
 
+<<<<<<< HEAD
 
 /* --- request tabs & badges ------------------------------------------- */
 .request-tabs {
@@ -758,4 +826,22 @@
     border-radius: 10px;
     margin-left: 4px;
     vertical-align: middle;
+=======
+/* ==========================================================================
+   RESPONSIVE
+   ========================================================================== */
+
+@media (max-width: 640px) {
+    .portal-brand-link span {
+        display: none;
+    }
+
+    .data-table {
+        font-size: 13px;
+    }
+
+    .search-bar .form-group {
+        min-width: 100%;
+    }
+>>>>>>> 087d4bc53ed0c31f18dbd7f0e31c7ef03da01ab5
 }

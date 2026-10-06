@@ -9,6 +9,13 @@
 
     <title>Sign in - {{ config['APP_NAME'] }}</title>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&display=swap"
+        rel="stylesheet"
+    >
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='portal.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='password_toggle.css') }}">
@@ -16,16 +23,22 @@
 
 <body class="portal-body">
 
+    <header class="login-header">
+        <a href="{{ url_for('pages.home') }}" class="back-btn" id="backToPageBtn">
+            &larr; BACK TO PAGE
+        </a>
+    </header>
+
     <main class="portal-main">
 
         <div class="portal-brand">
             <img src="{{ url_for('static', filename='logo.png') }}" alt="Archdiocese of Lipa">
-            <h1>LOGIN PORTAL</h1>
-            <p class="portal-brand-sub">{{ config['ORGANISATION'] }}</p>
+            <h1>ARCHDIOCESE OF LIPA</h1>
+            <p class="portal-brand-sub">MODERNIZED PIMS &bull; {{ config['ORGANISATION'] }}</p>
         </div>
 
 
-        <div class="portal-card">
+        <div class="portal-card narrow">
 
             <h2>SECURE AUTHENTICATION</h2>
             <div class="portal-card-line"></div>
@@ -69,6 +82,10 @@
                 </div>
 
                 <button type="submit" class="submit-login-btn">LOGIN</button>
+
+                <div class="login-back-container">
+                    <a href="{{ url_for('pages.home') }}" class="back-home-link">&larr; Return to Main Site</a>
+                </div>
 
             </form>
 

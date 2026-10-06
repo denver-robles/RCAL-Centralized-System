@@ -1,23 +1,97 @@
+/* ==========================================================================
+   MODERNIZED PIMS — ROMAN CATHOLIC ARCHDIOCESE OF LIPA
+   Parish Information Management System (Figma Edition)
+   Typography: DM Sans & Newsreader
+   Palette: Slate-950, Slate-50, Amber-400, Amber-50, Emerald, Blue
+   ========================================================================== */
+
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&display=swap");
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
+:root {
+    --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-display: 'Newsreader', Georgia, 'Times New Roman', serif;
+
+    /* Theme colors matching Figma PIMS */
+    --color-slate-950: #020617;
+    --color-slate-900: #0F172A;
+    --color-slate-850: #131E33;
+    --color-slate-800: #1E293B;
+    --color-slate-700: #334155;
+    --color-slate-600: #475569;
+    --color-slate-500: #64748B;
+    --color-slate-400: #94A3B8;
+    --color-slate-300: #CBD5E1;
+    --color-slate-200: #E2E8F0;
+    --color-slate-100: #F1F5F9;
+    --color-slate-50: #F8FAFC;
+    --color-white: #FFFFFF;
+
+    /* Amber gold brand accents */
+    --color-amber-500: #F59E0B;
+    --color-amber-400: #FBBF24;
+    --color-amber-300: #FCD34D;
+    --color-amber-200: #FDE68A;
+    --color-amber-100: #FEF3C7;
+    --color-amber-50: #FFFBEB;
+    --color-amber-700: #B45309;
+    --color-amber-800: #92400E;
+    --color-amber-900: #78350F;
+
+    /* Semantic accents */
+    --color-emerald-500: #10B981;
+    --color-emerald-50: #ECFDF5;
+    --color-emerald-700: #047857;
+    --color-blue-500: #3B82F6;
+    --color-blue-50: #EFF6FF;
+    --color-blue-700: #1D4ED8;
+    --color-rose-500: #F43F5E;
+    --color-rose-50: #FFF1F2;
+    --color-rose-700: #BE123C;
+
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+    --shadow-amber: 0 10px 25px -5px rgba(245, 158, 11, 0.35);
+
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --radius-full: 9999px;
+
+    --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Figtree', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    background-color: #F7F0DF;
-    color: #000;
-    min-height: 100vh;
-    line-height: 1.5;
+    margin: 0;
+    min-width: 320px;
+    background-color: var(--color-white);
+    font-family: var(--font-sans);
+    color: var(--color-slate-950);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 html {
     scroll-behavior: smooth;
 }
 
+::selection {
+    background-color: var(--color-amber-200);
+    color: var(--color-slate-950);
+}
 
-/* VIEW */
+/* ==========================================================================
+   VIEW CONTAINERS
+   ========================================================================== */
 
 .view-container {
     display: none;
@@ -29,340 +103,728 @@ html {
     display: block;
 }
 
-
-/* HEADER */
+/* ==========================================================================
+   SITE HEADER & NAVIGATION
+   ========================================================================== */
 
 .site-header {
-    height: 105px;
-    background-color: white;
-    border-bottom: 5px solid #FFC800;
+    height: 80px;
+    background-color: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 4px solid var(--color-amber-400);
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 4%;
+    padding: 0 5%;
     position: sticky;
     top: 0;
     z-index: 100;
+    transition: var(--transition);
 }
 
 .brand {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 14px;
     text-decoration: none;
-    color: black;
+    color: var(--color-slate-950);
 }
 
 .brand img {
-    width: 80px;
-    height: 80px;
+    width: 48px;
+    height: 48px;
     object-fit: contain;
+    border-radius: var(--radius-full);
+    border: 2px solid var(--color-amber-400);
+    background-color: var(--color-slate-950);
+    padding: 3px;
+    box-shadow: 0 4px 10px rgba(245, 158, 11, 0.15);
+    transition: var(--transition);
+}
+
+.brand:hover img {
+    transform: scale(1.04);
 }
 
 .brand-name {
-    font-family: -apple-system, BlinkMacSystemFont, 'Figtree', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    font-size: 30px;
-    line-height: 1.1;
+    font-family: var(--font-sans);
+    font-size: 17px;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    color: var(--color-slate-950);
+}
+
+.brand-sub {
+    display: block;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    color: var(--color-amber-700);
+    margin-top: 2px;
 }
 
 nav {
     display: flex;
     align-items: center;
-    gap: 30px;
+    gap: 28px;
 }
 
 nav a {
-    color: black;
+    color: var(--color-slate-700);
     text-decoration: none;
-    font-weight: bold;
-    font-size: 18px;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
 }
 
 nav a:hover {
-    opacity: 0.7;
+    color: var(--color-amber-700);
+    background-color: var(--color-amber-50);
+}
+
+nav a[href*="login"] {
+    background-color: var(--color-slate-950);
+    color: var(--color-white) !important;
+    padding: 10px 22px;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    font-weight: 700;
+    font-size: 14px;
+}
+
+nav a[href*="login"]:hover {
+    background-color: var(--color-amber-500);
+    color: var(--color-slate-950) !important;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-amber);
 }
 
 .menu-toggle {
     display: none;
-    background: none;
-    border: none;
-    font-size: 28px;
+    background: transparent;
+    border: 1px solid var(--color-slate-200);
+    font-size: 22px;
+    color: var(--color-slate-800);
     cursor: pointer;
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
 }
 
-
-/* HERO */
+/* ==========================================================================
+   HERO SECTION
+   ========================================================================== */
 
 .hero {
     display: grid;
-    grid-template-columns: 48% 52%;
+    grid-template-columns: minmax(0, 1.35fr) minmax(20rem, 0.65fr);
     align-items: center;
-    gap: 20px;
-    padding: 35px 4% 50px;
+    gap: 48px;
+    padding: 90px 6% 105px;
+    position: relative;
+    overflow: hidden;
     background:
         linear-gradient(
-            rgba(5, 8, 38, 0.45),
-            rgba(5, 8, 38, 0.55)
+            to right,
+            rgba(2, 6, 23, 0.97) 0%,
+            rgba(2, 6, 23, 0.88) 50%,
+            rgba(2, 6, 23, 0.55) 100%
         ),
         url('church.png') center / cover no-repeat;
 }
 
+.hero::after {
+    content: '';
+    position: absolute;
+    top: -80px;
+    right: -80px;
+    width: 380px;
+    height: 380px;
+    border-radius: 50%;
+    border: 1px solid rgba(252, 211, 77, 0.2);
+    pointer-events: none;
+}
+
 .hero-copy {
-    padding-right: 15px;
+    z-index: 2;
+}
+
+.hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    text-transform: uppercase;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    color: var(--color-amber-300);
+    margin-bottom: 24px;
+}
+
+.hero-tag::before {
+    content: '';
+    display: inline-block;
+    width: 44px;
+    height: 2px;
+    background-color: var(--color-amber-300);
 }
 
 .hero h1 {
-    font-family: -apple-system, BlinkMacSystemFont, 'Figtree', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    font-size: 42px;
-    line-height: 1.15;
-    letter-spacing: -0.01em;
-    color: white;
-    margin-bottom: 12px;
+    font-family: var(--font-display);
+    font-size: 54px;
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    color: var(--color-white);
+    margin-bottom: 22px;
+    text-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
 .hero .divider {
-    width: 100%;
+    width: 80px;
     height: 3px;
-    background-color: #FFC800;
-    margin-bottom: 16px;
+    background-color: var(--color-amber-400);
+    border-radius: 2px;
+    margin-bottom: 24px;
 }
 
 .hero-copy p {
-    font-size: 16px;
-    font-weight: 600;
-    line-height: 1.5;
-    color: rgba(255, 255, 255, 0.9);
-    margin-bottom: 24px;
-    max-width: 540px;
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 1.7;
+    color: var(--color-slate-200);
+    margin-bottom: 36px;
+    max-width: 620px;
+}
+
+.hero-actions {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    align-items: center;
 }
 
 .portal-btn {
-    background-color: #FFC800;
-    color: black;
+    background-color: var(--color-amber-400);
+    color: var(--color-slate-950);
     border: none;
-    border-radius: 30px;
-    padding: 12px 40px;
-    font-size: 24px;
-    font-weight: bold;
+    border-radius: var(--radius-md);
+    padding: 16px 36px;
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
     cursor: pointer;
+    box-shadow: var(--shadow-amber);
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .portal-btn:hover {
-    opacity: 0.8;
+    background-color: var(--color-amber-300);
+    transform: translateY(-2px);
+    box-shadow: 0 14px 28px -4px rgba(245, 158, 11, 0.45);
 }
 
-/* SECTIONS */
+.portal-btn:active {
+    transform: translateY(0);
+}
+
+/* Hero Floating Stepper Card (Figma style) */
+.hero-preview-card {
+    position: relative;
+    border-radius: var(--radius-xl);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    padding: 28px;
+    color: var(--color-white);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    z-index: 2;
+}
+
+.hero-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+}
+
+.hero-card-badge {
+    background-color: rgba(252, 211, 77, 0.15);
+    color: var(--color-amber-300);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: var(--radius-full);
+}
+
+.hero-stepper {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-bottom: 24px;
+}
+
+.stepper-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 14px;
+}
+
+.step-circle {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.step-completed {
+    background-color: var(--color-amber-400);
+    color: var(--color-slate-950);
+}
+
+.step-current {
+    border: 1px solid var(--color-amber-300);
+    background-color: rgba(252, 211, 77, 0.1);
+    color: var(--color-amber-300);
+}
+
+.step-next {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--color-slate-400);
+}
+
+.hero-trust-bar {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 32px;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    padding-top: 26px;
+    margin-top: 36px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-slate-200);
+    z-index: 2;
+}
+
+.trust-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.trust-item svg {
+    color: var(--color-amber-300);
+}
+
+/* ==========================================================================
+   ABOUT US SECTION (FIGMA bg-amber-50)
+   ========================================================================== */
 
 .section {
-    padding: 45px 4% 55px;
+    padding: 95px 6% 105px;
+    max-width: 1280px;
+    margin: 0 auto;
+}
+
+.section.about {
+    background-color: var(--color-amber-50);
+    max-width: 100%;
+    padding: 95px 6% 105px;
+    position: relative;
+}
+
+.section-tag {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-amber-700);
+    text-align: center;
+    margin-bottom: 8px;
 }
 
 .section-heading {
-    font-family: -apple-system, BlinkMacSystemFont, 'Figtree', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    font-size: 48px;
-    letter-spacing: -0.01em;
+    font-family: var(--font-display);
+    font-size: 44px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--color-slate-950);
     text-align: center;
-    margin-bottom: 6px;
+    margin-bottom: 12px;
 }
 
 .section-line {
-    width: 380px;
-    max-width: 80%;
+    width: 60px;
     height: 3px;
-    background-color: black;
-    margin: 0 auto 35px;
+    background-color: var(--color-amber-400);
+    border-radius: 2px;
+    margin: 0 auto 52px;
 }
 
-
-/* ABOUT */
+.about-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 50px;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+}
 
 .about-card-container {
-    max-width: 900px;
-    margin: auto;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 .about-card {
-    background-color: white;
-    border-radius: 20px;
-    padding: 45px 50px;
-    text-align: center;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    background: var(--color-white);
+    border-radius: var(--radius-xl);
+    padding: 44px;
+    box-shadow: 0 20px 40px -10px rgba(120, 53, 15, 0.08);
+    border: 1px solid var(--color-amber-200);
+    position: relative;
+    overflow: hidden;
+}
+
+.about-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, var(--color-amber-300) 0%, var(--color-amber-500) 50%, var(--color-amber-300) 100%);
 }
 
 .about-card-header {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 12px;
-    margin-bottom: 25px;
+    gap: 16px;
+    margin-bottom: 20px;
 }
 
 .church-icon {
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
+    color: var(--color-amber-700);
 }
 
 .about-card-header h3 {
-    font-family: -apple-system, BlinkMacSystemFont, 'Figtree', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    font-size: 26px;
+    font-family: var(--font-sans);
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    color: var(--color-slate-950);
 }
 
 .about-card-body {
-    font-size: 16px;
-    font-weight: bold;
-    line-height: 1.6;
-    max-width: 780px;
-    margin: auto;
+    font-size: 16.5px;
+    font-weight: 400;
+    line-height: 1.75;
+    color: var(--color-slate-600);
 }
 
+.about-badge-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 28px;
+}
 
-/* SERVICES */
+.about-mini-badge {
+    background-color: var(--color-amber-50);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    border: 1px solid var(--color-amber-100);
+}
+
+.about-mini-badge.dark {
+    background-color: var(--color-slate-950);
+    color: var(--color-white);
+    border-color: var(--color-slate-950);
+}
+
+.about-mini-badge .stat-num {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--color-slate-950);
+}
+
+.about-mini-badge.dark .stat-num {
+    color: var(--color-amber-300);
+}
+
+.about-mini-badge .stat-desc {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-slate-500);
+    margin-top: 2px;
+}
+
+/* ==========================================================================
+   PARISH SERVICES SECTION
+   ========================================================================== */
+
+.section.services {
+    background-color: var(--color-white);
+}
 
 .service-cards-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 25px;
-    max-width: 1050px;
+    gap: 30px;
+    max-width: 1200px;
     margin: auto;
 }
 
 .service-item-card {
-    background-color: white;
-    border-radius: 20px;
-    padding: 35px 25px;
-    text-align: center;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    background: var(--color-white);
+    border-radius: var(--radius-xl);
+    padding: 40px 32px;
+    box-shadow: 0 10px 30px -5px rgba(120, 53, 15, 0.06);
+    border: 1px solid var(--color-amber-100);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
 }
 
 .service-item-card:hover {
-    transform: translateY(-3px);
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px -10px rgba(120, 53, 15, 0.12);
+    border-color: var(--color-amber-300);
+}
+
+.service-item-card::before {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 80px;
+    height: 80px;
+    border-bottom-left-radius: 80px;
+    background-color: var(--color-amber-50);
+    transition: var(--transition);
+}
+
+.service-item-card:hover::before {
+    background-color: var(--color-amber-100);
 }
 
 .service-circle-icon {
-    width: 90px;
-    height: 90px;
-    background-color: #1DA1B2;
-    border-radius: 50%;
-    margin: 0 auto 20px;
+    width: 64px;
+    height: 64px;
+    background-color: var(--color-amber-400);
+    color: var(--color-slate-950);
+    border-radius: var(--radius-lg);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
+    margin-bottom: 28px;
+    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.25);
+    position: relative;
+    z-index: 1;
 }
 
 .service-circle-icon svg {
-    width: 44px;
-    height: 44px;
+    width: 28px;
+    height: 28px;
+}
+
+.service-num {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--color-amber-700);
+    margin-bottom: 6px;
+    letter-spacing: 0.05em;
 }
 
 .service-item-card h4 {
-    font-size: 22px;
-    margin-bottom: 10px;
+    font-size: 21px;
+    font-weight: 700;
+    color: var(--color-slate-950);
+    margin-bottom: 12px;
+    letter-spacing: -0.01em;
 }
 
 .service-item-card p {
-    font-size: 14px;
-    color: #444;
+    font-size: 15px;
+    color: var(--color-slate-500);
+    line-height: 1.65;
 }
 
+/* ==========================================================================
+   ANALYTICS SECTION (FIGMA bg-slate-950)
+   ========================================================================== */
 
-/* ANALYTICS */
+.section.analytics {
+    background-color: var(--color-slate-950);
+    color: var(--color-white);
+    max-width: 100%;
+    padding: 100px 6% 115px;
+    position: relative;
+    overflow: hidden;
+}
+
+.section.analytics::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -120px;
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(251, 191, 36, 0.12) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.section.analytics .section-tag {
+    color: var(--color-amber-300);
+}
+
+.section.analytics .section-heading {
+    color: var(--color-white);
+}
+
+.section.analytics .section-line {
+    background-color: var(--color-amber-400);
+}
 
 .analytics-container {
-    max-width: 760px;
+    max-width: 1200px;
     margin: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    align-items: center;
 }
 
 .analytics-row {
-    display: flex;
-    gap: 25px;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
     width: 100%;
+    margin-bottom: 20px;
 }
 
 .stat-pill {
-    background-color: white;
-    border-radius: 35px;
-    padding: 10px 25px 10px 14px;
+    background-color: var(--color-slate-900);
+    border-radius: var(--radius-xl);
+    padding: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     display: flex;
     align-items: center;
-    gap: 15px;
-    width: 320px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    gap: 22px;
+    transition: var(--transition);
+}
+
+.stat-pill:hover {
+    background-color: var(--color-slate-800);
+    transform: translateY(-2px);
+    border-color: rgba(251, 191, 36, 0.3);
 }
 
 .pill-icon {
-    width: 54px;
-    height: 54px;
-    border-radius: 50%;
+    width: 52px;
+    height: 52px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
-}
-
-.green-icon {
-    background-color: #2E7D32;
-}
-
-.red-icon {
-    background-color: #D32F2F;
-}
-
-.slate-icon {
-    background-color: #546E7A;
+    background-color: rgba(252, 211, 77, 0.1);
+    border: 1px solid rgba(252, 211, 77, 0.2);
+    color: var(--color-amber-300);
 }
 
 .pill-text {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    flex-grow: 1;
-    text-align: center;
 }
 
 .pill-label {
-    font-weight: bold;
-    font-size: 16px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-slate-400);
+    margin-bottom: 4px;
+    letter-spacing: 0.02em;
 }
 
 .pill-value {
-    font-size: 30px;
-    font-weight: bold;
+    font-size: 38px;
+    font-weight: 800;
+    color: var(--color-amber-300);
+    line-height: 1;
+    letter-spacing: -0.02em;
 }
 
+.analytics-footnote {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-slate-400);
+    margin-top: 32px;
+}
 
-/* LOGIN */
+/* ==========================================================================
+   LOGIN SECTION & CARD (FIGMA bg-amber-50)
+   ========================================================================== */
 
-.login-section {
-    padding-bottom: 65px;
+.section.login-section {
+    background-color: var(--color-amber-50);
+    max-width: 100%;
+    padding: 100px 6% 115px;
+    position: relative;
 }
 
 .login-card {
-    background-color: white;
-    border-radius: 25px;
-    width: 640px;
-    max-width: 94%;
-    padding: 45px 50px;
+    background: var(--color-white);
+    border-radius: var(--radius-xl);
+    width: 540px;
+    max-width: 95%;
+    padding: 44px 48px;
     margin: auto;
     text-align: center;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 25px 50px -12px rgba(120, 53, 15, 0.15);
+    border: 1px solid var(--color-amber-200);
+    position: relative;
+    overflow: hidden;
+}
+
+.login-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, var(--color-amber-300) 0%, var(--color-amber-500) 50%, var(--color-amber-300) 100%);
 }
 
 .login-card h2 {
-    font-family: -apple-system, BlinkMacSystemFont, 'Figtree', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    font-size: 30px;
-    letter-spacing: -0.01em;
+    font-family: var(--font-sans);
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    color: var(--color-slate-950);
     margin-bottom: 6px;
 }
 
 .login-card-line {
-    width: 85%;
-    height: 2px;
-    background-color: black;
-    margin: 0 auto 30px;
+    width: 48px;
+    height: 3px;
+    background-color: var(--color-amber-400);
+    margin: 12px auto 30px;
+    border-radius: 2px;
 }
 
 .form-group {
@@ -372,205 +834,268 @@ nav a:hover {
 
 .form-group label {
     display: block;
-    font-family: -apple-system, BlinkMacSystemFont, 'Figtree', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    font-size: 18px;
-    font-weight: 600;
-    letter-spacing: 0.03em;
-    margin-bottom: 6px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-slate-700);
+    margin-bottom: 8px;
 }
 
 .pill-input {
     width: 100%;
-    background-color: #DFDFDF;
-    border: none;
-    border-radius: 30px;
-    padding: 15px 25px;
-    font-size: 16px;
+    background-color: var(--color-slate-50);
+    border: 1.5px solid var(--color-slate-200);
+    border-radius: var(--radius-md);
+    padding: 13px 18px;
+    font-size: 15px;
+    font-family: inherit;
+    color: var(--color-slate-950);
     outline: none;
+    transition: var(--transition);
 }
 
 .pill-input:focus {
-    background-color: #D2D2D2;
+    background-color: var(--color-white);
+    border-color: var(--color-amber-500);
+    box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.25);
 }
 
 .form-options {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 14px;
-    margin: 15px 5px 30px;
+    font-size: 13.5px;
+    margin: 16px 2px 26px;
 }
 
 .remember-me {
     display: flex;
     align-items: center;
     gap: 8px;
+    color: var(--color-slate-600);
+    font-weight: 500;
 }
 
-.forgot-link {
-    color: black;
-    font-weight: bold;
-}
-
-.submit-login-btn {
-    background-color: #FFC800;
-    border: none;
-    border-radius: 30px;
-    padding: 10px 50px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Figtree', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: 0.03em;
+.remember-me input[type="checkbox"] {
+    accent-color: var(--color-amber-500);
+    width: 16px;
+    height: 16px;
     cursor: pointer;
 }
 
+.submit-login-btn {
+    width: 100%;
+    background-color: var(--color-amber-400);
+    color: var(--color-slate-950);
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 14px 28px;
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    box-shadow: var(--shadow-amber);
+    transition: var(--transition);
+    display: inline-block;
+    text-align: center;
+}
+
 .submit-login-btn:hover {
-    opacity: 0.8;
+    background-color: var(--color-amber-300);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px -4px rgba(245, 158, 11, 0.4);
+}
+
+.submit-login-btn:active {
+    transform: translateY(0);
 }
 
 .login-status-msg {
     margin-top: 18px;
-    font-weight: bold;
+    font-weight: 700;
+    font-size: 14px;
 }
 
-
-/* FOOTER */
+/* ==========================================================================
+   FOOTER (FIGMA border-t-4 border-amber-400 bg-slate-950)
+   ========================================================================== */
 
 .site-footer {
-    background-color: #050826;
-    color: white;
-    margin-top: 40px;
-}
-
-.footer-top-stripe {
-    height: 8px;
-    background-color: #C02626;
+    background-color: var(--color-slate-950);
+    color: var(--color-slate-300);
+    border-top: 4px solid var(--color-amber-400);
+    padding: 70px 5% 40px;
 }
 
 .footer-content {
     display: grid;
-    grid-template-columns: 1.2fr 1fr 1.2fr;
-    gap: 35px;
-    max-width: 1150px;
+    grid-template-columns: 1.4fr 1fr 1.4fr;
+    gap: 48px;
+    max-width: 1200px;
     margin: auto;
-    padding: 35px 4% 45px;
 }
 
 .footer-col h4 {
-    color: #FFC800;
-    font-size: 18px;
-    margin-bottom: 12px;
+    font-family: var(--font-sans);
+    color: var(--color-amber-300);
+    font-size: 13px;
+    font-weight: 800;
+    margin-bottom: 18px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
 }
 
 .footer-col p {
-    font-size: 13px;
-    line-height: 1.5;
+    font-size: 14.5px;
+    line-height: 1.7;
+    color: var(--color-slate-400);
 }
 
-.links-col ul {
-    list-style: none;
-}
-
-.links-col li {
-    margin-bottom: 10px;
-}
-
-.links-col a {
-    color: white;
+.footer-col a {
+    color: var(--color-slate-300);
     text-decoration: none;
-    font-size: 14px;
+    font-size: 14.5px;
+    font-weight: 600;
+    display: inline-block;
+    transition: var(--transition);
 }
 
-.links-col a:hover {
-    opacity: 0.7;
+.footer-col a:hover {
+    color: var(--color-amber-300);
 }
 
-.contact-item {
-    display: flex;
-    gap: 10px;
-    font-size: 13px;
-    margin-bottom: 12px;
-}
-
-
-/* LOGIN PORTAL */
+/* ==========================================================================
+   LOGIN VIEW / MODAL (script.js loginView)
+   ========================================================================== */
 
 .login-header {
     display: flex;
     align-items: center;
-    padding: 25px 4%;
+    padding: 16px 5%;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--color-slate-200);
 }
 
 .back-btn {
-    background: none;
-    border: none;
-    font-family: -apple-system, BlinkMacSystemFont, 'Figtree', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    font-size: 15px;
+    background: var(--color-slate-100);
+    border: 1px solid var(--color-slate-200);
+    border-radius: var(--radius-md);
+    padding: 9px 18px;
+    color: var(--color-slate-800);
+    font-family: var(--font-sans);
+    font-size: 13.5px;
     font-weight: 700;
-    letter-spacing: 0.08em;
     cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: var(--transition);
 }
 
 .back-btn:hover {
-    opacity: 0.7;
+    background: var(--color-slate-950);
+    color: var(--color-white);
+    border-color: var(--color-slate-950);
+}
+
+.login-back-container {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.back-home-link {
+    color: var(--color-slate-600);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+}
+
+.back-home-link:hover {
+    color: var(--color-amber-700);
+    background-color: var(--color-amber-50);
 }
 
 .login-brand {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 14px;
     margin: auto;
 }
 
 .login-logo {
-    width: 65px;
-    height: 65px;
+    width: 50px;
+    height: 50px;
     object-fit: contain;
+    border-radius: var(--radius-full);
+    border: 2px solid var(--color-amber-400);
+    background-color: var(--color-slate-950);
+    padding: 3px;
 }
 
 .login-brand h1 {
-    font-family: -apple-system, BlinkMacSystemFont, 'Figtree', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    font-size: 30px;
+    font-family: var(--font-sans);
+    font-size: 22px;
+    font-weight: 800;
     letter-spacing: -0.01em;
+    color: var(--color-slate-950);
 }
 
 .login-main {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: calc(100vh - 120px);
-    padding: 30px 20px 60px;
+    min-height: calc(100vh - 100px);
+    background-color: var(--color-amber-50);
+    padding: 40px 20px 70px;
 }
 
+/* ==========================================================================
+   RESPONSIVE DESIGN BREAKPOINTS
+   ========================================================================== */
 
-/* MOBILE */
-
-@media (max-width: 900px) {
-
+@media (max-width: 980px) {
     .hero {
         grid-template-columns: 1fr;
-        text-align: center;
+        padding: 60px 6% 75px;
     }
 
-    .hero-copy {
-        padding-right: 0;
+    .hero-preview-card {
+        display: none;
     }
 
-    .hero-copy p {
-        margin: 0 auto 24px;
+    .about-grid {
+        grid-template-columns: 1fr;
     }
 
     .service-cards-grid {
+        grid-template-columns: 1fr;
+        max-width: 480px;
+    }
+
+    .analytics-row {
         grid-template-columns: 1fr;
     }
 
     .footer-content {
         grid-template-columns: 1fr;
+        gap: 32px;
     }
 }
 
-
-@media (max-width: 650px) {
+@media (max-width: 720px) {
+    .site-header {
+        height: 72px;
+    }
 
     .menu-toggle {
         display: block;
@@ -578,52 +1103,32 @@ nav a:hover {
 
     nav {
         position: absolute;
-        top: 100px;
+        top: 72px;
         left: 0;
         right: 0;
-        background-color: white;
+        background-color: var(--color-white);
+        box-shadow: var(--shadow-lg);
         flex-direction: column;
         padding: 20px;
+        gap: 12px;
         display: none;
+        border-bottom: 3px solid var(--color-amber-400);
     }
 
     nav.open {
         display: flex;
     }
 
-    .analytics-row {
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .stat-pill {
-        width: 100%;
-        max-width: 320px;
-    }
-
-    .brand-name {
-        font-size: 22px;
-    }
-
-    .brand img {
-        width: 60px;
-        height: 60px;
-    }
-
     .hero h1 {
-        font-size: 32px;
+        font-size: 36px;
     }
 
     .section-heading {
-        font-size: 40px;
+        font-size: 32px;
     }
 
-    .about-card {
-        padding: 30px 20px;
-    }
-
+    .about-card,
     .login-card {
-        padding: 30px 20px;
+        padding: 32px 24px;
     }
-
 }
