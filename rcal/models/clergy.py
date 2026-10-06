@@ -32,6 +32,8 @@ class Clergy(NameMixin, db.Model, TimestampMixin):
         "SacramentalRecord", back_populates="performed_by_clergy"
     )
     user_accounts = db.relationship("User", back_populates="clergy_record")
+    #: Parish events this cleric is scheduled to preside at (FR-2.2).
+    presided_events = db.relationship("ParishEvent", back_populates="presiding_clergy")
 
     @property
     def titled_name(self) -> str:

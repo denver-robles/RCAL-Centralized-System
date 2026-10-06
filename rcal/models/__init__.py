@@ -10,6 +10,8 @@ from .enums import (
     AuditAction,
     ClergyTitle,
     DocumentRequestStatus,
+    EventStatus,
+    EventType,
     LabelledEnum,
     LegitimacyStatus,
     MassIntentionStatus,
@@ -27,6 +29,7 @@ from .request import CertificateRequest
 from .mass import MassIntention
 from .audit import AccessLog, AuditLog
 from .document_request import DocumentRequest
+from .event import ParishEvent, Venue
 
 __all__ = [
     # enums
@@ -38,6 +41,8 @@ __all__ = [
     "AnnotationType",
     "AuditAction",
     "DocumentRequestStatus",
+    "EventType",
+    "EventStatus",
     "RequestStatus",
     "MassIntentionStatus",
     "ClergyTitle",
@@ -56,4 +61,6 @@ __all__ = [
     "AccessLog",
     "AuditLog",
     "DocumentRequest",
+    "Venue",
+    "ParishEvent",
 ]

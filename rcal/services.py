@@ -13,7 +13,7 @@ turns the signed-in account into the filter that every listing query uses, so
 the scoping rule is stated once rather than repeated per view.
 """
 
-from datetime import date
+from datetime import date, timedelta
 
 from sqlalchemy import Select, func, or_, select
 from sqlalchemy.orm import aliased
@@ -28,12 +28,22 @@ from .models import (
     ClergyAssignment,
     MassIntention,
     Parish,
+    ParishEvent,
     Person,
     SacramentalRecord,
     User,
+    Venue,
     Vicariate,
 )
-from .models.enums import AuditAction, MassIntentionStatus, RequestStatus, SacramentType
+from .models.base import utcnow
+from .models.enums import (
+    AuditAction,
+    EventStatus,
+    EventType,
+    MassIntentionStatus,
+    RequestStatus,
+    SacramentType,
+)
 
 
 # --- parish scoping -------------------------------------------------------
@@ -405,6 +415,170 @@ def annotation_count(record: SacramentalRecord) -> int:
     return db.session.scalar(
         select(func.count(Annotation.id)).where(Annotation.record_id == record.id)
     ) or 0
+
+
+# --- scheduling and conflict detection (FR-2.1–2.3) ----------------------
+
+def event_conflicts(
+    starts_at,
+    ends_at,
+    *,
+    parish_id: int,
+    venue_id: int | None = None,
+    clergy_id: int | None = None,
+    exclude_event_id: int | None = None,
+) -> list:
+    """Events that would clash with a proposed booking (FR-2.2).
+
+    Returns the existing events that overlap the proposed interval, either
+    because they use the same venue or because they need the same cleric.
+
+    The overlap test is the standard half-open comparison
+    ``existing.start < new.end AND existing.end > new.start``. Note the
+    strict inequalities: an event ending at 11:00 and another starting at
+    11:00 do *not* clash, which is the behaviour a parish expects — back
+    to back ceremonies in the same church are ordinary.
+
+    Cancelled events are excluded. A cancelled booking does not hold the
+    venue, and treating it as though it did would slowly fill the
+    schedule with phantoms.
+
+    ``exclude_event_id`` is for editing: an event must not be reported as
+    clashing with itself.
+    """
+    if not (starts_at and ends_at):
+        return []
+
+    statement = select(ParishEvent).where(
+        ParishEvent.status.in_([EventStatus.SCHEDULED.value, EventStatus.CONFIRMED.value]),
+        ParishEvent.starts_at < ends_at,
+        ParishEvent.ends_at > starts_at,
+        ParishEvent.parish_id == parish_id,
+    )
+
+    # A conflict is either the same room or the same person. With neither
+    # given there is nothing to clash with, so no query is run.
+    clashes = []
+    if venue_id:
+        clashes.append(ParishEvent.venue_id == venue_id)
+    if clergy_id:
+        clashes.append(ParishEvent.presiding_clergy_id == clergy_id)
+    if not clashes:
+        return []
+
+    statement = statement.where(or_(*clashes))
+    if exclude_event_id:
+        statement = statement.where(ParishEvent.id != exclude_event_id)
+
+    return list(
+        db.session.scalars(statement.order_by(ParishEvent.starts_at)).unique()
+    )
+
+
+def describe_conflict(event: ParishEvent, venue_id=None, clergy_id=None) -> str:
+    """A sentence naming why an event clashes.
+
+    Built from what actually overlaps, not from a generic warning, so a
+    clerk can see at a glance whether to move the time, the room or the
+    priest.
+    """
+    reasons = []
+    if venue_id and event.venue_id == venue_id and event.venue:
+        reasons.append(f"{event.venue.name} is already booked")
+    if clergy_id and event.presiding_clergy_id == clergy_id and event.presiding_clergy:
+        reasons.append(f"{event.presiding_clergy.titled_name} is already officiating")
+    if not reasons:  # pragma: no cover - callers only pass actual conflicts
+        reasons.append("This time overlaps another event")
+
+    window = f"{event.starts_at:%d %b %Y %H:%M}-{event.ends_at:%H:%M}"
+    return f"{'; '.join(reasons)} ({window}): {event.title}"
+
+
+def events_query(
+    user: User,
+    *,
+    parish_id: int | None = None,
+    venue_id: int | None = None,
+    clergy_id: int | None = None,
+    event_type=None,
+    status=None,
+    since=None,
+    until=None,
+) -> Select:
+    """Build the schedule query, scoped to the parishes *user* may see."""
+    statement = select(ParishEvent)
+    statement = parish_filter(statement, user, ParishEvent.parish_id)
+
+    if parish_id:
+        statement = statement.where(ParishEvent.parish_id == parish_id)
+    if venue_id:
+        statement = statement.where(ParishEvent.venue_id == venue_id)
+    if clergy_id:
+        statement = statement.where(ParishEvent.presiding_clergy_id == clergy_id)
+    if event_type is not None:
+        statement = statement.where(ParishEvent.event_type == event_type)
+    if status is not None:
+        statement = statement.where(ParishEvent.status == status)
+    if since:
+        statement = statement.where(ParishEvent.starts_at >= since)
+    if until:
+        statement = statement.where(ParishEvent.starts_at < until)
+
+    return statement
+
+
+def upcoming_events(user: User, limit: int = 10):
+    """The next few scheduled events, soonest first."""
+    now = utcnow()
+    statement = events_query(user, since=now).where(
+        ParishEvent.status.in_(
+            [EventStatus.SCHEDULED.value, EventStatus.CONFIRMED.value]
+        )
+    )
+    return db.session.scalars(
+        statement.order_by(ParishEvent.starts_at).limit(limit)
+    ).unique()
+
+
+def activity_log(user: User, *, days: int = 90, limit: int = 100):
+    """Completed and cancelled events, most recent first (FR-2.3).
+
+    This is the searchable record of what actually happened at the parish,
+    as opposed to what was planned.
+    """
+    cutoff = utcnow() - timedelta(days=days)
+    statement = events_query(user, since=cutoff).where(
+        ParishEvent.status.in_([EventStatus.COMPLETED.value, EventStatus.CANCELLED.value])
+    )
+    return db.session.scalars(
+        statement.order_by(ParishEvent.starts_at.desc()).limit(limit)
+    ).unique()
+
+
+def awaiting_register_entry(user: User):
+    """Completed sacraments not yet transcribed into a register.
+
+    The join between the schedule and the books: a wedding that happened
+    and has no marriage record yet is a gap in the canonical record, so it
+    is worth surfacing rather than leaving to be noticed.
+    """
+    statement = events_query(user).where(
+        ParishEvent.status == EventStatus.COMPLETED.value,
+        ParishEvent.record_id.is_(None),
+        ParishEvent.event_type.in_(
+            [kind.value for kind in EventType if kind.is_sacrament]
+        ),
+    )
+    return db.session.scalars(
+        statement.order_by(ParishEvent.starts_at).limit(50)
+    ).unique()
+
+
+def venue_options(user: User) -> list:
+    """Active venues the user may book."""
+    statement = select(Venue).where(Venue.is_active.is_(True))
+    statement = parish_filter(statement, user, Venue.parish_id)
+    return list(db.session.scalars(statement.order_by(Venue.name)).unique())
 
 
 # --- audit trail (FR-1.4) -------------------------------------------------

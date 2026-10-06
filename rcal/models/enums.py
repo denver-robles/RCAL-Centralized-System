@@ -368,6 +368,71 @@ class DocumentRequestStatus(LabelledEnum):
         }
 
 
+class EventType(LabelledEnum):
+    """What kind of parish activity is being scheduled (FR-2.1).
+
+    The specification lists parish events, masses, sacraments and office
+    activities. Sacraments are distinguished from the rest because they
+    are the ones that must appear in the register, so scheduling one and
+    recording it are two steps of the same real-world act.
+    """
+
+    MASS = ("mass", "Mass")
+    BAPTISM = ("baptism", "Baptism")
+    CONFIRMATION = ("confirmation", "Confirmation")
+    WEDDING = ("wedding", "Wedding")
+    FUNERAL = ("funeral", "Funeral / Burial")
+    BLESSING = ("blessing", "Blessing")
+    MEETING = ("meeting", "Meeting")
+    OFFICE_ACTIVITY = ("office_activity", "Office Activity")
+    OTHER = ("other", "Other")
+
+    @property
+    def is_sacrament(self) -> bool:
+        """True when the event should result in a register entry."""
+        return self in {
+            EventType.BAPTISM,
+            EventType.CONFIRMATION,
+            EventType.WEDDING,
+            EventType.FUNERAL,
+        }
+
+    @property
+    def requires_clergy(self) -> bool:
+        """True when a priest or deacon must be present.
+
+        A meeting does not need one; a Mass or a sacrament does. Used to
+        decide whether the absence of clergy on an event is a problem or
+        simply not applicable.
+        """
+        return self in {
+            EventType.MASS,
+            EventType.BAPTISM,
+            EventType.CONFIRMATION,
+            EventType.WEDDING,
+            EventType.FUNERAL,
+            EventType.BLESSING,
+        }
+
+
+class EventStatus(LabelledEnum):
+    """Lifecycle of a scheduled parish activity."""
+
+    SCHEDULED = ("scheduled", "Scheduled")
+    CONFIRMED = ("confirmed", "Confirmed")
+    COMPLETED = ("completed", "Completed")
+    CANCELLED = ("cancelled", "Cancelled")
+
+    @property
+    def is_open(self) -> bool:
+        """True while the event is still going to happen."""
+        return self in {EventStatus.SCHEDULED, EventStatus.CONFIRMED}
+
+    @property
+    def is_closed(self) -> bool:
+        return not self.is_open
+
+
 class MassIntentionStatus(LabelledEnum):
     """Lifecycle of a requested Mass."""
 

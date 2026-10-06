@@ -51,6 +51,14 @@ class Parish(db.Model, TimestampMixin):
     )
     users = db.relationship("User", back_populates="home_parish")
     mass_intentions = db.relationship("MassIntention", back_populates="parish")
+    #: Bookable spaces inside this parish (the church, the hall, a chapel).
+    venues = db.relationship(
+        "Venue", back_populates="parish", cascade="all, delete-orphan"
+    )
+    #: Scheduled masses, sacraments and activities (FR-2.1).
+    events = db.relationship(
+        "ParishEvent", back_populates="parish", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<Parish {self.name}>"
