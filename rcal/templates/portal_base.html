@@ -41,7 +41,7 @@
         <a href="{{ url_for('directory.parishes') }}">Parishes</a>
         <a href="{{ url_for('directory.clergy') }}">Clergy</a>
         <a href="{{ url_for('certificates.index') }}">Certificates</a>
-        <a href="{{ url_for('records.intentions') }}">Intentions</a>
+        <a href="{{ url_for('records.schedules') }}">Schedules</a>
         {% if current_user.role.value in ('admin', 'chancery', 'parish_staff', 'clergy') %}
         <a href="{{ url_for('records.analytics') }}">Analytics</a>
         {% endif %}

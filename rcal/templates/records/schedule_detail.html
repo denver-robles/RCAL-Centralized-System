@@ -1,0 +1,196 @@
+{% extends "portal_base.html" %}
+
+{% block title %}Schedule #{{ event.id }} - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<div class="title-row">
+    <div>
+        <h1 class="portal-title">{{ event.event_type.label }}: {{ event.title }}</h1>
+        <p class="muted">
+            Parish: {{ event.parish.name }} &middot;
+            {% if event.status.value == 'requested' %}
+            <span class="badge badge-pending">Pending Approval</span>
+            {% elif event.status.value in ('scheduled', 'confirmed') %}
+            <span class="badge badge-ok">{{ event.status.label }}</span>
+            {% elif event.status.value == 'completed' %}
+                {% if event.record_id %}
+                <span class="badge badge-ok">Completed &amp; Recorded #{{ event.record_id }}</span>
+                {% else %}
+                <span class="badge badge-pending">Completed &mdash; Awaiting Register Entry</span>
+                {% endif %}
+            {% elif event.status.value == 'cancelled' %}
+            <span class="badge badge-rejected">Cancelled</span>
+            {% else %}
+            <span class="badge badge-pending">{{ event.status.label }}</span>
+            {% endif %}
+        </p>
+    </div>
+    <div>
+        <a href="{{ url_for('records.schedules') }}" class="link-btn">&larr; Back to Schedules</a>
+    </div>
+</div>
+
+{% if conflict_warnings %}
+<div class="immutability-note" style="border-left: 4px solid #ef4444; background: #fef2f2; color: #991b1b; margin-bottom: 1.5rem;">
+    <strong>Scheduling Conflict Warning:</strong>
+    <ul style="margin: 0.5rem 0 0 1rem;">
+        {% for w in conflict_warnings %}
+        <li>{{ w }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<div class="portal-grid">
+
+    <div class="portal-card">
+        <h2>SCHEDULE DETAILS</h2>
+        <div class="portal-card-line"></div>
+
+        <dl class="detail-list">
+            <dt>Sacrament Type</dt>
+            <dd><strong>{{ event.event_type.label }}</strong></dd>
+
+            <dt>Subject / Candidate</dt>
+            <dd>{{ event.title }}</dd>
+
+            <dt>Date &amp; Time</dt>
+            <dd><strong>{{ event.starts_at.strftime('%A, %d %B %Y at %I:%M %p') }}</strong></dd>
+
+            <dt>Duration</dt>
+            <dd>{{ event.duration_minutes }} minutes</dd>
+
+            <dt>Parish</dt>
+            <dd>{{ event.parish.name }} ({{ event.parish.municipality }})</dd>
+
+            <dt>Assigned Venue</dt>
+            <dd>{{ event.venue.name if event.venue else "Not assigned yet" }}</dd>
+
+            <dt>Presiding Clergy</dt>
+            <dd>{{ event.presiding_clergy.titled_name if event.presiding_clergy else "Not assigned yet" }}</dd>
+
+            <dt>Expected Attendees</dt>
+            <dd>{{ event.expected_attendees or "Not specified" }}</dd>
+
+            <dt>Requester Contact</dt>
+            <dd>
+                {{ event.requester_name or "Parish Office" }}
+                {% if event.requester_contact %}
+                ({{ event.requester_contact }})
+                {% endif %}
+            </dd>
+
+            <dt>Details / Requests</dt>
+            <dd>{{ event.description or "None provided" }}</dd>
+
+            {% if event.record_id %}
+            <dt>Linked Register Entry</dt>
+            <dd>
+                <a href="{{ url_for('records.detail', record_id=event.record_id) }}" class="badge badge-ok">
+                    View Record #{{ event.record_id }} &rarr;
+                </a>
+            </dd>
+            {% endif %}
+
+            {% if event.cancellation_reason %}
+            <dt>Cancellation Reason</dt>
+            <dd class="badge-rejected">{{ event.cancellation_reason }}</dd>
+            {% endif %}
+        </dl>
+    </div>
+
+    <div class="portal-card">
+        <h2>STAFF ACTIONS &amp; ASSIGNMENT</h2>
+        <div class="portal-card-line"></div>
+
+        {% if event.status.value in ('requested', 'scheduled', 'confirmed') %}
+        <form method="post" action="{{ url_for('records.approve_schedule', event_id=event.id) }}" style="margin-bottom: 2rem;">
+            {% include "_csrf.html" %}
+
+            <div class="form-group">
+                <label for="venue_id">ASSIGN VENUE:</label>
+                <select name="venue_id" id="venue_id" class="pill-input">
+                    <option value="">Select venue…</option>
+                    {% for v in venues %}
+                    <option value="{{ v.id }}" {{ 'selected' if event.venue_id == v.id }}>
+                        {{ v.name }} (capacity: {{ v.capacity or 'N/A' }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="presiding_clergy_id">ASSIGN OFFICIATING CLERGY:</label>
+                <select name="presiding_clergy_id" id="presiding_clergy_id" class="pill-input">
+                    <option value="">Select priest / deacon…</option>
+                    {% for c in clergy_list %}
+                    <option value="{{ c.id }}" {{ 'selected' if event.presiding_clergy_id == c.id }}>
+                        {{ c.titled_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button type="submit" class="submit-login-btn">
+                {% if event.status.value == 'requested' %}APPROVE &amp; CONFIRM SCHEDULE{% else %}UPDATE ASSIGNMENT{% endif %}
+            </button>
+        </form>
+
+        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 1.5rem 0;">
+
+        {% if event.status.value in ('scheduled', 'confirmed') %}
+        <div style="margin-bottom: 1.5rem; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 1rem; border-radius: 6px;">
+            <h3 style="margin-top: 0; color: #166534; font-size: 1.1rem;">Ceremony Completed?</h3>
+            <p style="color: #15803d; font-size: 0.9rem; margin-bottom: 1rem;">
+                Mark this sacrament as completed and proceed directly to register transcription.
+            </p>
+            <form method="post" action="{{ url_for('records.complete_schedule', event_id=event.id) }}">
+                {% include "_csrf.html" %}
+                <button type="submit" class="submit-login-btn ok"
+                        onclick="return confirm('Mark as completed and proceed to transcribe into canonical register?');">
+                    MARK COMPLETED &amp; TRANSCRIBE TO REGISTER &rarr;
+                </button>
+            </form>
+        </div>
+        {% endif %}
+
+        <div style="margin-top: 1.5rem;">
+            <h3 style="margin-top: 0; font-size: 1rem; color: #991b1b;">Cancel / Reject Schedule</h3>
+            <form method="post" action="{{ url_for('records.cancel_schedule', event_id=event.id) }}"
+                  onsubmit="return confirm('Are you sure you want to cancel this schedule?');">
+                {% include "_csrf.html" %}
+                <div class="form-group">
+                    <input type="text" name="reason" class="pill-input" placeholder="Reason for cancellation..." required>
+                </div>
+                <button type="submit" class="link-btn danger">Cancel this schedule</button>
+            </form>
+        </div>
+
+        {% elif event.status.value == 'completed' %}
+            {% if not event.record_id and event.event_type.is_sacrament %}
+            <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 1.25rem; border-radius: 6px;">
+                <h3 style="margin-top: 0; color: #1e40af;">Needs Register Entry</h3>
+                <p style="color: #1e3a8a; font-size: 0.95rem; margin-bottom: 1rem;">
+                    This sacrament was completed but has not yet been inscribed into the canonical books.
+                </p>
+                <a href="{{ url_for('records.create', from_event_id=event.id) }}" class="submit-login-btn as-link">
+                    TRANSCRIBE INTO REGISTER NOW &rarr;
+                </a>
+            </div>
+            {% else %}
+            <p class="badge-ok" style="display:inline-block; padding: 0.5rem 1rem; border-radius: 4px;">
+                ✓ This sacrament schedule is completed and canonical register entry is recorded.
+            </p>
+            {% endif %}
+        {% elif event.status.value == 'cancelled' %}
+        <p class="badge-rejected" style="display:inline-block; padding: 0.5rem 1rem; border-radius: 4px;">
+            ✕ This schedule was cancelled.
+        </p>
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

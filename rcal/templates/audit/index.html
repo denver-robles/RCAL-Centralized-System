@@ -15,8 +15,7 @@
     </div>
     <a href="{{ url_for('audit.export_csv',
                         action=selected_action, user=selected_user,
-                        mutations='1' if mutations_only else '') }}"
-       class="submit-login-btn as-link">EXPORT CSV</a>
+                        mutations='1' if mutations_only else '') }}" class="submit-login-btn as-link">EXPORT CSV</a>
 </div>
 
 <div class="stat-grid compact">
@@ -46,7 +45,7 @@
         <select id="user" name="user" class="pill-input">
             <option value="">Anyone</option>
             {% for account in accounts %}
-            <option value="{{ account.id }}" {{ 'selected' if selected_user == account.id }}>
+            <option value="{{ account.id }}" {{ 'selected' if selected_user==account.id }}>
                 {{ account.username }}
             </option>
             {% endfor %}
@@ -58,7 +57,7 @@
         <select id="subject" name="subject" class="pill-input">
             <option value="">Any kind</option>
             {% for kind in subject_types %}
-            <option value="{{ kind }}" {{ 'selected' if selected_subject == kind }}>
+            <option value="{{ kind }}" {{ 'selected' if selected_subject==kind }}>
                 {{ kind }}
             </option>
             {% endfor %}
@@ -70,7 +69,7 @@
         <select id="days" name="days" class="pill-input">
             <option value="">All time</option>
             {% for option in [1, 7, 30, 90] %}
-            <option value="{{ option }}" {{ 'selected' if selected_days == option }}>
+            <option value="{{ option }}" {{ 'selected' if selected_days==option }}>
                 Last {{ option }} {{ "day" if option == 1 else "days" }}
             </option>
             {% endfor %}
@@ -145,9 +144,9 @@
     </table>
 
     {{ pagination_nav(pagination, 'audit.index', {
-        'action': selected_action, 'user': selected_user,
-        'subject': selected_subject, 'days': selected_days,
-        'mutations': '1' if mutations_only else ''}) }}
+    'action': selected_action, 'user': selected_user,
+    'subject': selected_subject, 'days': selected_days,
+    'mutations': '1' if mutations_only else ''}) }}
 
 </div>
 

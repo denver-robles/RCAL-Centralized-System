@@ -93,7 +93,8 @@ class ParishEvent(db.Model, TimestampMixin):
         index=True,
     )
 
-    #: Who asked for it, when not the parish office itself.
+    #: Who asked for it: parishioner account when filed through portal
+    requester_user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     requester_name = db.Column(db.String(160))
     requester_contact = db.Column(db.String(255))
     expected_attendees = db.Column(db.Integer)
@@ -108,6 +109,7 @@ class ParishEvent(db.Model, TimestampMixin):
     parish = db.relationship("Parish", back_populates="events")
     venue = db.relationship("Venue", back_populates="events")
     presiding_clergy = db.relationship("Clergy", back_populates="presided_events")
+    requester_user = db.relationship("User", foreign_keys=[requester_user_id])
     record = db.relationship("SacramentalRecord")
 
     @property

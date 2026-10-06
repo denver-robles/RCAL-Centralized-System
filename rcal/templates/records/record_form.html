@@ -16,6 +16,14 @@
         afterwards instead, so the original transcription survives.
     </div>
 
+    {% if from_event %}
+    <div class="immutability-note" style="border-left: 4px solid #2563eb; background: #eff6ff; color: #1e40af; margin-bottom: 1rem;">
+        <strong>Linking to Sacrament Schedule #{{ from_event.id }}</strong>:
+        {{ from_event.title }} ({{ from_event.event_type.label }}, celebrated on {{ from_event.starts_at.strftime('%B %d, %Y') }}).
+        Saving this register entry will link it to the completed schedule.
+    </div>
+    {% endif %}
+
     {% if not parishes %}
     <p class="muted">
         Your account has no parish assigned, so there is no register to
@@ -25,6 +33,9 @@
 
     <form method="post" novalidate>
         {% include "_csrf.html" %}
+        {% if from_event %}
+        <input type="hidden" name="from_event_id" value="{{ from_event.id }}">
+        {% endif %}
 
         <fieldset class="fieldset">
             <legend>The person</legend>

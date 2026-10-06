@@ -1,0 +1,80 @@
+{% extends "portal/portal_base.html" %}
+
+{% block title %}Sacrament Schedules - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<div class="title-row">
+    <div>
+        <h1 class="portal-title">Sacrament Schedule Requests</h1>
+        <p class="muted">
+            {{ pending_count }} pending parish staff review
+            {%- if events | length > pending_count %},
+            {{ events | length - pending_count }} scheduled or completed
+            {%- endif %}.
+        </p>
+    </div>
+    <a href="{{ url_for('portal.new_schedule') }}" class="submit-login-btn as-link">
+        REQUEST A SCHEDULE
+    </a>
+</div>
+
+<div class="portal-card">
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Sacrament</th>
+                <th>Title / Intended For</th>
+                <th>Parish</th>
+                <th>Requested Date &amp; Time</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in events %}
+            <tr>
+                <td><strong>{{ item.event_type.label }}</strong></td>
+                <td>{{ item.title }}</td>
+                <td>{{ item.parish.name }}</td>
+                <td>
+                    {{ item.starts_at.strftime('%d %b %Y, %I:%M %p') }}
+                </td>
+                <td>
+                    {% if item.status.value == 'requested' %}
+                    <span class="badge badge-pending">Pending Approval</span>
+                    {% elif item.status.value in ('scheduled', 'confirmed') %}
+                    <span class="badge badge-ok">{{ item.status.label }}</span>
+                    {% elif item.status.value == 'completed' %}
+                    <span class="badge badge-ok">Completed</span>
+                    {% elif item.status.value == 'cancelled' %}
+                    <span class="badge badge-rejected">Cancelled</span>
+                    {% else %}
+                    <span class="badge badge-pending">{{ item.status.label }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('portal.schedule_detail', event_id=item.id) }}">
+                        View
+                    </a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="muted">
+                    You have not submitted any sacrament schedule requests yet.
+                    <a href="{{ url_for('portal.new_schedule') }}">Request a schedule</a>.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+
+<p class="muted small">
+    Once you submit a request, parish staff will review venue and clergy availability to confirm your appointment.
+</p>
+
+{% endblock %}

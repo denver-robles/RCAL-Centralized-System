@@ -301,10 +301,11 @@ class AuditTrailTest(PhaseOneTestCase):
             data={"annotation_type": "other", "note_text": "x"},
         )
 
+        self.login("admin", "adminpw")
         response = self.client.get("/audit?mutations=1")
         body = response.data
         self.assertIn(b"Margin note added", body)
-        self.assertNotIn(b"Viewed", body)
+        self.assertNotIn(b"badge-ok", body)
 
     def test_trail_exports_as_csv_and_records_the_export(self):
         self.login("admin", "adminpw")
@@ -567,7 +568,9 @@ class ParishionerPortalTest(PhaseOneTestCase):
             "/portal/requests/new",
             data={
                 "sacrament_type": SacramentType.BAPTISM.value,
+                "targeted_parish_id": str(self.parish.id),
                 "name_on_record": "Juan Dela Cruz",
+                "date_of_birth": "1990-01-01",
                 "date_of_sacrament": "1995-02-18",
                 "place_of_sacrament": "St. Sebastian Cathedral",
                 "parents_or_spouse": "Pedro and Maria Dela Cruz",
@@ -598,7 +601,9 @@ class ParishionerPortalTest(PhaseOneTestCase):
             "/portal/requests/new",
             data={
                 "sacrament_type": SacramentType.BAPTISM.value,
+                "targeted_parish_id": str(self.parish.id),
                 "name_on_record": "Juan Dela Cruz",
+                "date_of_birth": "1990-01-01",
                 "consent": "1",
             },
         )
@@ -618,7 +623,9 @@ class ParishionerPortalTest(PhaseOneTestCase):
             "/portal/requests/new",
             data={
                 "sacrament_type": SacramentType.BAPTISM.value,
+                "targeted_parish_id": str(self.parish.id),
                 "name_on_record": "Juan Dela Cruz",
+                "date_of_birth": "1990-01-01",
                 "consent": "1",
             },
         )
@@ -636,7 +643,9 @@ class ParishionerPortalTest(PhaseOneTestCase):
             "/portal/requests/new",
             data={
                 "sacrament_type": SacramentType.MARRIAGE.value,
+                "targeted_parish_id": str(self.parish.id),
                 "name_on_record": "Juan Dela Cruz",
+                "date_of_birth": "1990-01-01",
                 "consent": "1",
             },
         )

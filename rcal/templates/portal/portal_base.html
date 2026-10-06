@@ -38,7 +38,9 @@
     <nav class="portal-nav">
         {% if current_user.is_authenticated %}
         <a href="{{ url_for('portal.dashboard') }}">My requests</a>
-        <a href="{{ url_for('portal.new_request') }}">New request</a>
+        <a href="{{ url_for('portal.schedules') }}">Sacrament schedules</a>
+        <a href="{{ url_for('portal.new_request') }}">Request a document</a>
+        <a href="{{ url_for('portal.new_schedule') }}">Schedule a sacrament</a>
         {% endif %}
     </nav>
 

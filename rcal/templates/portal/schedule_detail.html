@@ -1,0 +1,109 @@
+{% extends "portal/portal_base.html" %}
+
+{% block title %}Schedule Request - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<h1 class="portal-title">{{ event.event_type.label }} Schedule Request</h1>
+<p class="muted">
+    Submitted {{ event.created_at.strftime('%d %B %Y') }}
+    &middot;
+    {% if event.status.value == 'requested' %}
+    <span class="badge badge-pending">Pending Approval</span>
+    {% elif event.status.value in ('scheduled', 'confirmed') %}
+    <span class="badge badge-ok">{{ event.status.label }}</span>
+    {% elif event.status.value == 'completed' %}
+    <span class="badge badge-ok">Completed</span>
+    {% elif event.status.value == 'cancelled' %}
+    <span class="badge badge-rejected">Cancelled</span>
+    {% else %}
+    <span class="badge badge-pending">{{ event.status.label }}</span>
+    {% endif %}
+</p>
+
+<div class="portal-grid">
+
+    <div class="portal-card">
+        <h2>SCHEDULE DETAILS</h2>
+        <div class="portal-card-line"></div>
+
+        <dl class="detail-list">
+            <dt>Sacrament</dt>
+            <dd><strong>{{ event.event_type.label }}</strong></dd>
+
+            <dt>Title / Intended For</dt>
+            <dd>{{ event.title }}</dd>
+
+            <dt>Parish</dt>
+            <dd>{{ event.parish.name }} ({{ event.parish.municipality }})</dd>
+
+            <dt>Date &amp; Time</dt>
+            <dd>
+                <strong>{{ event.starts_at.strftime('%A, %d %B %Y at %I:%M %p') }}</strong>
+            </dd>
+
+            <dt>Venue</dt>
+            <dd>{{ event.venue.name if event.venue else "To be assigned by parish" }}</dd>
+
+            <dt>Presiding Clergy</dt>
+            <dd>{{ event.presiding_clergy.titled_name if event.presiding_clergy else "To be assigned by parish" }}</dd>
+
+            <dt>Expected Attendees</dt>
+            <dd>{{ event.expected_attendees or "Not specified" }}</dd>
+
+            <dt>Contact Person</dt>
+            <dd>{{ event.requester_name or "Not given" }} ({{ event.requester_contact or "No phone" }})</dd>
+
+            <dt>Notes / Details</dt>
+            <dd>{{ event.description or "None provided" }}</dd>
+        </dl>
+    </div>
+
+    <div class="portal-card">
+        <h2>STATUS &amp; ACTIONS</h2>
+        <div class="portal-card-line"></div>
+
+        {% if event.status.value == 'requested' %}
+        <p>
+            Your request is currently awaiting review by the parish staff.
+            They will verify the availability of the church and priest.
+        </p>
+        <form method="post" action="{{ url_for('portal.cancel_schedule', event_id=event.id) }}"
+              onsubmit="return confirm('Are you sure you want to cancel this sacrament schedule request?');">
+            {% include "_csrf.html" %}
+            <button type="submit" class="link-btn danger">Cancel this request</button>
+        </form>
+        {% elif event.status.value in ('scheduled', 'confirmed') %}
+        <p class="badge-ok" style="display:inline-block; padding: 0.5rem 1rem; border-radius: 4px; margin-bottom: 1rem;">
+            ✓ Your schedule request has been approved by the parish office.
+        </p>
+        <p class="muted small">
+            Please be at {{ event.parish.name }} 15-30 minutes before the scheduled time.
+            Bring any necessary documents required by the parish office.
+        </p>
+        {% elif event.status.value == 'completed' %}
+        <p class="badge-ok" style="display:inline-block; padding: 0.5rem 1rem; border-radius: 4px; margin-bottom: 1rem;">
+            ✓ The sacrament has been celebrated and completed.
+        </p>
+        {% if event.record_id %}
+        <p class="muted small">
+            This celebration has been canonically inscribed into the parish sacramental registers.
+        </p>
+        {% endif %}
+        {% elif event.status.value == 'cancelled' %}
+        <p class="badge-rejected" style="display:inline-block; padding: 0.5rem 1rem; border-radius: 4px; margin-bottom: 1rem;">
+            ✕ This request was cancelled.
+        </p>
+        {% if event.cancellation_reason %}
+        <p><strong>Reason:</strong> {{ event.cancellation_reason }}</p>
+        {% endif %}
+        {% endif %}
+
+        <div style="margin-top: 2rem;">
+            <a href="{{ url_for('portal.schedules') }}" class="link-btn">&larr; Back to all schedules</a>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

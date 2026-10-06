@@ -1,0 +1,166 @@
+{% extends "portal_base.html" %}
+{% from "_fields.html" import status_badge, textarea %}
+
+{% block title %}Document request #{{ item.id }} - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<div class="title-row">
+    <div>
+        <h1 class="portal-title">RCAL-DR-{{ '%05d' % item.id }}</h1>
+        <p class="muted">
+            {{ status_badge(item.status) }}
+            &middot; submitted {{ item.created_at.strftime('%d %B %Y') }}
+        </p>
+    </div>
+</div>
+
+<div class="portal-grid">
+
+    <div class="portal-card">
+        <h2>PARISHIONER'S CLAIM</h2>
+        <div class="portal-card-line"></div>
+
+        <dl class="detail-list">
+            <dt>Submitted by</dt>
+            <dd>{{ item.parishioner.display_name or item.parishioner.username }}</dd>
+
+            <dt>Contact</dt>
+            <dd>
+                {{ item.parishioner.email }}
+                {% if item.parishioner.phone %} &middot; {{ item.parishioner.phone }}{% endif %}
+            </dd>
+
+            <dt>Document needed</dt>
+            <dd>{{ item.sacrament_type.label }} certificate</dd>
+
+            <dt>Name on record</dt>
+            <dd>{{ item.name_on_record }}</dd>
+
+            <dt>Date of birth</dt>
+            <dd>
+                {% if item.date_of_birth %}
+                {{ item.date_of_birth.strftime('%d %B %Y') }}
+                {% else %}Not given{% endif %}
+            </dd>
+
+            <dt>Date of sacrament</dt>
+            <dd>
+                {% if item.date_of_sacrament %}
+                {{ item.date_of_sacrament.strftime('%d %B %Y') }}
+                {% else %}Not given{% endif %}
+            </dd>
+
+            <dt>Church</dt>
+            <dd>{{ item.place_of_sacrament or "Not given" }}</dd>
+
+            <dt>Parents or spouse</dt>
+            <dd>{{ item.parents_or_spouse or "Not given" }}</dd>
+
+            <dt>Purpose</dt>
+            <dd>{{ item.purpose or "Not given" }}</dd>
+
+            <dt>Targeted parish</dt>
+            <dd>{{ item.targeted_parish.name if item.targeted_parish else "Not specified" }}</dd>
+
+            <dt>Consent given</dt>
+            <dd>
+                {% if item.consent_given_at %}
+                {{ item.consent_given_at.strftime('%d %B %Y at %H:%M') }} UTC
+                {% else %}Not recorded{% endif %}
+            </dd>
+        </dl>
+    </div>
+
+    <div class="portal-card">
+        <h2>STAFF ACTIONS</h2>
+        <div class="portal-card-line"></div>
+
+        {% if item.status.is_closed %}
+        <p class="muted">
+            This request is {{ item.status.label|lower }} and cannot be changed.
+        </p>
+        {% if item.rejection_reason %}
+        <p class="field-hint">{{ item.rejection_reason }}</p>
+        {% endif %}
+
+        {% elif item.certificate_request %}
+        <p>
+            This request has been matched and a certificate is being processed.
+        </p>
+        <a href="{{ url_for('certificates.detail', request_id=item.certificate_request.id) }}">
+            View certificate request &rarr;
+        </a>
+
+        {% elif can_handle %}
+
+        {% if item.status.value == 'submitted' or item.status.value == 'under_review' %}
+        <form method="post" action="{{ url_for('certificates.match_document_request', request_id=item.id) }}">
+            {% include "_csrf.html" %}
+
+            <div class="form-group">
+                <label for="record_id">REGISTER ENTRY:</label>
+                <select id="record_id" name="record_id" class="pill-input">
+                    <option value="">Choose a matching record…</option>
+                    {% for value, text in records.items() %}
+                    <option value="{{ value }}">{{ text }}</option>
+                    {% endfor %}
+                </select>
+                <span class="field-hint">
+                    Select the register entry that matches this claim.
+                </span>
+            </div>
+
+            <div class="form-group">
+                <label for="internal_note">INTERNAL NOTE:</label>
+                <textarea id="internal_note" name="internal_note" class="pill-input" rows="2"></textarea>
+                <span class="field-hint">
+                    Optional staff note. Not shown to the parishioner.
+                </span>
+            </div>
+
+            <button type="submit" class="submit-login-btn as-button">MATCH &amp; CREATE CERTIFICATE REQUEST</button>
+        </form>
+        {% endif %}
+
+        <details class="details-block">
+            <summary>Cannot fulfil this request</summary>
+
+            <form method="post" action="{{ url_for('certificates.reject_document_request', request_id=item.id) }}">
+                {% include "_csrf.html" %}
+
+                <div class="form-group">
+                    <label for="action">ACTION:</label>
+                    <select id="action" name="action" class="pill-input">
+                        <option value="record_not_found">Record not found in the register</option>
+                        <option value="rejected">Reject this request</option>
+                    </select>
+                    <span class="field-hint">
+                        "Record not found" tells the parishioner to re-check their details.
+                    </span>
+                </div>
+
+                <div class="form-group">
+                    <label for="reason">REASON:</label>
+                    <textarea id="reason" name="reason" class="pill-input" rows="3"></textarea>
+                    <span class="field-hint">
+                        Shown to the parishioner.
+                    </span>
+                </div>
+
+                <button type="submit" class="submit-login-btn muted-btn">CLOSE REQUEST</button>
+            </form>
+        </details>
+
+        {% else %}
+        <p class="muted">
+            Your account does not have permission to process this request.
+        </p>
+        {% endif %}
+    </div>
+
+</div>
+
+<a href="{{ url_for('certificates.document_requests') }}" class="link-btn">Back to parishioner requests</a>
+
+{% endblock %}

@@ -1,5 +1,5 @@
 {% extends "portal_base.html" %}
-{% from "_fields.html" import pagination_nav, status_badge, enum_filter %}
+{% from "_fields.html" import pagination_nav, status_badge %}
 
 {% block title %}Certificate requests - {{ config['APP_NAME'] }}{% endblock %}
 
@@ -29,8 +29,37 @@
     </div>
 </div>
 
+<div class="request-tabs">
+    <a href="{{ url_for('certificates.index', view='all', status=selected_status, open='1' if open_only else '') }}"
+       class="request-tab-item {{ 'active' if view == 'all' else '' }}">
+        All Requests
+        <span class="request-tab-count">{{ stats.total }}</span>
+    </a>
+    <a href="{{ url_for('certificates.index', view='parishioner', status=selected_status, open='1' if open_only else '') }}"
+       class="request-tab-item {{ 'active' if view == 'parishioner' else '' }}">
+        Parishioner Requests
+        <span class="request-tab-count {{ 'has-pending' if stats.doc_open > 0 else '' }}">
+            {{ stats.doc_total }}
+        </span>
+    </a>
+    <a href="{{ url_for('certificates.index', view='internal', status=selected_status, open='1' if open_only else '') }}"
+       class="request-tab-item {{ 'active' if view == 'internal' else '' }}">
+        Internal Queue
+        <span class="request-tab-count">{{ stats.cert_total }}</span>
+    </a>
+</div>
+
 <form method="get" action="{{ url_for('certificates.index') }}" class="search-bar">
-    {{ enum_filter('status', statuses, selected_status) }}
+    <input type="hidden" name="view" value="{{ view }}">
+    <div class="form-group inline-group">
+        <label for="status">STATUS:</label>
+        <select id="status" name="status" class="pill-input">
+            <option value="">All</option>
+            {% for s_val, s_lbl in statuses.items() %}
+            <option value="{{ s_val }}" {{ 'selected' if selected_status == s_val }}>{{ s_lbl }}</option>
+            {% endfor %}
+        </select>
+    </div>
     <label class="remember-me">
         <input type="checkbox" name="open" value="1" {{ 'checked' if open_only }}>
         <span>Only those still open</span>
@@ -55,16 +84,45 @@
             {% for item in pagination.items %}
             <tr>
                 <td class="mono small">
+                    {% if item.is_document_request %}
+                    <a href="{{ url_for('certificates.document_request_detail', request_id=item.id) }}">
+                        RCAL-DR-{{ '%05d' % item.id }}
+                    </a>
+                    <span class="badge badge-portal">Online</span>
+                    {% else %}
                     <a href="{{ url_for('certificates.detail', request_id=item.id) }}">
                         {{ item.certificate_number or "#" ~ item.id }}
                     </a>
+                    {% endif %}
                 </td>
-                <td>{{ item.requester_name }}</td>
+                <td>
+                    {% if item.is_document_request %}
+                    {{ item.parishioner.display_name or item.name_on_record }}
+                    {% else %}
+                    {{ item.requester_name }}
+                    {% endif %}
+                </td>
                 <td class="small">
-                    {{ item.record.sacrament_type.label }} &middot;
-                    {{ item.record.person.full_name }}
+                    {% if item.is_document_request %}
+                        {% if item.matched_record %}
+                        {{ item.matched_record.sacrament_type.label }} &middot;
+                        {{ item.matched_record.person.full_name }}
+                        {% else %}
+                        {{ item.sacrament_type.label }} &middot;
+                        {{ item.name_on_record }}
+                        {% endif %}
+                    {% else %}
+                        {{ item.record.sacrament_type.label }} &middot;
+                        {{ item.record.person.full_name }}
+                    {% endif %}
                 </td>
-                <td class="small">{{ item.record.originating_parish.name }}</td>
+                <td class="small">
+                    {% if item.is_document_request %}
+                        {{ item.targeted_parish.name if item.targeted_parish else (item.place_of_sacrament or "—") }}
+                    {% else %}
+                        {{ item.record.originating_parish.name }}
+                    {% endif %}
+                </td>
                 <td>{{ status_badge(item.status) }}</td>
                 <td class="small">{{ item.created_at.strftime('%d %b %Y') }}</td>
             </tr>
@@ -74,7 +132,7 @@
                     {% if selected_status or open_only %}
                     No request matches that filter.
                     {% else %}
-                    No certificate has been requested yet.
+                    No requests have been received yet.
                     {% endif %}
                 </td>
             </tr>
@@ -83,7 +141,7 @@
     </table>
 
     {{ pagination_nav(pagination, 'certificates.index',
-        {'status': selected_status, 'open': '1' if open_only else ''}) }}
+        {'view': view, 'status': selected_status, 'open': '1' if open_only else ''}) }}
 
 </div>
 

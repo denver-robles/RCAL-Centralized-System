@@ -42,6 +42,7 @@ from .models.enums import (
     EventType,
     MassIntentionStatus,
     RequestStatus,
+    Role,
     SacramentType,
 )
 
@@ -288,8 +289,9 @@ def requests_for(user: User, **kwargs):
 def can_view_request(user: User, item: CertificateRequest) -> bool:
     """Whether *user* may open a certificate request.
 
-    A requester can always track the copy they asked for; staff see the
-    requests arising from their own parish's registers.
+    A requester can always track the copy they asked for; staff only see
+    requests against their own parish's registers, and the chancery/admin
+    sees the whole archdiocese.
     """
     if user.is_archdiocese_wide:
         return True
@@ -389,12 +391,127 @@ def certificate_stats(user: User | None = None) -> dict[str, int]:
     statement = select(CertificateRequest.status, func.count(CertificateRequest.id)).group_by(
         CertificateRequest.status
     )
+    if user is not None and not user.is_archdiocese_wide:
+        statement = statement.join(
+            SacramentalRecord, CertificateRequest.record_id == SacramentalRecord.id
+        ).where(
+            or_(
+                CertificateRequest.requester_user_id == user.id,
+                SacramentalRecord.originating_parish_id == user.home_parish_id,
+            )
+        )
     rows = db.session.execute(statement).all()
-    counts = {status: 0 for status in RequestStatus}
+    counts = {status.value: 0 for status in RequestStatus}
     for status, count in rows:
-        counts[status] = count
-    counts["open"] = sum(counts[status] for status in RequestStatus if status.is_open)
+        counts[status.value] = count
+    counts["open"] = sum(counts[status.value] for status in RequestStatus if status.is_open)
     return counts
+
+
+def combined_request_stats(user: User | None = None) -> dict[str, int]:
+    """How the combined certificate and parishioner request queues are doing."""
+    from .models import DocumentRequest
+    from .models.enums import DocumentRequestStatus
+
+    cert_stmt = requests_query(user) if user else select(CertificateRequest)
+    cert_rows = list(db.session.scalars(cert_stmt).all())
+
+    doc_stmt = document_requests_query(user) if user else select(DocumentRequest)
+    doc_rows = list(db.session.scalars(doc_stmt).all())
+
+    cert_open = sum(1 for c in cert_rows if c.is_open)
+    doc_open = sum(1 for d in doc_rows if d.is_open and d.certificate_request_id is None)
+
+    issued = sum(1 for c in cert_rows if c.status == RequestStatus.ISSUED) + sum(
+        1 for d in doc_rows if d.status == DocumentRequestStatus.COMPLETED
+    )
+    pending = sum(1 for c in cert_rows if c.status == RequestStatus.PENDING) + sum(
+        1 for d in doc_rows if d.status in (DocumentRequestStatus.SUBMITTED, DocumentRequestStatus.UNDER_REVIEW)
+    )
+    rejected = sum(1 for c in cert_rows if c.status in (RequestStatus.REJECTED, RequestStatus.CANCELLED)) + sum(
+        1 for d in doc_rows if d.status in (DocumentRequestStatus.REJECTED, DocumentRequestStatus.RECORD_NOT_FOUND, DocumentRequestStatus.CANCELLED)
+    )
+
+    return {
+        "open": cert_open + doc_open,
+        "issued": issued,
+        "pending": pending,
+        "rejected": rejected,
+        "doc_total": len(doc_rows),
+        "doc_open": sum(1 for d in doc_rows if d.is_open),
+        "cert_total": len(cert_rows),
+        "cert_open": cert_open,
+        "total": len(cert_rows) + len(doc_rows),
+    }
+
+
+def document_requests_query(
+    user: User, status=None,
+) -> Select:
+    """Build the query for parishioner-submitted document requests.
+
+    Staff see requests targeted at their parish (or unrouted ones); the
+    chancery and admin see everything.  This is the staff counterpart of
+    the portal's own ``DocumentRequest`` listing.
+    """
+    from .models import DocumentRequest
+    from .models.enums import DocumentRequestStatus
+
+    statement = select(DocumentRequest)
+
+    if not user.is_archdiocese_wide:
+        # Parish staff see requests aimed at their parish, plus unrouted
+        # ones (targeted_parish_id IS NULL) so nothing falls through the
+        # cracks.
+        statement = statement.where(
+            or_(
+                DocumentRequest.targeted_parish_id == user.home_parish_id,
+                DocumentRequest.targeted_parish_id.is_(None),
+            )
+        )
+
+    if status:
+        statement = statement.where(DocumentRequest.status == status)
+
+    return statement
+
+
+def document_request_stats(user: User | None = None) -> dict[str, int]:
+    """Counts by status for the parishioner request inbox."""
+    from .models import DocumentRequest
+    from .models.enums import DocumentRequestStatus
+
+    statement = select(
+        DocumentRequest.status, func.count(DocumentRequest.id)
+    ).group_by(DocumentRequest.status)
+
+    if user is not None and not user.is_archdiocese_wide:
+        statement = statement.where(
+            or_(
+                DocumentRequest.targeted_parish_id == user.home_parish_id,
+                DocumentRequest.targeted_parish_id.is_(None),
+            )
+        )
+
+    rows = db.session.execute(statement).all()
+    counts = {status.value: 0 for status in DocumentRequestStatus}
+    for status, count in rows:
+        counts[status.value] = count
+    return counts
+
+
+def can_view_document_request(user: User, item) -> bool:
+    """Whether *user* may open a parishioner document request.
+
+    Chancery, admin, and parish staff see document requests to review and action them.
+    """
+    if user.is_archdiocese_wide:
+        return True
+    if user.role in (Role.ADMIN, Role.CHANCERY, Role.PARISH_STAFF):
+        return True
+    if item.targeted_parish_id is None:
+        return True
+    return item.targeted_parish_id == user.home_parish_id
 
 
 def mass_intention_stats() -> dict[str, int]:

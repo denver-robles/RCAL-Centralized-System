@@ -93,6 +93,11 @@ class DocumentRequest(db.Model, TimestampMixin):
         """True once a register entry has been linked by staff."""
         return self.matched_record_id is not None
 
+    @property
+    def is_document_request(self) -> bool:
+        """True for parishioner portal requests."""
+        return True
+
     def wants(self) -> str:
         """A one-line description, for lists and notifications."""
         year = self.date_of_sacrament.year if self.date_of_sacrament else "year unknown"

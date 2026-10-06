@@ -66,6 +66,11 @@ class Role(LabelledEnum):
         return self in {Role.ADMIN, Role.CHANCERY, Role.PARISH_STAFF}
 
     @property
+    def can_approve_certificates(self) -> bool:
+        """Who may approve certificates for issue."""
+        return self in {Role.ADMIN, Role.CHANCERY, Role.PARISH_STAFF}
+
+    @property
     def is_archdiocese_wide(self) -> bool:
         """Chancery and administrators see every parish, not just their own."""
         return self in {Role.ADMIN, Role.CHANCERY}
@@ -383,6 +388,9 @@ class EventType(LabelledEnum):
     WEDDING = ("wedding", "Wedding")
     FUNERAL = ("funeral", "Funeral / Burial")
     BLESSING = ("blessing", "Blessing")
+    EUCHARIST = ("eucharist", "First Holy Communion")
+    ANOINTING = ("anointing", "Anointing of the Sick")
+    RECONCILIATION = ("reconciliation", "Reconciliation / Confession")
     MEETING = ("meeting", "Meeting")
     OFFICE_ACTIVITY = ("office_activity", "Office Activity")
     OTHER = ("other", "Other")
@@ -412,12 +420,16 @@ class EventType(LabelledEnum):
             EventType.WEDDING,
             EventType.FUNERAL,
             EventType.BLESSING,
+            EventType.EUCHARIST,
+            EventType.ANOINTING,
+            EventType.RECONCILIATION,
         }
 
 
 class EventStatus(LabelledEnum):
     """Lifecycle of a scheduled parish activity."""
 
+    REQUESTED = ("requested", "Pending Approval")
     SCHEDULED = ("scheduled", "Scheduled")
     CONFIRMED = ("confirmed", "Confirmed")
     COMPLETED = ("completed", "Completed")
@@ -425,8 +437,12 @@ class EventStatus(LabelledEnum):
 
     @property
     def is_open(self) -> bool:
-        """True while the event is still going to happen."""
-        return self in {EventStatus.SCHEDULED, EventStatus.CONFIRMED}
+        """True while the event is still active or awaiting approval."""
+        return self in {EventStatus.REQUESTED, EventStatus.SCHEDULED, EventStatus.CONFIRMED}
+
+    @property
+    def is_pending(self) -> bool:
+        return self is EventStatus.REQUESTED
 
     @property
     def is_closed(self) -> bool:

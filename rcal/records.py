@@ -14,7 +14,8 @@ registers it keeps; the chancery supervises the province and may enter
 anywhere. :func:`can_write_record` is the single place that decides this.
 """
 
-from datetime import date
+from datetime import date, datetime, time, timedelta, timezone
+import re
 
 from flask import (
     Blueprint,
@@ -27,25 +28,37 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_required
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
 from . import audit, services
 from .auth import roles_required
 from .extensions import db
-from .forms import Form, SelectField, StringField, TextAreaField
+from .forms import (
+    DateField,
+    Form,
+    IntegerField,
+    PhoneField,
+    SelectField,
+    StringField,
+    TextAreaField,
+)
 from .models import (
     CertificateRequest,
     Clergy,
     MassIntention,
     Parish,
+    ParishEvent,
     Person,
     Role,
     SacramentalRecord,
+    Venue,
 )
 from .models.enums import (
     AnnotationType,
     AuditAction,
+    EventStatus,
+    EventType,
     LegitimacyStatus,
     MassIntentionStatus,
     SacramentType,
@@ -60,31 +73,37 @@ records_bp = Blueprint("records", __name__)
 class RecordForm(Form):
     """Transcribe one entry into a register."""
 
-    first_name = StringField("First name", max_length=80)
+    first_name = StringField("First name", min_length=1, max_length=80)
     middle_name = StringField("Middle name", max_length=80, required=False)
-    last_name = StringField("Surname", max_length=80)
+    last_name = StringField("Surname", min_length=1, max_length=80)
     suffix = StringField("Suffix", max_length=20, required=False)
     sex = SelectField("Sex", {s.value: s for s in Sex})
-    date_of_birth = StringField("Date of birth (YYYY-MM-DD)", required=False)
+    date_of_birth = DateField("Date of birth", required=False, allow_future=False)
 
     spouse_name = StringField("Spouse surname", max_length=80, required=False)
     spouse_first_name = StringField("Spouse first name", max_length=80, required=False)
 
     sacrament_type = SelectField("Register", {s.value: s for s in SacramentType})
-    event_date = StringField("Date of event (YYYY-MM-DD)")
+    event_date = DateField("Date of event", required=True, allow_future=False)
     originating_parish_id = SelectField("Parish", validate_choice=False)
-    book_number = StringField("Book number", max_length=10)
-    page_number = StringField("Page number", max_length=10)
-    entry_number = StringField("Entry number", max_length=10)
-    performed_by_clergy_id = StringField("Officiating cleric", required=False)
+    book_number = IntegerField("Book number", min_value=1, max_value=99999)
+    page_number = IntegerField("Page number", min_value=1, max_value=99999)
+    entry_number = IntegerField("Entry number", min_value=1, max_value=99999)
+    performed_by_clergy_id = SelectField("Officiating cleric", validate_choice=False, required=False)
 
     legitimacy = SelectField("Legitimacy", {s.value: s for s in LegitimacyStatus}, required=False)
-    godparents = TextAreaField("Godparents", required=False)
-    witnesses = TextAreaField("Witnesses", required=False)
+    godparents = TextAreaField("Godparents", max_length=500, required=False)
+    witnesses = TextAreaField("Witnesses", max_length=500, required=False)
     place_of_event = StringField("Place of event", max_length=160, required=False)
-    register_notes = TextAreaField("Register notes", required=False)
+    register_notes = TextAreaField("Register notes", max_length=1000, required=False)
 
     def validate_on_submit(self) -> None:
+        if self.date_of_birth and self.event_date:
+            birth = _parse_date(self.date_of_birth)
+            event_d = _parse_date(self.event_date)
+            if birth and event_d and birth > event_d:
+                self._error("date_of_birth", "A person cannot be born after the event date.")
+
         if self.sacrament_type == SacramentType.MARRIAGE.value:
             if not self.spouse_name or not self.spouse_first_name:
                 self._error(
@@ -108,9 +127,9 @@ class AnnotationForm(Form):
     """Append a margin note to an existing entry."""
 
     annotation_type = SelectField("Note", {a.value: a for a in AnnotationType})
-    note_text = TextAreaField("Note")
-    event_date = StringField("Date of the event (YYYY-MM-DD)", required=False)
-    reference_record_id = StringField("Related register entry", required=False)
+    note_text = TextAreaField("Note", max_length=1000)
+    event_date = DateField("Date of the event", required=False, allow_future=False)
+    reference_record_id = IntegerField("Related register entry ID", required=False, min_value=1)
 
     def validate_on_submit(self) -> None:
         kind = AnnotationType(self.annotation_type) if self.annotation_type else None
@@ -121,6 +140,58 @@ class AnnotationForm(Form):
                 "reference_record_id",
                 "A note of this kind must point at the register entry it refers to.",
             )
+
+
+def _parse_time(raw: str) -> time | None:
+    if not raw:
+        return None
+    raw = raw.strip()
+    for fmt in ("%H:%M", "%I:%M %p", "%I:%M%p", "%H:%M:%S", "%I %p", "%I%p"):
+        try:
+            return datetime.strptime(raw, fmt).time()
+        except ValueError:
+            pass
+    m = re.match(r"^(\d{1,2}):(\d{2})\s*(am|pm)?$", raw, re.IGNORECASE)
+    if m:
+        h, mn, ampm = int(m.group(1)), int(m.group(2)), m.group(3)
+        if ampm:
+            ampm = ampm.lower()
+            if ampm == "pm" and h < 12:
+                h += 12
+            elif ampm == "am" and h == 12:
+                h = 0
+        if 0 <= h <= 23 and 0 <= mn <= 59:
+            return time(h, mn)
+    m_hour = re.match(r"^(\d{1,2})\s*(am|pm)$", raw, re.IGNORECASE)
+    if m_hour:
+        h, ampm = int(m_hour.group(1)), m_hour.group(2).lower()
+        if ampm == "pm" and h < 12:
+            h += 12
+        elif ampm == "am" and h == 12:
+            h = 0
+        if 0 <= h <= 23:
+            return time(h, 0)
+    return None
+
+
+class StaffScheduleForm(Form):
+    """Direct schedule creation by parish staff for liturgies and sacraments."""
+
+    parish_id = SelectField("Parish", validate_choice=False, required=True)
+    event_type = SelectField("Sacrament / Ceremony", validate_choice=False, required=True)
+    event_date = DateField("Event Date", required=True)
+    event_time = StringField("Event Time (e.g. 10:00 AM)", min_length=2, max_length=30, required=True)
+    title = StringField("Subject / Intended Person(s)", min_length=3, max_length=200, required=True)
+    venue_id = SelectField("Venue", validate_choice=False, required=False)
+    presiding_clergy_id = SelectField("Presiding Clergy", validate_choice=False, required=False)
+    requester_name = StringField("Requester / Contact Person", max_length=160, required=False)
+    requester_contact = StringField("Contact Number", max_length=255, required=False)
+    expected_attendees = IntegerField("Expected Attendees", required=False, min_value=1, max_value=5000)
+    description = TextAreaField("Notes / Instructions", max_length=1000, required=False)
+
+    def validate_on_submit(self) -> None:
+        if self.event_time and not _parse_time(self.event_time):
+            self._error("event_time", "Please enter a valid time (e.g. 10:00 AM, 14:00).")
 
 
 def _parse_date(raw: str):
@@ -234,10 +305,46 @@ def detail(record_id: int):
 def create():
     """Transcribe a new register entry."""
     form = RecordForm()
+    from_event_id = request.args.get("from_event_id", type=int) or request.form.get("from_event_id", type=int)
+    from_event = None
+    if from_event_id:
+        from_event = db.session.get(ParishEvent, from_event_id)
+
+    if request.method == "GET" and from_event:
+        form.originating_parish_id = str(from_event.parish_id)
+        sacrament_map = {
+            EventType.BAPTISM.value: SacramentType.BAPTISM.value,
+            EventType.CONFIRMATION.value: SacramentType.CONFIRMATION.value,
+            EventType.WEDDING.value: SacramentType.MARRIAGE.value,
+            EventType.FUNERAL.value: SacramentType.DEATH.value,
+        }
+        if from_event.event_type.value in sacrament_map:
+            form.sacrament_type = sacrament_map[from_event.event_type.value]
+        if from_event.starts_at:
+            form.event_date = from_event.starts_at.date().isoformat()
+        if from_event.venue:
+            form.place_of_event = from_event.venue.name
+        if from_event.presiding_clergy_id:
+            form.performed_by_clergy_id = str(from_event.presiding_clergy_id)
+        if from_event.title:
+            form.register_notes = f"Scheduled event #{from_event.id}: {from_event.title}. {from_event.description or ''}".strip()
+
     if request.method == "POST" and form.validate():
         error = _save_record(form)
         if error is None:
-            flash("Register entry recorded.", "success")
+            if from_event:
+                from_event.record_id = form.record_id
+                from_event.status = EventStatus.COMPLETED
+                db.session.add(from_event)
+                audit.record(
+                    AuditAction.UPDATE,
+                    subject=from_event,
+                    note=f"Linked sacrament schedule #{from_event.id} to register entry #{form.record_id}",
+                )
+                db.session.commit()
+                flash(f"Register entry recorded and linked to schedule #{from_event.id}.", "success")
+            else:
+                flash("Register entry recorded.", "success")
             return redirect(url_for("records.detail", record_id=form.record_id))
         for field, message in error.items():
             form._error(field, message)
@@ -245,6 +352,7 @@ def create():
     return render_template(
         "records/record_form.html",
         form=form,
+        from_event=from_event,
         parishes=_parish_choices(),
         clergy_list=None,
         sacraments=SacramentType,
@@ -444,59 +552,287 @@ def annotate(record_id: int):
     )
 
 
-# --- mass intentions ------------------------------------------------------
+# --- sacrament schedules (staff management) -------------------------------
 
-class MassIntentionForm(Form):
-    intended_for = StringField("Intention", max_length=300)
-    requester_name = StringField("Requested by", max_length=160)
-    requester_contact = StringField("Contact", max_length=255, required=False)
-    parish_id = SelectField("Parish", validate_choice=False)
-    notes = TextAreaField("Notes", required=False)
+@records_bp.route("/records/schedules")
+@roles_required(Role.ADMIN, Role.CHANCERY, Role.PARISH_STAFF, Role.CLERGY)
+def schedules():
+    """Monitor and manage parish sacrament schedule requests."""
+    status_filter = request.args.get("status", "").strip().lower()
+    parish_id = request.args.get("parish", type=int)
+
+    statement = services.events_query(current_user, parish_id=parish_id)
+
+    if status_filter == "pending":
+        statement = statement.where(ParishEvent.status == EventStatus.REQUESTED)
+    elif status_filter == "approved":
+        statement = statement.where(
+            ParishEvent.status.in_([EventStatus.SCHEDULED, EventStatus.CONFIRMED])
+        )
+    elif status_filter == "completed":
+        statement = statement.where(ParishEvent.status == EventStatus.COMPLETED)
+    elif status_filter == "unrecorded":
+        statement = statement.where(
+            ParishEvent.status == EventStatus.COMPLETED,
+            ParishEvent.record_id.is_(None),
+            ParishEvent.event_type.in_([k for k in EventType if k.is_sacrament]),
+        )
+    elif status_filter == "cancelled":
+        statement = statement.where(ParishEvent.status == EventStatus.CANCELLED)
+
+    page = request.args.get("page", 1, type=int)
+    pagination = db.paginate(
+        statement.order_by(ParishEvent.starts_at.desc()),
+        page=page,
+        per_page=current_app.config["ITEMS_PER_PAGE"],
+        error_out=False,
+    )
+
+    base = services.events_query(current_user)
+    pending_count = db.session.scalar(
+        select(func.count(ParishEvent.id)).where(
+            ParishEvent.id.in_(base.with_only_columns(ParishEvent.id)),
+            ParishEvent.status == EventStatus.REQUESTED,
+        )
+    ) or 0
+    unrecorded_count = db.session.scalar(
+        select(func.count(ParishEvent.id)).where(
+            ParishEvent.id.in_(base.with_only_columns(ParishEvent.id)),
+            ParishEvent.status == EventStatus.COMPLETED,
+            ParishEvent.record_id.is_(None),
+            ParishEvent.event_type.in_([k for k in EventType if k.is_sacrament]),
+        )
+    ) or 0
+
+    return render_template(
+        "records/schedules.html",
+        pagination=pagination,
+        status_filter=status_filter,
+        pending_count=pending_count,
+        unrecorded_count=unrecorded_count,
+        parishes=_parish_choices(),
+        current_parish=parish_id,
+    )
+
+
+@records_bp.route("/records/schedules/new", methods=["GET", "POST"])
+@roles_required(Role.ADMIN, Role.CHANCERY, Role.PARISH_STAFF, Role.CLERGY)
+def new_schedule():
+    """Schedule a sacrament or ceremony directly from the parish office."""
+    form = StaffScheduleForm()
+    parishes = _parish_choices()
+    if not parishes:
+        flash("You do not have permission to schedule events for any parish.", "error")
+        return redirect(url_for("records.schedules"))
+
+    from .portal import SACRAMENT_CHOICES
+
+    default_parish_id = (
+        str(current_user.home_parish_id)
+        if current_user.home_parish_id and str(current_user.home_parish_id) in parishes
+        else next(iter(parishes.keys()))
+    )
+
+    selected_parish_str = str(request.form.get("parish_id") or request.args.get("parish_id") or default_parish_id)
+    if selected_parish_str not in parishes:
+        selected_parish_str = default_parish_id
+    selected_parish_id = int(selected_parish_str)
+
+    parish = db.session.get(Parish, selected_parish_id)
+    venues = (
+        db.session.scalars(
+            select(Venue).where(Venue.parish_id == parish.id, Venue.is_active.is_(True)).order_by(Venue.name)
+        ).all()
+        if parish
+        else []
+    )
+    clergy_list = db.session.scalars(
+        select(Clergy).where(Clergy.is_active.is_(True)).order_by(Clergy.last_name, Clergy.first_name)
+    ).all()
+
+    if request.method == "POST" and form.validate():
+        target_parish = db.session.get(Parish, int(form.parish_id))
+        if not target_parish or not services.can_write_parish(current_user, target_parish):
+            form._error("parish_id", "You do not have permission to schedule for this parish.")
+        else:
+            event_d = _parse_date(form.event_date)
+            event_t = _parse_time(form.event_time) or time(9, 0)
+            if not event_d:
+                form._error("event_date", "Please enter a valid date in YYYY-MM-DD format.")
+            else:
+                starts_at = datetime.combine(event_d, event_t, tzinfo=timezone.utc)
+                ends_at = starts_at + timedelta(hours=1)
+
+                venue_id = _parse_int(form.venue_id) if form.venue_id else None
+                clergy_id = _parse_int(form.presiding_clergy_id) if form.presiding_clergy_id else None
+                attendees = _parse_int(form.expected_attendees) if form.expected_attendees else None
+
+                clashes = services.event_conflicts(
+                    starts_at, ends_at, parish_id=target_parish.id, venue_id=venue_id, clergy_id=clergy_id
+                )
+                status = EventStatus.CONFIRMED if (venue_id and clergy_id) else EventStatus.SCHEDULED
+
+                event = ParishEvent(
+                    parish_id=target_parish.id,
+                    event_type=EventType(form.event_type),
+                    title=form.title.strip(),
+                    starts_at=starts_at,
+                    ends_at=ends_at,
+                    venue_id=venue_id,
+                    presiding_clergy_id=clergy_id,
+                    status=status,
+                    requester_name=form.requester_name.strip() if form.requester_name else "Parish Office",
+                    requester_contact=form.requester_contact.strip() if form.requester_contact else None,
+                    expected_attendees=attendees,
+                    description=form.description.strip() if form.description else None,
+                )
+                db.session.add(event)
+                db.session.flush()
+
+                audit.record(
+                    AuditAction.CREATE,
+                    subject=event,
+                    subject_label=f"{event.event_type.label} schedule for {event.title}",
+                    note=f"Scheduled by {current_user.display_name or current_user.username}",
+                )
+                db.session.commit()
+
+                if clashes:
+                    flash(
+                        f"Schedule #{event.id} created, but note: conflicting bookings exist at that time.",
+                        "warning",
+                    )
+                else:
+                    flash(f"Sacrament schedule #{event.id} created successfully.", "success")
+                return redirect(url_for("records.schedule_detail", event_id=event.id))
+
+    return render_template(
+        "records/schedule_form.html",
+        form=form,
+        parishes=parishes,
+        selected_parish_id=selected_parish_id,
+        venues=venues,
+        clergy_list=clergy_list,
+        sacrament_choices=SACRAMENT_CHOICES,
+        today=date.today().isoformat(),
+    )
+
+
+@records_bp.route("/records/schedules/<int:event_id>")
+@roles_required(Role.ADMIN, Role.CHANCERY, Role.PARISH_STAFF, Role.CLERGY)
+def schedule_detail(event_id: int):
+    """Review, monitor, and configure an individual sacrament schedule."""
+    event = db.get_or_404(ParishEvent, event_id)
+    if not services.can_write_parish(current_user, event.parish):
+        abort(403)
+
+    venues = db.session.scalars(
+        select(Venue)
+        .where(Venue.parish_id == event.parish_id, Venue.is_active.is_(True))
+        .order_by(Venue.name)
+    ).all()
+    clergy_list = db.session.scalars(
+        select(Clergy).where(Clergy.is_active.is_(True)).order_by(Clergy.last_name)
+    ).all()
+
+    conflict_warnings = []
+    if event.status.is_open:
+        clashes = services.event_conflicts(
+            event.starts_at,
+            event.ends_at,
+            parish_id=event.parish_id,
+            venue_id=event.venue_id,
+            clergy_id=event.presiding_clergy_id,
+            exclude_event_id=event.id,
+        )
+        for c in clashes:
+            conflict_warnings.append(
+                services.describe_conflict(c, event.venue_id, event.presiding_clergy_id)
+            )
+
+    return render_template(
+        "records/schedule_detail.html",
+        event=event,
+        venues=venues,
+        clergy_list=clergy_list,
+        conflict_warnings=conflict_warnings,
+    )
+
+
+@records_bp.post("/records/schedules/<int:event_id>/approve")
+@roles_required(Role.ADMIN, Role.CHANCERY, Role.PARISH_STAFF, Role.CLERGY)
+def approve_schedule(event_id: int):
+    """Approve and confirm a sacrament schedule request."""
+    event = db.get_or_404(ParishEvent, event_id)
+    if not services.can_write_parish(current_user, event.parish):
+        abort(403)
+
+    venue_id = _parse_int(request.form.get("venue_id"))
+    clergy_id = _parse_int(request.form.get("presiding_clergy_id"))
+    if venue_id:
+        event.venue_id = venue_id
+    if clergy_id:
+        event.presiding_clergy_id = clergy_id
+
+    event.status = EventStatus.CONFIRMED
+    audit.record(
+        AuditAction.STATUS_CHANGE,
+        subject=event,
+        note=f"Schedule approved and confirmed by {current_user.display_name or current_user.username}",
+    )
+    db.session.commit()
+    flash(f"Schedule #{event.id} ({event.title}) has been confirmed.", "success")
+    return redirect(url_for("records.schedule_detail", event_id=event.id))
+
+
+@records_bp.post("/records/schedules/<int:event_id>/complete")
+@roles_required(Role.ADMIN, Role.CHANCERY, Role.PARISH_STAFF, Role.CLERGY)
+def complete_schedule(event_id: int):
+    """Mark a sacrament schedule completed and direct immediately to the register."""
+    event = db.get_or_404(ParishEvent, event_id)
+    if not services.can_write_parish(current_user, event.parish):
+        abort(403)
+
+    event.status = EventStatus.COMPLETED
+    audit.record(
+        AuditAction.STATUS_CHANGE,
+        subject=event,
+        note=f"Ceremony completed, directing to register transcription",
+    )
+    db.session.commit()
+    flash(
+        f"Sacrament ceremony completed! Please transcribe it into the canonical register.",
+        "info",
+    )
+    return redirect(url_for("records.create", from_event_id=event.id))
+
+
+@records_bp.post("/records/schedules/<int:event_id>/cancel")
+@roles_required(Role.ADMIN, Role.CHANCERY, Role.PARISH_STAFF, Role.CLERGY)
+def cancel_schedule(event_id: int):
+    """Cancel a sacrament schedule with a stated reason."""
+    event = db.get_or_404(ParishEvent, event_id)
+    if not services.can_write_parish(current_user, event.parish):
+        abort(403)
+
+    reason = request.form.get("reason", "").strip() or "Cancelled by parish office."
+    event.status = EventStatus.CANCELLED
+    event.cancellation_reason = reason
+    audit.record(
+        AuditAction.STATUS_CHANGE,
+        subject=event,
+        note=f"Schedule cancelled: {reason}",
+    )
+    db.session.commit()
+    flash(f"Schedule #{event.id} has been cancelled.", "info")
+    return redirect(url_for("records.schedule_detail", event_id=event.id))
 
 
 @records_bp.route("/intentions", methods=["GET", "POST"])
 @login_required
 def intentions():
-    """Request a Mass intention."""
-    form = MassIntentionForm()
-    if request.method == "POST" and form.validate():
-        parish = db.session.get(Parish, _parse_int(form.parish_id) or 0)
-        if parish is None:
-            form._error("parish_id", "Choose a parish.")
-        elif not services.can_write_parish(current_user, parish):
-            form._error("parish_id", "Your account may only use its own parish.")
-        else:
-            db.session.add(
-                MassIntention(
-                    intended_for=form.intended_for,
-                    requester_name=form.requester_name,
-                    requester_contact=form.requester_contact or None,
-                    parish=parish,
-                    notes=form.notes or None,
-                    status=MassIntentionStatus.PENDING,
-                )
-            )
-            db.session.commit()
-            flash("Mass intention received.", "success")
-            return redirect(url_for("records.intentions"))
-
-    rows = db.session.scalars(
-        select(MassIntention)
-        .where(
-            MassIntention.parish_id == current_user.home_parish_id
-            if not current_user.is_archdiocese_wide
-            else MassIntention.parish_id.is_not(None)
-        )
-        .order_by(MassIntention.created_at.desc())
-    ).unique()
-
-    return render_template(
-        "records/intentions.html",
-        form=form,
-        intentions=rows,
-        parishes=_parish_choices(),
-        stats=services.mass_intention_stats(),
-    )
+    """Redirect legacy intentions route to sacrament schedules."""
+    return redirect(url_for("records.schedules"))
 
 
 # --- analytics ------------------------------------------------------------

@@ -56,9 +56,10 @@
             <li><a href="{{ url_for('records.search') }}">Search the registers</a></li>
             <li><a href="{{ url_for('records.create') }}">Record a register entry</a></li>
             <li><a href="{{ url_for('certificates.index') }}">Certificate requests</a></li>
+            <li><a href="{{ url_for('certificates.document_requests') }}">Parishioner requests</a></li>
             <li><a href="{{ url_for('directory.parishes') }}">Parish directory</a></li>
             <li><a href="{{ url_for('directory.clergy') }}">Clergy directory</a></li>
-            <li><a href="{{ url_for('records.intentions') }}">Mass intentions</a></li>
+            <li><a href="{{ url_for('records.schedules') }}">Sacrament schedules</a></li>
             <li><a href="{{ url_for('records.analytics') }}">Analytics</a></li>
             <li><a href="{{ url_for('auth.change_password') }}">Change password</a></li>
             {% if current_user.role.can_manage_users %}
@@ -110,8 +111,8 @@
     <div class="portal-card-line"></div>
     <p class="muted">
         Your dashboard shows what your account is permitted to do. The parish
-        directory, register search, and the certificate workflow are all
-        live; mass intentions can be requested but not yet scheduled.
+        directory, register search, sacrament schedules, and the certificate
+        workflow are all live.
     </p>
 </div>
 

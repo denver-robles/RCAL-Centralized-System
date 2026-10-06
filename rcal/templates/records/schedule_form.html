@@ -1,0 +1,132 @@
+{% extends "portal_base.html" %}
+{% from "_fields.html" import field, textarea %}
+
+{% block title %}Schedule a Sacrament - {{ config['APP_NAME'] }}{% endblock %}
+
+{% block content %}
+
+<div class="title-row" style="margin-bottom: 1.5rem;">
+    <div>
+        <h1 class="portal-title">Schedule a Sacrament / Liturgy</h1>
+        <p class="muted">
+            Directly create and schedule a sacrament celebration or parish liturgy.
+        </p>
+    </div>
+    <div>
+        <a href="{{ url_for('records.schedules') }}" class="link-btn">&larr; Back to Schedules</a>
+    </div>
+</div>
+
+<div class="portal-card">
+
+    <form method="post" novalidate>
+        {% include "_csrf.html" %}
+
+        <fieldset class="fieldset">
+            <legend>Ceremony &amp; Parish</legend>
+
+            <div class="form-group">
+                <label for="parish_id">PARISH:</label>
+                <select id="parish_id" name="parish_id" class="pill-input" required onchange="window.location.href='{{ url_for('records.new_schedule') }}?parish_id=' + this.value">
+                    {% for p_id, p_name in parishes.items() %}
+                    <option value="{{ p_id }}" {{ 'selected' if (form.parish_id|string if form.parish_id else selected_parish_id|string) == (p_id|string) }}>
+                        {{ p_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if form.errors.parish_id %}
+                <span class="field-error">{{ form.errors.parish_id }}</span>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="event_type">SACRAMENT / CEREMONY:</label>
+                <select id="event_type" name="event_type" class="pill-input" required>
+                    <option value="">Choose sacrament / ceremony…</option>
+                    {% for val, lbl in (sacrament_choices or form.choices_for('event_type')).items() %}
+                    <option value="{{ val }}" {{ 'selected' if form.event_type == val }}>
+                        {{ lbl }}
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if form.errors.event_type %}
+                <span class="field-error">{{ form.errors.event_type }}</span>
+                {% endif %}
+            </div>
+
+            {{ field('title', form, 'Subject / Person(s) Intended', value=form.title,
+            placeholder='e.g. Baptism of Juan Dela Cruz, Jr. or Wedding of John & Mary', required=true,
+            hint='Candidate name, child name, or couple receiving the sacrament.') }}
+        </fieldset>
+
+        <fieldset class="fieldset">
+            <legend>Date, Time &amp; Assignment</legend>
+
+            {{ field('event_date', form, 'Event Date', type='date',
+            value=form.event_date, required=true,
+            hint='Date of celebration.') }}
+
+            {{ field('event_time', form, 'Event Time',
+            value=form.event_time, placeholder='e.g. 10:00 AM or 14:00', required=true,
+            hint='Time of liturgy (e.g. 9:00 AM, 10:30 AM, 2:00 PM).') }}
+
+            <div class="form-group">
+                <label for="venue_id">ASSIGN VENUE (Optional):</label>
+                <select id="venue_id" name="venue_id" class="pill-input">
+                    <option value="">Select venue / altar…</option>
+                    {% for v in venues %}
+                    <option value="{{ v.id }}" {{ 'selected' if (form.venue_id|string) == (v.id|string) }}>
+                        {{ v.name }} (capacity: {{ v.capacity or 'N/A' }})
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if form.errors.venue_id %}
+                <span class="field-error">{{ form.errors.venue_id }}</span>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="presiding_clergy_id">PRESIDING CLERGY (Optional):</label>
+                <select id="presiding_clergy_id" name="presiding_clergy_id" class="pill-input">
+                    <option value="">Select priest / deacon…</option>
+                    {% for c in clergy_list %}
+                    <option value="{{ c.id }}" {{ 'selected' if (form.presiding_clergy_id|string) == (c.id|string) }}>
+                        {{ c.titled_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if form.errors.presiding_clergy_id %}
+                <span class="field-error">{{ form.errors.presiding_clergy_id }}</span>
+                {% endif %}
+            </div>
+
+            {{ field('expected_attendees', form, 'Expected Attendees (approximate)', type='number',
+            value=form.expected_attendees, placeholder='e.g. 50', required=false, extra='min="1" max="5000"') }}
+        </fieldset>
+
+        <fieldset class="fieldset">
+            <legend>Contact &amp; Notes</legend>
+
+            {{ field('requester_name', form, 'Requester / Family Contact Name',
+            value=form.requester_name, placeholder='e.g. Juan Dela Cruz (Father) or Parish Office', required=false) }}
+
+            {{ field('requester_contact', form, 'Contact Phone Number', type='tel',
+            value=form.requester_contact, placeholder='e.g. 0917-123-4567', required=false) }}
+
+            <div class="form-group">
+                <label for="description">NOTES / SPECIAL INSTRUCTIONS:</label>
+                <textarea id="description" name="description" class="pill-input" rows="4"
+                    placeholder="Enter special requirements, sponsors, requirements checklist status, etc...">{{ form.description or '' }}</textarea>
+                {% if form.errors.description %}
+                <span class="field-error">{{ form.errors.description }}</span>
+                {% endif %}
+            </div>
+        </fieldset>
+
+        <button type="submit" class="submit-login-btn">CREATE SACRAMENT SCHEDULE</button>
+        <a href="{{ url_for('records.schedules') }}" class="link-btn">Cancel</a>
+    </form>
+
+</div>
+
+{% endblock %}

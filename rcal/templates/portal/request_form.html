@@ -41,16 +41,19 @@
 
             <div class="form-group">
                 <label for="targeted_parish_id">PARISH HOLDING THE RECORD:</label>
-                <select id="targeted_parish_id" name="targeted_parish_id" class="pill-input">
-                    <option value="">I am not sure</option>
+                <select id="targeted_parish_id" name="targeted_parish_id" class="pill-input" required>
+                    <option value="">Select the parish holding the record…</option>
                     {% for parish in parishes %}
-                    <option value="{{ parish.id }}">{{ parish.name }}</option>
+                    <option value="{{ parish.id }}" {{ 'selected' if (form.targeted_parish_id|string) == (parish.id|string) }}>{{ parish.name }}</option>
                     {% endfor %}
                 </select>
+                {% if form.errors.targeted_parish_id %}
+                <span class="field-error">{{ form.errors.targeted_parish_id }}</span>
+                {% else %}
                 <span class="field-hint">
-                    Leave blank if you do not know. This only helps route the
-                    request to the right office.
+                    Select the specific parish where the sacramental record was created and is held.
                 </span>
+                {% endif %}
             </div>
         </fieldset>
 
@@ -61,10 +64,11 @@
             required=true) }}
 
             {{ field('date_of_birth', form, 'Date of birth', type='date',
-            value=form.date_of_birth) }}
+            value=form.date_of_birth, required=true, extra='max="' ~ today ~ '"') }}
 
-            {{ field('date_of_sacrament', form, 'Date of the sacrament', type='date',
-            value=form.date_of_sacrament) }}
+            {{ field('date_of_sacrament', form, 'Date of the sacrament (optional)', type='date',
+            value=form.date_of_sacrament, required=false, extra='max="' ~ today ~ '"',
+            hint='Leave blank if the exact date is unknown.') }}
 
             {{ field('place_of_sacrament', form, 'Church where it took place',
             value=form.place_of_sacrament) }}

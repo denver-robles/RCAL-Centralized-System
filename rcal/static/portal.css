@@ -671,3 +671,91 @@
 .data-table .mono.small {
     word-break: break-all;
 }
+
+
+/* --- request tabs & badges ------------------------------------------- */
+.request-tabs {
+    display: flex;
+    gap: 8px;
+    margin: 16px 0 20px;
+    border-bottom: 2px solid #e4e7eb;
+    padding-bottom: 0;
+}
+
+.request-tab-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #52606d;
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.15s ease-in-out;
+}
+
+.request-tab-item:hover {
+    color: #12325c;
+}
+
+.request-tab-item.active {
+    color: #12325c;
+    border-bottom-color: #12325c;
+    font-weight: 700;
+}
+
+.request-tab-count {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 10px;
+    background-color: #eef0f3;
+    color: #52606d;
+}
+
+.request-tab-item.active .request-tab-count {
+    background-color: #12325c;
+    color: #ffffff;
+}
+
+.request-tab-count.has-pending {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.request-tab-item.active .request-tab-count.has-pending {
+    background-color: #f59e0b;
+    color: #ffffff;
+}
+
+.badge-submitted,
+.badge-under_review,
+.badge-awaiting_payment {
+    background-color: #fff6e0;
+    color: #7a5b00;
+}
+
+.badge-processing,
+.badge-ready,
+.badge-out_for_delivery {
+    background-color: #e3f0fb;
+    color: #14507f;
+}
+
+.badge-record_not_found {
+    background-color: #fdecea;
+    color: #8a1c1c;
+}
+
+.badge-portal {
+    background-color: #ede9fe;
+    color: #5b21b6;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-left: 4px;
+    vertical-align: middle;
+}

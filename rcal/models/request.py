@@ -88,5 +88,10 @@ class CertificateRequest(db.Model, TimestampMixin):
         """Pending, verified and approved requests still need action."""
         return self.status.is_open
 
+    @property
+    def is_document_request(self) -> bool:
+        """False for internal certificate requests."""
+        return False
+
     def __repr__(self) -> str:
         return f"<CertificateRequest #{self.id} {self.status.value}>"

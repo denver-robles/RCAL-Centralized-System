@@ -1,25 +1,28 @@
 {% extends "portal/portal_base.html" %}
 
-{% block title %}My requests - {{ config['APP_NAME'] }}{% endblock %}
+{% block title %}My Portal - {{ config['APP_NAME'] }}{% endblock %}
 
 {% block content %}
 
 <div class="title-row">
     <div>
-        <h1 class="portal-title">My Requests</h1>
+        <h1 class="portal-title">Parishioner Portal</h1>
         <p class="muted">
-            {{ open_count }} still being processed
-            {%- if requests | length > open_count %},
-            {{ requests | length - open_count }} finished
-            {%- endif %}.
+            Track your certificate requests and sacramental appointments.
         </p>
     </div>
-    <a href="{{ url_for('portal.new_request') }}" class="submit-login-btn as-link">
-        NEW REQUEST
-    </a>
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <a href="{{ url_for('portal.new_request') }}" class="submit-login-btn as-link">
+            REQUEST DOCUMENT
+        </a>
+        <a href="{{ url_for('portal.new_schedule') }}" class="submit-login-btn as-link">
+            SCHEDULE SACRAMENT
+        </a>
+    </div>
 </div>
 
-<div class="portal-card">
+<h2 style="margin-top: 1.5rem; margin-bottom: 0.5rem; font-size: 1.25rem;">Church Document Requests</h2>
+<div class="portal-card" style="margin-bottom: 2rem;">
 
     <table class="data-table">
         <thead>
@@ -68,9 +71,57 @@
 
 </div>
 
-<p class="muted small">
-    A request is checked against the parish register before anything is
-    prepared. If the record cannot be found, the request will say so.
-</p>
+<h2 style="margin-top: 1.5rem; margin-bottom: 0.5rem; font-size: 1.25rem;">Sacrament Schedules</h2>
+<div class="portal-card">
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Sacrament</th>
+                <th>Title / Intended For</th>
+                <th>Parish</th>
+                <th>Date &amp; Time</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in schedules %}
+            <tr>
+                <td><strong>{{ item.event_type.label }}</strong></td>
+                <td>{{ item.title }}</td>
+                <td>{{ item.parish.name }}</td>
+                <td>{{ item.starts_at.strftime('%d %b %Y, %I:%M %p') }}</td>
+                <td>
+                    {% if item.status.value == 'requested' %}
+                    <span class="badge badge-pending">Pending Approval</span>
+                    {% elif item.status.value in ('scheduled', 'confirmed') %}
+                    <span class="badge badge-ok">{{ item.status.label }}</span>
+                    {% elif item.status.value == 'completed' %}
+                    <span class="badge badge-ok">Completed</span>
+                    {% elif item.status.value == 'cancelled' %}
+                    <span class="badge badge-rejected">Cancelled</span>
+                    {% else %}
+                    <span class="badge badge-pending">{{ item.status.label }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('portal.schedule_detail', event_id=item.id) }}">
+                        View
+                    </a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="muted">
+                    You have not requested a sacrament schedule yet.
+                    <a href="{{ url_for('portal.new_schedule') }}">Schedule a sacrament</a>.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
 
 {% endblock %}

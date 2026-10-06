@@ -68,7 +68,11 @@
         {% if old_values or new_values %}
         <table class="data-table">
             <thead>
-                <tr><th>Field</th><th>Before</th><th>After</th></tr>
+                <tr>
+                    <th>Field</th>
+                    <th>Before</th>
+                    <th>After</th>
+                </tr>
             </thead>
             <tbody>
                 {% set fields = (new_values or old_values).keys() %}
@@ -109,7 +113,14 @@
     <div class="portal-card-line"></div>
 
     <table class="data-table">
-        <thead><tr><th>When</th><th>Who</th><th>Action</th><th></th></tr></thead>
+        <thead>
+            <tr>
+                <th>When</th>
+                <th>Who</th>
+                <th>Action</th>
+                <th></th>
+            </tr>
+        </thead>
         <tbody>
             {% for other in related %}
             <tr>

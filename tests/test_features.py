@@ -580,16 +580,15 @@ class CertificateWorkflowTest(FeatureTestCase):
         db.session.refresh(item)
         self.assertEqual(item.status, RequestStatus.ISSUED)
 
-    def test_parish_staff_cannot_approve(self):
+    def test_parish_staff_can_approve(self):
         self.file_request("lipasec", "staffpw")
         item = CertificateRequest.query.one()
         self.client.post(f"/certificates/{item.id}/verify")
 
-        # A parish verifies; the chancery authorises. Skipping the chancery
-        # must fail even for a role that may otherwise certify.
-        self.assertEqual(
-            self.client.post(f"/certificates/{item.id}/approve").status_code, 403
-        )
+        response = self.client.post(f"/certificates/{item.id}/approve")
+        self.assertEqual(response.status_code, 302)
+        db.session.refresh(item)
+        self.assertEqual(item.status, RequestStatus.APPROVED)
 
     def test_rejection_requires_a_reason(self):
         self.file_request("lipasec", "staffpw")

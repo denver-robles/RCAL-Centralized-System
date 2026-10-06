@@ -23,7 +23,7 @@ from sqlalchemy import or_, select
 from . import services
 from .auth import roles_required
 from .extensions import db
-from .forms import Form, SelectField, StringField
+from .forms import DateField, EmailField, Form, PhoneField, SelectField, StringField
 from .models import Clergy, ClergyAssignment, Parish, Role, Vicariate
 from .models.enums import AssignmentRole
 
@@ -33,20 +33,27 @@ directory_bp = Blueprint("directory", __name__)
 class ParishForm(Form):
     """Create and edit a parish."""
 
-    name = StringField("Parish name", max_length=160)
-    vicariate_id = SelectField("Vicariate", validate_choice=False)
+    name = StringField("Parish name", min_length=3, max_length=160)
+    vicariate_id = SelectField("Vicariate", validate_choice=False, required=True)
     municipality = StringField("City / Municipality", max_length=120, required=False)
     address = StringField("Address", max_length=300, required=False)
-    phone = StringField("Telephone", max_length=30, required=False)
-    email = StringField("Email", max_length=255, required=False)
+    phone = PhoneField("Telephone", required=False)
+    email = EmailField("Email", required=False)
 
 
 class AssignmentForm(Form):
     """Appoint a cleric to a parish."""
 
-    role = SelectField("Appointment", {r.value: r for r in AssignmentRole})
-    assigned_from = StringField("From (YYYY-MM-DD)")
-    assigned_to = StringField("To (YYYY-MM-DD)", required=False)
+    role = SelectField("Appointment", {r.value: r for r in AssignmentRole}, required=True)
+    assigned_from = DateField("From", required=True)
+    assigned_to = DateField("To", required=False)
+
+    def validate_on_submit(self) -> None:
+        if self.assigned_from and self.assigned_to:
+            f_d = _parse_date(self.assigned_from)
+            t_d = _parse_date(self.assigned_to)
+            if f_d and t_d and f_d > t_d:
+                self._error("assigned_to", "'To' date cannot be earlier than 'From' date.")
 
 
 def _vicariate_choices() -> dict:
