@@ -7,12 +7,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Archdiocese of Lipa - Centralized Information System</title>
+    <title>Archdiocese of Lipa — Modernized PIMS</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap"
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&display=swap"
         rel="stylesheet"
     >
 
@@ -30,7 +30,8 @@
                 <img src="{{ url_for('static', filename='logo.png') }}" alt="Archdiocese of Lipa">
 
                 <div class="brand-name">
-                    ARCHDIOCESE OF<br>LIPA
+                    ARCHDIOCESE OF LIPA
+                    <span class="brand-sub">MODERNIZED PIMS</span>
                 </div>
             </a>
 
@@ -38,10 +39,10 @@
 
             <nav id="mainNav">
                 <a href="#home">Home</a>
-                <a href="#about">About Us</a>
-                <a href="#services">Parish Services</a>
+                <a href="#about">About us</a>
+                <a href="#services">Parish services</a>
                 <a href="#analytics">Analytics</a>
-                <a href="{{ url_for('auth.login') }}">Login</a>
+                <a href="{{ url_for('auth.login') }}">Portal login</a>
             </nav>
 
         </header>
@@ -53,24 +54,75 @@
 
                 <div class="hero-copy">
 
+                    <div class="hero-tag">Faithful records. Connected service.</div>
+
                     <h1>
-                        CENTRALIZED DATABASE &<br>
-                        MODERNIZED INFORMATION<br>
-                        SYSTEM
+                        Modern parish service,<br>
+                        rooted in tradition.
                     </h1>
 
                     <div class="divider"></div>
 
                     <p>
-                        "Empowering the Roman Catholic Archdiocese of Lipa
-                        through modernized records, secure architecture,
-                        and operational excellence."
+                        A centralized information system connecting parish communities
+                        across the Archdiocese of Lipa through secure records, efficient
+                        administration, and accessible document services.
                     </p>
 
-                    <button class="portal-btn" id="portalBtn">
-                        Access the Portal
-                    </button>
+                    <div class="hero-actions">
+                        <button class="portal-btn" id="portalBtn">
+                            Access the portal &rarr;
+                        </button>
+                    </div>
 
+                </div>
+
+                <div class="hero-preview-card">
+                    <div class="hero-card-header">
+                        <div>
+                            <div style="font-weight: 700; font-size: 15px;">Document Request</div>
+                            <div style="font-size: 12px; color: var(--color-slate-400); margin-top: 2px;">REQ-2025-0842</div>
+                        </div>
+                        <span class="hero-card-badge">In progress</span>
+                    </div>
+
+                    <div class="hero-stepper">
+                        <div class="stepper-item">
+                            <span class="step-circle step-completed">&#10003;</span>
+                            <span>Request submitted</span>
+                        </div>
+                        <div class="stepper-item">
+                            <span class="step-circle step-completed">&#10003;</span>
+                            <span>Identity verified</span>
+                        </div>
+                        <div class="stepper-item">
+                            <span class="step-circle step-current">3</span>
+                            <span style="color: var(--color-amber-300); font-weight: 700;">Certificate processing</span>
+                        </div>
+                        <div class="stepper-item">
+                            <span class="step-circle step-next">4</span>
+                            <span style="color: var(--color-slate-400);">Ready for release</span>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(2, 6, 23, 0.6); padding: 12px 16px; border-radius: 12px; font-size: 12px; color: var(--color-slate-300);">
+                        Your parish will notify you as soon as your certificate is ready.
+                    </div>
+                </div>
+
+                <div class="hero-trust-bar">
+                    <div class="trust-item">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>
+                        RA 10173 compliant
+                    </div>
+                    <div class="trust-item">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 4 4L19 6"/></svg>
+                        Verified canonical records
+                    </div>
+                    <div class="trust-item">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                        Real-time request tracking
+                    </div>
                 </div>
 
             </section>
@@ -78,7 +130,9 @@
 
             <section class="section about" id="about">
 
-                <h2 class="section-heading">About Us</h2>
+                <div class="section-tag">About the system</div>
+
+                <h2 class="section-heading">One secure home for every parish record.</h2>
 
                 <div class="section-line"></div>
 
@@ -101,17 +155,28 @@
 
                             </svg>
 
-                            <h3>ARCHDIOCESE OF LIPA</h3>
+                            <h3>ARCHDIOCESE OF LIPA — CENTRALIZED PIMS</h3>
 
                         </div>
 
                         <p class="about-card-body">
-                            The Archdiocese of Lipa is a local Church of the
-                            Catholic faith. It serves the faithful in the
-                            province of Batangas. The Metropolitan Cathedral
-                            of St. Sebastian in Lipa City serves as our main
-                            seat and cathedral.
+                            The Archdiocese of Lipa serves the faithful in the province of Batangas.
+                            Modernized PIMS consolidates sacramental registers, certificate generation,
+                            and document requests into one trusted platform, keeping sensitive
+                            canonical records protected under RA 10173 while making everyday
+                            parish service faster, verified, and transparent.
                         </p>
+
+                        <div class="about-badge-row">
+                            <div class="about-mini-badge">
+                                <div class="stat-num">AES-256</div>
+                                <div class="stat-desc">Data encryption standard</div>
+                            </div>
+                            <div class="about-mini-badge dark">
+                                <div class="stat-num">24/7</div>
+                                <div class="stat-desc">Secure verified access</div>
+                            </div>
+                        </div>
 
                     </div>
 
@@ -122,7 +187,9 @@
 
             <section class="section services" id="services">
 
-                <h2 class="section-heading">Parish Services</h2>
+                <div class="section-tag">Parish Services</div>
+
+                <h2 class="section-heading">Service at every stage of parish life</h2>
 
                 <div class="section-line"></div>
 
@@ -136,11 +203,13 @@
                             </svg>
                         </div>
 
+                        <div class="service-num">01</div>
+
                         <h4>Sacramental Records</h4>
 
                         <p>
                             Request and verify digital records for Baptism,
-                            Confirmation, Marriage, and Death certificates.
+                            Confirmation, Marriage, and Burial certificates.
                         </p>
 
                     </div>
@@ -153,6 +222,8 @@
                                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
                             </svg>
                         </div>
+
+                        <div class="service-num">02</div>
 
                         <h4>Parish Directory</h4>
 
@@ -172,7 +243,9 @@
                             </svg>
                         </div>
 
-                        <h4>Masses & Intentions</h4>
+                        <div class="service-num">03</div>
+
+                        <h4>Masses & Schedules</h4>
 
                         <p>
                             Schedule Mass intentions, special blessings,
@@ -188,7 +261,9 @@
 
             <section class="section analytics" id="analytics">
 
-                <h2 class="section-heading">Analytics</h2>
+                <div class="section-tag">System at a glance</div>
+
+                <h2 class="section-heading">Built to serve with clarity.</h2>
 
                 <div class="section-line"></div>
 
@@ -197,19 +272,29 @@
                     <div class="analytics-row">
 
                         <div class="stat-pill">
-                            <div class="pill-icon green-icon"></div>
+                            <div class="pill-icon green-icon">
+                                <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 2v4M10 4h4M4 10l8-4 8 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V10z" />
+                                    <path d="M9 22v-6a3 3 0 0 1 6 0v6" />
+                                </svg>
+                            </div>
 
                             <div class="pill-text">
-                                <span class="pill-label">Churches:</span>
+                                <span class="pill-label">Churches</span>
                                 <strong class="pill-value">{{ counts.parishes }}</strong>
                             </div>
                         </div>
 
                         <div class="stat-pill">
-                            <div class="pill-icon red-icon"></div>
+                            <div class="pill-icon red-icon">
+                                <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
+                                </svg>
+                            </div>
 
                             <div class="pill-text">
-                                <span class="pill-label">Priests:</span>
+                                <span class="pill-label">Priests</span>
                                 <strong class="pill-value">{{ counts.priests }}</strong>
                             </div>
                         </div>
@@ -219,7 +304,12 @@
                     <div class="analytics-row">
 
                         <div class="stat-pill">
-                            <div class="pill-icon slate-icon"></div>
+                            <div class="pill-icon slate-icon">
+                                <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                    <circle cx="12" cy="10" r="3"></circle>
+                                </svg>
+                            </div>
 
                             <div class="pill-text">
                                 <span class="pill-label">
@@ -233,7 +323,12 @@
                         </div>
 
                         <div class="stat-pill">
-                            <div class="pill-icon green-icon"></div>
+                            <div class="pill-icon green-icon">
+                                <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                                </svg>
+                            </div>
 
                             <div class="pill-text">
                                 <span class="pill-label">
@@ -252,7 +347,7 @@
                         {{ counts.vicariates }} vicariates &middot;
                         {{ counts.records }} register
                         {{ "entry" if counts.records == 1 else "entries" }}
-                        on file
+                        digitized and protected
                     </p>
 
                 </div>
@@ -262,7 +357,9 @@
 
             <section class="section login-section" id="login">
 
-                <h2 class="section-heading">Portal Login</h2>
+                <div class="section-tag">Secure Portal</div>
+
+                <h2 class="section-heading">Welcome back</h2>
 
                 <div class="section-line"></div>
 
@@ -286,6 +383,7 @@
                                 id="inlineUsername"
                                 name="identifier"
                                 class="pill-input"
+                                placeholder="name@parish.org or username"
                                 autocomplete="username"
                                 required
                             >
@@ -306,7 +404,7 @@
 
 
                         <button type="submit" class="submit-login-btn">
-                            LOGIN
+                            SIGN IN SECURELY &rarr;
                         </button>
 
                         <div id="inlineLoginMsg"></div>
@@ -325,30 +423,33 @@
             <div class="footer-content">
 
                 <div class="footer-col">
-                    <h4>RCAL Mission:</h4>
+                    <h4>Modernized PIMS</h4>
 
                     <p>
-                        To build a synodal and missionary Church that
-                        responds to the needs of the times.
+                        Building a connected and missionary Church through
+                        secure, compassionate, and modern parish service
+                        for the Roman Catholic Archdiocese of Lipa.
                     </p>
                 </div>
 
 
                 <div class="footer-col">
 
-                    <h4>System Links:</h4>
+                    <h4>System Links</h4>
 
-                    <a href="{{ url_for('auth.login') }}">Access Portal</a>
+                    <p><a href="{{ url_for('auth.login') }}">Access Portal</a></p>
+                    <p><a href="#services">Parish Services</a></p>
+                    <p><a href="#analytics">System Analytics</a></p>
 
                 </div>
 
 
                 <div class="footer-col">
 
-                    <h4>Contact:</h4>
+                    <h4>Contact</h4>
 
                     <p>
-                        C.M. Recto Avenue corner G. Solis Street,
+                        C.M. Recto Avenue corner G. Solis Street,<br>
                         Poblacion, Lipa City, Batangas
                     </p>
 
@@ -370,12 +471,12 @@
         <header class="login-header">
 
             <button class="back-btn" id="backToPageBtn">
-                ← BACK TO PAGE
+                &larr; BACK TO PAGE
             </button>
 
             <div class="login-brand">
 
-                <img src="{{ url_for('static', filename='logo.png') }}" class="login-logo">
+                <img src="{{ url_for('static', filename='logo.png') }}" class="login-logo" alt="Archdiocese of Lipa">
 
                 <h1>LOGIN PORTAL</h1>
 
@@ -402,31 +503,32 @@
                         </label>
 
                         <input
-                                                        type="text"
-                                                        id="loginUsername"
-                                                        name="identifier"
-                                                        class="pill-input"
-                                                        autocomplete="username"
-                                                        required
-                                                    >
+                            type="text"
+                            id="loginUsername"
+                            name="identifier"
+                            class="pill-input"
+                            placeholder="name@parish.org or username"
+                            autocomplete="username"
+                            required
+                        >
 
                     </div>
 
 
                     <div class="form-group">
 
-                                                <label for="loginPassword">
-                                                    PASSWORD:
-                                                </label>
+                        <label for="loginPassword">
+                            PASSWORD:
+                        </label>
 
-                                                {{ password_input('password', id='loginPassword',
-                                                                  autocomplete='current-password') }}
+                        {{ password_input('password', id='loginPassword',
+                                          autocomplete='current-password') }}
 
-                                            </div>
+                    </div>
 
 
                     <button type="submit" class="submit-login-btn">
-                        LOGIN
+                        SIGN IN SECURELY &rarr;
                     </button>
 
                     <div id="portalLoginMsg"></div>
