@@ -34,14 +34,28 @@ class LabelledEnum(Enum):
         return {member.value: member.label for member in cls}
 
 
+#: The roles belonging to the parish office, as opposed to the public.
+#: Defined at module level because a plain tuple inside an enum class body
+#: is treated as another member, not as a constant.
+STAFF_ROLE_VALUES = ("admin", "chancery", "parish_staff", "clergy", "viewer")
+
+
 class Role(LabelledEnum):
-    """What a signed-in user is permitted to do."""
+    """What a signed-in user is permitted to do.
+
+    There are two populations here, and the separation is a security
+    boundary rather than a convenience (FR-1.3). Staff roles see the
+    internal registers; ``PARISHIONER`` is a member of the public who may
+    only file and track their own document requests, and must never reach
+    a register, an analytics figure, or a schedule.
+    """
 
     ADMIN = ("admin", "System Administrator")
     CHANCERY = ("chancery", "Chancery Office")
     PARISH_STAFF = ("parish_staff", "Parish Staff")
     CLERGY = ("clergy", "Clergy")
     VIEWER = ("viewer", "Read-only")
+    PARISHIONER = ("parishioner", "Parishioner")
 
     @property
     def can_manage_users(self) -> bool:
@@ -55,6 +69,93 @@ class Role(LabelledEnum):
     def is_archdiocese_wide(self) -> bool:
         """Chancery and administrators see every parish, not just their own."""
         return self in {Role.ADMIN, Role.CHANCERY}
+
+    @property
+    def is_parishioner(self) -> bool:
+        """True for the public portal role, which sees no internal module."""
+        return self is Role.PARISHIONER
+
+    @property
+    def is_staff(self) -> bool:
+        """True for every parish-office role.
+
+        The inverse of :attr:`is_parishioner`. Stated as its own property
+        so that a new staff role added later does not silently become a
+        parishioner by omission from one list but not the other.
+        """
+        return self is not Role.PARISHIONER
+
+    @property
+    def can_view_registers(self) -> bool:
+        """Whether the role may read canonical records at all (FR-1.3)."""
+        return self.is_staff
+
+    @property
+    def can_view_analytics(self) -> bool:
+        """Reports and analytics are internal-only (FR-2.7, FR-2.8)."""
+        return self in {
+            Role.ADMIN,
+            Role.CHANCERY,
+            Role.PARISH_STAFF,
+            Role.CLERGY,
+        }
+
+    @property
+    def can_manage_schedules(self) -> bool:
+        """Who may create and change parish events (FR-2.1)."""
+        return self in {Role.ADMIN, Role.CHANCERY, Role.PARISH_STAFF}
+
+    @property
+    def can_handle_requests(self) -> bool:
+        """Who may review the document-request queue (FR-2.9, FR-2.10)."""
+        return self in {Role.ADMIN, Role.CHANCERY, Role.PARISH_STAFF}
+
+    @property
+    def can_view_audit_log(self) -> bool:
+        """The audit trail is for the chancery, not for every clerk
+        (FR-1.4)."""
+        return self in {Role.ADMIN, Role.CHANCERY}
+
+
+class AuditAction(LabelledEnum):
+    """What a user did, for the comprehensive audit trail (FR-1.4).
+
+    The spec requires the log to distinguish a view from a creation from an
+    edit from a print from a status change, because those carry different
+    weight when the register is being tampered with. Storing the action as
+    a controlled value rather than a free string is what makes that
+    distinction reliably reportable.
+    """
+
+    LOGIN = ("login", "Signed in")
+    LOGIN_FAILED = ("login_failed", "Sign-in failed")
+    LOGOUT = ("logout", "Signed out")
+
+    VIEW = ("view", "Viewed")
+    CREATE = ("create", "Created")
+    UPDATE = ("update", "Edited")
+    PRINT = ("print", "Printed")
+    EXPORT = ("export", "Exported")
+    STATUS_CHANGE = ("status_change", "Status changed")
+    ANNOTATE = ("annotate", "Margin note added")
+    UPLOAD = ("upload", "Document uploaded")
+    DELETE = ("delete", "Deleted")
+
+    @property
+    def is_mutation(self) -> bool:
+        """True for actions that changed stored data.
+
+        A read and a write are not equally serious, so reports and alerts
+        filter on this rather than treating every row alike.
+        """
+        return self in {
+            AuditAction.CREATE,
+            AuditAction.UPDATE,
+            AuditAction.STATUS_CHANGE,
+            AuditAction.ANNOTATE,
+            AuditAction.DELETE,
+            AuditAction.UPLOAD,
+        }
 
 
 class Sex(LabelledEnum):
@@ -121,12 +222,27 @@ class AnnotationType(LabelledEnum):
 #: means a view can never accidentally skip the verification step, and a
 #: request that is already issued cannot be silently reopened.
 #:
+#: FR-2.9 names the stages as Pending Verification, Verified/Awaiting
+#: Payment, Processing, Ready for Pickup or Out for Delivery, Completed,
+#: Rejected. The online-payment stages are optional in the spec, so they
+#: are reachable but not mandatory: a walk-in request goes straight from
+#: approved to issued. Both paths are legal, and neither can skip
+#: verification.
+#:
 #: Defined at module level rather than inside the enum because a class body
 #: cannot refer to itself while it is being created.
 REQUEST_TRANSITIONS = {
     "pending": ("verified", "rejected", "cancelled"),
-    "verified": ("approved", "rejected", "cancelled"),
-    "approved": ("issued", "rejected", "cancelled"),
+    # The chancery authorises, then the request either waits for an online
+    # payment or goes straight to being prepared.
+    "verified": ("approved", "awaiting_payment", "rejected", "cancelled"),
+    "awaiting_payment": ("processing", "rejected", "cancelled"),
+    "approved": ("processing", "issued", "rejected", "cancelled"),
+    "processing": ("ready", "out_for_delivery", "issued", "rejected", "cancelled"),
+    "ready": ("issued", "out_for_delivery", "cancelled"),
+    "out_for_delivery": ("issued", "cancelled"),
+    # Terminal states. An issued certificate is evidence, so its request
+    # is never reopened.
     "issued": (),
     "rejected": (),
     "cancelled": (),
@@ -134,26 +250,54 @@ REQUEST_TRANSITIONS = {
 
 
 class RequestStatus(LabelledEnum):
-    """Lifecycle of a request for a certified copy."""
+    """Lifecycle of a request for a certified copy.
 
-    PENDING = ("pending", "Pending")
+    The first four stages are the original walk-in workflow; the rest were
+    added for the parishioner portal, where a request may be paid for
+    online and delivered by courier (FR-2.9).
+    """
+
+    PENDING = ("pending", "Pending Verification")
     VERIFIED = ("verified", "Verified")
+    AWAITING_PAYMENT = ("awaiting_payment", "Awaiting Payment")
     APPROVED = ("approved", "Approved")
-    ISSUED = ("issued", "Issued")
+    PROCESSING = ("processing", "Processing")
+    READY = ("ready", "Ready for Pickup")
+    OUT_FOR_DELIVERY = ("out_for_delivery", "Out for Delivery")
+    ISSUED = ("issued", "Completed")
     REJECTED = ("rejected", "Rejected")
     CANCELLED = ("cancelled", "Cancelled")
 
     @property
     def is_open(self) -> bool:
+        """True while the request still needs someone to act on it.
+
+        The physical delivery stages count as open: the parishioner is
+        still waiting for the document.
+        """
         return self in {
             RequestStatus.PENDING,
             RequestStatus.VERIFIED,
+            RequestStatus.AWAITING_PAYMENT,
             RequestStatus.APPROVED,
+            RequestStatus.PROCESSING,
+            RequestStatus.READY,
+            RequestStatus.OUT_FOR_DELIVERY,
         }
 
     @property
     def is_closed(self) -> bool:
         return not self.is_open
+
+    @property
+    def needs_online_payment(self) -> bool:
+        """True at the stage where a fee is still owed (FR-2.9)."""
+        return self is RequestStatus.AWAITING_PAYMENT
+
+    @property
+    def is_fulfilled(self) -> bool:
+        """True only when the certificate has actually been completed."""
+        return self is RequestStatus.ISSUED
 
     @classmethod
     def open_values(cls):
@@ -177,6 +321,51 @@ class RequestStatus(LabelledEnum):
     def can_transition_to(self, target: "RequestStatus") -> bool:
         """Whether the workflow may move from this status to *target*."""
         return target in self.allowed_transitions()
+
+
+class DocumentRequestStatus(LabelledEnum):
+    """Lifecycle of a parishioner's document request in the public portal.
+
+    Simpler than the internal certificate workflow (FR-2.9) by design. The
+    parishioner sees only the stages that concern them; what the office
+    does internally — verifying, approving, printing — is tracked on the
+    certificate request this spawns.
+    """
+
+    SUBMITTED = ("submitted", "Submitted")
+    UNDER_REVIEW = ("under_review", "Being verified")
+    RECORD_NOT_FOUND = ("record_not_found", "Record not found")
+    PROCESSING = ("processing", "Being prepared")
+    READY = ("ready", "Ready for pickup")
+    OUT_FOR_DELIVERY = ("out_for_delivery", "Out for delivery")
+    COMPLETED = ("completed", "Completed")
+    REJECTED = ("rejected", "Rejected")
+    CANCELLED = ("cancelled", "Cancelled")
+
+    @property
+    def is_open(self) -> bool:
+        return self in {
+            DocumentRequestStatus.SUBMITTED,
+            DocumentRequestStatus.UNDER_REVIEW,
+            DocumentRequestStatus.PROCESSING,
+            DocumentRequestStatus.READY,
+            DocumentRequestStatus.OUT_FOR_DELIVERY,
+        }
+
+    @property
+    def is_closed(self) -> bool:
+        return not self.is_open
+
+    @property
+    def is_outcome(self) -> bool:
+        """True for the terminal states, which the portal shows as a
+        result rather than as progress."""
+        return self in {
+            DocumentRequestStatus.COMPLETED,
+            DocumentRequestStatus.REJECTED,
+            DocumentRequestStatus.CANCELLED,
+            DocumentRequestStatus.RECORD_NOT_FOUND,
+        }
 
 
 class MassIntentionStatus(LabelledEnum):

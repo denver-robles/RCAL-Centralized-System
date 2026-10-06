@@ -22,6 +22,7 @@ from .extensions import db
 from .models import (
     AccessLog,
     Annotation,
+    AuditLog,
     CertificateRequest,
     Clergy,
     ClergyAssignment,
@@ -32,7 +33,7 @@ from .models import (
     User,
     Vicariate,
 )
-from .models.enums import MassIntentionStatus, RequestStatus, SacramentType
+from .models.enums import AuditAction, MassIntentionStatus, RequestStatus, SacramentType
 
 
 # --- parish scoping -------------------------------------------------------
@@ -404,3 +405,84 @@ def annotation_count(record: SacramentalRecord) -> int:
     return db.session.scalar(
         select(func.count(Annotation.id)).where(Annotation.record_id == record.id)
     ) or 0
+
+
+# --- audit trail (FR-1.4) -------------------------------------------------
+
+def audit_query(
+    action: AuditAction | None = None,
+    user_id: int | None = None,
+    subject_type: str | None = None,
+    subject_id: int | None = None,
+    mutations_only: bool = False,
+    since=None,
+) -> Select:
+    """Build the audit-trail query.
+
+    Returns a *statement* so the caller can paginate. Nothing here is
+    scoped by parish: the trail exists to be read by the chancery across
+    the whole archdiocese, which is why the route is restricted rather
+    than the query.
+    """
+    statement = select(AuditLog)
+
+    if action is not None:
+        statement = statement.where(AuditLog.action == action)
+    elif mutations_only:
+        # Reads outnumber writes by a wide margin, so filtering to the
+        # actions that changed data is the useful default when reviewing.
+        statement = statement.where(
+            AuditLog.action.in_(
+                [a.value for a in AuditAction if a.is_mutation]
+            )
+        )
+
+    if user_id:
+        statement = statement.where(AuditLog.user_id == user_id)
+    if subject_type:
+        statement = statement.where(AuditLog.subject_type == subject_type)
+    if subject_id:
+        statement = statement.where(AuditLog.subject_id == subject_id)
+    if since:
+        statement = statement.where(AuditLog.created_at >= since)
+
+    return statement
+
+
+def audit_for(subject) -> list:
+    """Every audit entry concerning one object, newest first.
+
+    This is what makes the trail useful at the point of decision: a staff
+    member looking at a register entry can see who has touched it.
+    """
+    return db.session.scalars(
+        select(AuditLog)
+        .where(
+            AuditLog.subject_type == type(subject).__name__,
+            AuditLog.subject_id == getattr(subject, "id", None),
+        )
+        .order_by(AuditLog.created_at.desc())
+    ).all()
+
+
+def audit_stats() -> dict:
+    """Counts by action, for the audit dashboard.
+
+    Keyed by the action's *value* (``"view"``, ``"login_failed"``), not by
+    the enum member. A template can only reach a dict with a string key, so
+    keying by the member produced ``Undefined`` in the markup and the
+    figures silently rendered as blanks.
+    """
+    rows = db.session.execute(
+        select(AuditLog.action, func.count(AuditLog.id)).group_by(AuditLog.action)
+    ).all()
+    counts = {action.value: 0 for action in AuditAction}
+    for action, count in rows:
+        counts[action.value] = count
+    counts["mutations"] = sum(
+        count
+        for action in AuditAction
+        if action.is_mutation
+        for count in (counts[action.value],)
+    )
+    return counts

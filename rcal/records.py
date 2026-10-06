@@ -30,7 +30,7 @@ from flask_login import current_user, login_required
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from . import services
+from . import audit, services
 from .auth import roles_required
 from .extensions import db
 from .forms import Form, SelectField, StringField, TextAreaField
@@ -45,6 +45,7 @@ from .models import (
 )
 from .models.enums import (
     AnnotationType,
+    AuditAction,
     LegitimacyStatus,
     MassIntentionStatus,
     SacramentType,
@@ -363,6 +364,29 @@ def _save_record(form: RecordForm):
 
     db.session.commit()
     form.record_id = record.id
+
+    # The transcription itself is a mutation of a canonical register, so it
+    # is recorded with the citation and the parish, which is what makes the
+    # entry checkable against the bound book later.
+    audit.record(
+        AuditAction.CREATE,
+        subject=record,
+        subject_label=f"{record.sacrament_type.label} — {record.person.full_name}",
+        new_values=audit.snapshot(
+            record,
+            (
+                "sacrament_type",
+                "event_date",
+                "book_number",
+                "page_number",
+                "entry_number",
+                "originating_parish_id",
+                "performed_by_clergy_id",
+            ),
+        ),
+        note=f"Transcribed into {parish.name} ({record.citation})",
+    )
+    db.session.commit()
     return None
 
 
@@ -395,6 +419,19 @@ def annotate(record_id: int):
             reference_record=reference,
         )
         services.log_access(current_user, record, action="annotate")
+        # A margin note is an append to a canonical record: the entry itself
+        # is untouched, but the record as evidence has changed.
+        audit.record(
+            AuditAction.ANNOTATE,
+            subject=record,
+            subject_label=f"{record.sacrament_type.label} — {record.person.full_name}",
+            new_values={
+                "annotation_type": kind.value,
+                "note_text": form.note_text,
+                "event_date": note_date.isoformat() if note_date else None,
+                "reference_record_id": reference.id if reference else None,
+            },
+        )
         db.session.commit()
         flash("Margin note added. The register entry itself is unchanged.", "success")
         return redirect(url_for("records.detail", record_id=record.id))

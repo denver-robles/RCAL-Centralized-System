@@ -31,13 +31,13 @@ from flask_login import current_user, login_required
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from . import services
+from . import audit, services
 from .auth import roles_required
 from .extensions import db
 from .forms import Form, SelectField, StringField, TextAreaField
 from .models import CertificateRequest, Role, SacramentalRecord
 from .models.base import utcnow
-from .models.enums import RequestStatus
+from .models.enums import AuditAction, RequestStatus
 
 certificates_bp = Blueprint("certificates", __name__)
 
@@ -192,6 +192,9 @@ def transition(request_id: int, action: str):
     if target is None:
         abort(404)
 
+    # Captured before the change so the trail can show the transition.
+    old_status = item.status
+
     if not item.status.can_transition_to(target):
         flash(
             f"A request that is {item.status.label.lower()} cannot be moved to "
@@ -214,6 +217,7 @@ def transition(request_id: int, action: str):
 
     item.status = target
     now = utcnow()
+    previous = old_status
 
     if target is RequestStatus.VERIFIED:
         item.verified_by_user = current_user
@@ -245,6 +249,17 @@ def transition(request_id: int, action: str):
         item.rejection_reason = reason or "Cancelled."
 
     services.log_access(current_user, item.record, action=f"certificate_{action}")
+
+    # A status change is the audit event FR-1.4 is most concerned with: it
+    # moves a citizen's document along, and it has to be attributable.
+    audit.record(
+        AuditAction.STATUS_CHANGE,
+        subject=item,
+        subject_label=f"Certificate request #{item.id}",
+        old_values={"status": previous.value},
+        new_values={"status": target.value},
+        note=reason or None,
+    )
     db.session.commit()
     flash(f"Request {item.status.label.lower()}.", "success")
     return redirect(url_for("certificates.detail", request_id=item.id))
@@ -288,6 +303,14 @@ def print_certificate(request_id: int):
         abort(404)
 
     services.log_access(current_user, item.record, action="certificate_print")
+    # Printing a certificate is a distinct, accountable act: it is the
+    # moment a certified copy leaves the building.
+    audit.record(
+        AuditAction.PRINT,
+        subject=item,
+        subject_label=f"Certificate {item.certificate_number}",
+        note=f"Printed the certified copy for {item.requester_name}",
+    )
     db.session.commit()
 
     return render_template("certificates/certificate.html", item=item)

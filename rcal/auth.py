@@ -25,11 +25,11 @@ from flask import (
 from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import func, or_, select
 
-from . import services
+from . import audit, services
 from .extensions import db
 from .forms import ChangePasswordForm, LoginForm, UserForm
 from .models import User
-from .models.enums import Role
+from .models.enums import AuditAction, Role
 
 auth_bp = Blueprint("auth", __name__)
 admin_bp = Blueprint("admin", __name__)
@@ -59,6 +59,88 @@ def roles_required(*roles: Role):
     return decorator
 
 
+def staff_required(view):
+    """Allow only parish-office roles; parishioners get a 403.
+
+    The blunt counterpart to :func:`roles_required`, for the internal
+    modules where every staff role is welcome and the public role is not.
+    """
+    from functools import wraps
+
+    @wraps(view)
+    @login_required
+    def wrapper(*args, **kwargs):
+        if not current_user.role.is_staff:
+            return render_template("errors/403.html"), 403
+        return view(*args, **kwargs)
+
+    return wrapper
+
+
+#: URL path prefixes that belong to the parish office and must never be
+#: reachable by a parishioner account (FR-1.3).
+#:
+#: Enforcing this per-view would mean trusting every future view to
+#: remember the decorator, and one omission would quietly expose the
+#: registers. A single check on the path is one rule in one place, and it
+#: fails closed: a new internal module added under one of these prefixes
+#: is protected by default rather than by remembering.
+INTERNAL_PATH_PREFIXES = (
+    "/directory",
+    "/records",
+    "/certificates",
+    "/audit",
+    "/intentions",
+    "/admin",
+    "/analytics",
+)
+
+#: The only areas a parishioner account may reach.
+PARISHIONER_PATH_PREFIXES = ("/portal", "/account", "/logout", "/login")
+
+
+def register_role_isolation(app) -> None:
+    """Install the global parishioner isolation guard on *app*.
+
+    Runs before every request. A parishioner whose path is outside the
+    public portal is refused, whether or not the view it is heading for
+    happens to carry a decorator.
+    """
+    from flask import request
+
+    @app.before_request
+    def _isolate_parishioners():
+        if not current_user.is_authenticated:
+            return None
+        if current_user.role.is_staff:
+            return None
+
+        path = request.path
+        if path.startswith(PARISHIONER_PATH_PREFIXES):
+            return None
+        if path.startswith(INTERNAL_PATH_PREFIXES):
+            return render_template("errors/403.html"), 403
+        # Static assets and the public pages stay open.
+        return None
+
+
+def landing_url(user=None):
+    """Where a signed-in account should land after signing in.
+
+    A parishioner has no dashboard in the internal sense — the staff
+    dashboard reads register entries — so sending them there would either
+    leak data or, as the isolation guard does, bounce them with a 403 the
+    moment they signed in. One function decides this, so every redirect
+    agrees.
+    """
+    from flask import url_for
+
+    user = user or current_user
+    if getattr(user, "is_authenticated", False) and user.role.is_parishioner:
+        return url_for("portal.dashboard")
+    return url_for("auth.dashboard")
+
+
 def is_safe_url(target: str) -> bool:
     """True when *target* points back at this site.
 
@@ -79,7 +161,7 @@ def is_safe_url(target: str) -> bool:
 def login():
     """Sign in with a username or an email address."""
     if current_user.is_authenticated:
-        return redirect(url_for("auth.dashboard"))
+        return redirect(landing_url())
 
     form = LoginForm()
     if request.method == "POST" and form.validate():
@@ -92,14 +174,35 @@ def login():
         # One message for both cases: distinguishing them would confirm which
         # usernames and addresses exist.
         if user is None or not user.check_password(form.password or ""):
+            # A failed sign-in is the most interesting event in the trail, so
+            # it is recorded even though there is no authenticated actor. The
+            # attempted identifier is kept, which is what makes credential
+            # stuffing visible in the log.
+            audit.record(
+                AuditAction.LOGIN_FAILED,
+                subject_type="User",
+                actor_username=form.identifier,
+                note=("unknown account" if user is None else "wrong password"),
+            )
+            db.session.commit()
             flash("Incorrect username or password.", "error")
         elif not user.is_active:
+            audit.record(
+                AuditAction.LOGIN_FAILED,
+                subject=user,
+                note="account deactivated",
+            )
+            db.session.commit()
             flash("This account has been deactivated.", "error")
         else:
             login_user(user, remember=bool(form.remember))
+            audit.record(AuditAction.LOGIN, subject=user)
+            db.session.commit()
             next_url = request.args.get("next")
             flash(f"Welcome back, {user.display_name or user.username}.", "success")
-            return redirect(next_url if is_safe_url(next_url) else url_for("auth.dashboard"))
+            return redirect(
+                next_url if is_safe_url(next_url) else landing_url(user)
+            )
 
     return render_template("auth/login.html", form=form)
 
@@ -112,6 +215,9 @@ def logout():
     POST-only: a GET link would let a third-party page end the user's
     session through a plain <img> tag.
     """
+    # Captured before logout_user() clears current_user.
+    audit.record(AuditAction.LOGOUT, subject=current_user)
+    db.session.commit()
     logout_user()
     flash("You have been signed out.", "success")
     return redirect(url_for("auth.login"))
@@ -129,9 +235,16 @@ def change_password():
             flash("The new password must be different from the current one.", "error")
         else:
             current_user.set_password(form.new_password)
+            # The password itself is never written to the trail; only the
+            # fact that it was rotated, by whom, and from where.
+            audit.record(
+                AuditAction.UPDATE,
+                subject=current_user,
+                note="password changed by the account holder",
+            )
             db.session.commit()
             flash("Your password has been changed.", "success")
-            return redirect(url_for("auth.dashboard"))
+            return redirect(landing_url())
 
     return render_template("auth/change_password.html", form=form)
 
@@ -139,7 +252,15 @@ def change_password():
 @auth_bp.route("/dashboard")
 @login_required
 def dashboard():
-    """The signed-in landing page: what this account may actually do."""
+    """The signed-in landing page: what this account may actually do.
+
+    Staff only. A parishioner is sent to their own portal by
+    :func:`landing_url`, and the isolation guard would refuse them here in
+    any case.
+    """
+    if not current_user.role.is_staff:
+        return redirect(landing_url())
+
     recent = services.recent_records(current_user, 5)
     return render_template("auth/dashboard.html", recent=recent)
 

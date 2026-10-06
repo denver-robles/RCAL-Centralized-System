@@ -5,9 +5,11 @@ never reach into individual model modules.
 """
 
 from .enums import (
-    AssignmentRole,
     AnnotationType,
+    AssignmentRole,
+    AuditAction,
     ClergyTitle,
+    DocumentRequestStatus,
     LabelledEnum,
     LegitimacyStatus,
     MassIntentionStatus,
@@ -23,7 +25,8 @@ from .person import Person
 from .record import SacramentalRecord, Annotation
 from .request import CertificateRequest
 from .mass import MassIntention
-from .audit import AccessLog
+from .audit import AccessLog, AuditLog
+from .document_request import DocumentRequest
 
 __all__ = [
     # enums
@@ -33,6 +36,8 @@ __all__ = [
     "SacramentType",
     "LegitimacyStatus",
     "AnnotationType",
+    "AuditAction",
+    "DocumentRequestStatus",
     "RequestStatus",
     "MassIntentionStatus",
     "ClergyTitle",
@@ -49,4 +54,6 @@ __all__ = [
     "CertificateRequest",
     "MassIntention",
     "AccessLog",
+    "AuditLog",
+    "DocumentRequest",
 ]

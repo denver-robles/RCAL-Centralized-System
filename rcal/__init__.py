@@ -41,10 +41,19 @@ def create_app(config_name: str | None = None) -> Flask:
     def load_user(user_id: str) -> User | None:
         return db.session.get(User, int(user_id))
 
-    from .auth import admin_bp, auth_bp
+    @app.after_request
+    def add_security_headers(response):
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        return response
+
+    from .auth import admin_bp, auth_bp, register_role_isolation
+    from .audit_views import audit_bp
     from .certificates import certificates_bp
     from .directory import directory_bp
     from .pages import pages_bp
+    from .portal import portal_bp
     from .records import records_bp
 
     app.register_blueprint(pages_bp)
@@ -53,6 +62,12 @@ def create_app(config_name: str | None = None) -> Flask:
     app.register_blueprint(directory_bp)
     app.register_blueprint(records_bp)
     app.register_blueprint(certificates_bp)
+    app.register_blueprint(audit_bp)
+    app.register_blueprint(portal_bp)
+
+    # Parishioners must never reach an internal module (FR-1.3). Installed
+    # here so it covers every blueprint, present and future.
+    register_role_isolation(app)
 
     from .cli import init_db_command
     app.cli.add_command(init_db_command)
