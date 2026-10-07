@@ -47,8 +47,10 @@
             above, so their career history stays on file.
         </p>
 
-        <button type="submit" class="submit-login-btn">ASSIGN</button>
-        <a href="{{ url_for('directory.parish_detail', parish_id=parish.id) }}" class="link-btn">Cancel</a>
+        <div class="form-actions">
+            <button type="submit" class="submit-login-btn">ASSIGN CLERGY &rarr;</button>
+            <a href="{{ url_for('directory.parish_detail', parish_id=parish.id) }}" class="btn-cancel">Cancel</a>
+        </div>
     </form>
 
     {% endif %}

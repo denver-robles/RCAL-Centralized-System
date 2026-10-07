@@ -35,6 +35,11 @@
                 </div>
             </a>
 
+            <div class="site-header-badge">
+                <span class="status-indicator-dot"></span>
+                <span>Curia Chancery &bull; Mon–Fri 8AM–5PM</span>
+            </div>
+
             <button class="menu-toggle" id="menuToggle">☰</button>
 
             <nav id="mainNav">
@@ -42,6 +47,7 @@
                 <a href="#about">About us</a>
                 <a href="#services">Parish services</a>
                 <a href="#analytics">Analytics</a>
+                <a href="#helpdesk">Support &amp; FAQ</a>
                 <a href="{{ url_for('auth.login') }}">Portal login</a>
             </nav>
 
@@ -70,9 +76,9 @@
                     </p>
 
                     <div class="hero-actions">
-                        <button class="portal-btn" id="portalBtn">
-                            Access the portal &rarr;
-                        </button>
+                        <a href="{{ url_for('auth.login') }}" class="portal-btn" id="portalBtn">
+                            Enter Diocesan Portal &rarr;
+                        </a>
                     </div>
 
                 </div>
@@ -497,61 +503,121 @@
             </section>
 
 
-            <section class="section login-section" id="login">
+            <section class="section helpdesk-section" id="helpdesk">
 
-                <div class="section-tag">Secure Portal</div>
+                <div class="section-tag">Parishioner Support &amp; Canonical Guidelines</div>
 
-                <h2 class="section-heading">Welcome back</h2>
+                <h2 class="section-heading">Frequently Asked Questions &amp; Chancery Helpdesk</h2>
 
                 <div class="section-line"></div>
 
-                <div class="login-card">
+                <div class="helpdesk-container">
 
-                    <h2>SECURE AUTHENTICATION</h2>
+                    <div class="helpdesk-faq">
 
-                    <div class="login-card-line"></div>
-
-                    <form id="inlineLoginForm" action="{{ url_for('auth.login') }}" method="post">
-                        {% include "_csrf.html" %}
-
-                        <div class="form-group">
-
-                            <label for="inlineUsername">
-                                USERNAME OR EMAIL:
-                            </label>
-
-                            <input
-                                type="text"
-                                id="inlineUsername"
-                                name="identifier"
-                                class="pill-input"
-                                placeholder="name@parish.org or username"
-                                autocomplete="username"
-                                required
-                            >
-
+                        <div class="faq-accordion-item open" id="faqItem1">
+                            <button type="button" class="faq-question-btn" onclick="toggleFaq(1)">
+                                <span class="faq-q-title">⏱️ How long does it take to process a sacramental certificate?</span>
+                                <span class="faq-toggle-icon">−</span>
+                            </button>
+                            <div class="faq-answer">
+                                <div class="faq-answer-inner">
+                                    <p>
+                                        Standard document requests (Baptism, Confirmation, and Marriage certificates) are typically processed and released within <strong>3 to 5 business days</strong> following canonical book search and seal inscription. Urgent requests may be accommodated depending on parish volume.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
 
-
-                        <div class="form-group">
-
-                            <label for="inlinePassword">
-                                PASSWORD:
-                            </label>
-
-                            {{ password_input('password', id='inlinePassword',
-                                              autocomplete='current-password') }}
-
+                        <div class="faq-accordion-item" id="faqItem2">
+                            <button type="button" class="faq-question-btn" onclick="toggleFaq(2)">
+                                <span class="faq-q-title">✍️ Can I correct a misspelled name or date in my baptismal certificate?</span>
+                                <span class="faq-toggle-icon">+</span>
+                            </button>
+                            <div class="faq-answer">
+                                <div class="faq-answer-inner">
+                                    <p>
+                                        Yes. Under <em>Canon 535</em> of the Code of Canon Law, clerical annotations or corrections require canonical endorsement. Parishioners must present their certified PSA Birth Certificate and supporting affidavits to their home parish office or the Diocesan Chancery.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
 
+                        <div class="faq-accordion-item" id="faqItem3">
+                            <button type="button" class="faq-question-btn" onclick="toggleFaq(3)">
+                                <span class="faq-q-title">🔒 What valid IDs are required under Data Privacy (RA 10173)?</span>
+                                <span class="faq-toggle-icon">+</span>
+                            </button>
+                            <div class="faq-answer">
+                                <div class="faq-answer-inner">
+                                    <p>
+                                        To protect personal and sacramental data under the Data Privacy Act of 2012, requests can only be filed by the document owner or direct family members (parents, legal guardians). Please present one government-issued photo ID (e.g. Passport, UMID, Driver's License, National ID).
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
 
-                        <button type="submit" class="submit-login-btn">
-                            SIGN IN SECURELY &rarr;
-                        </button>
+                        <div class="faq-accordion-item" id="faqItem4">
+                            <button type="button" class="faq-question-btn" onclick="toggleFaq(4)">
+                                <span class="faq-q-title">🕊️ What are the requirements for scheduling weddings and baptisms?</span>
+                                <span class="faq-toggle-icon">+</span>
+                            </button>
+                            <div class="faq-answer">
+                                <div class="faq-answer-inner">
+                                    <p>
+                                        Matrimony schedules require at least <strong>2 to 3 months lead time</strong> for canonical interviews, Pre-Cana formation, and marriage banns. Infant baptisms require submission of the child's PSA birth certificate and completion of the pre-baptismal catechesis.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
 
-                        <div id="inlineLoginMsg"></div>
+                    </div>
 
-                    </form>
+                    <div class="helpdesk-card">
+                        <div class="helpdesk-card-header">
+                            <span class="helpdesk-card-badge">DIRECT CHANCERY DESK</span>
+                            <h3>Archdiocesan Chancery Assistance</h3>
+                            <p>For canonical clarifications, diocesan archives, or appointment inquiries, our curia staff are ready to assist you.</p>
+                        </div>
+
+                        <div class="helpdesk-contact-list">
+                            <div class="helpdesk-contact-item">
+                                <span class="contact-icon">📞</span>
+                                <div>
+                                    <strong>Phone Hotline</strong>
+                                    <span>(043) 756-2142 &bull; (043) 756-2572</span>
+                                </div>
+                            </div>
+
+                            <div class="helpdesk-contact-item">
+                                <span class="contact-icon">✉️</span>
+                                <div>
+                                    <strong>Official Support Email</strong>
+                                    <span>chancery@archdioceselipa.ph</span>
+                                </div>
+                            </div>
+
+                            <div class="helpdesk-contact-item">
+                                <span class="contact-icon">📍</span>
+                                <div>
+                                    <strong>Chancery Office Address</strong>
+                                    <span>C.M. Recto Ave. cor. G. Solis St., Lipa City, Batangas</span>
+                                </div>
+                            </div>
+
+                            <div class="helpdesk-contact-item">
+                                <span class="contact-icon">🕒</span>
+                                <div>
+                                    <strong>Curia Operating Hours</strong>
+                                    <span>Monday – Friday &bull; 8:00 AM – 5:00 PM</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <a href="{{ url_for('auth.login') }}" class="portal-btn helpdesk-portal-btn">
+                            Sign In to Portal &rarr;
+                        </a>
+                    </div>
 
                 </div>
 
@@ -582,6 +648,7 @@
                     <p><a href="{{ url_for('auth.login') }}">Access Portal</a></p>
                     <p><a href="#services">Parish Services</a></p>
                     <p><a href="#analytics">System Analytics</a></p>
+                    <p><a href="#helpdesk">Support &amp; FAQ</a></p>
 
                 </div>
 
@@ -604,85 +671,6 @@
         </footer>
 
     </div>
-
-
-    <!-- Login Page -->
-
-    <div id="loginView" class="view-container">
-
-        <header class="login-header">
-
-            <button class="back-btn" id="backToPageBtn">
-                &larr; BACK TO PAGE
-            </button>
-
-            <div class="login-brand">
-
-                <img src="{{ url_for('static', filename='logo.png') }}" class="login-logo" alt="Archdiocese of Lipa">
-
-                <h1>LOGIN PORTAL</h1>
-
-            </div>
-
-        </header>
-
-
-        <main class="login-main">
-
-            <div class="login-card">
-
-                <h2>SECURE AUTHENTICATION</h2>
-
-                <div class="login-card-line"></div>
-
-                <form id="portalLoginForm" action="{{ url_for('auth.login') }}" method="post">
-                    {% include "_csrf.html" %}
-
-                    <div class="form-group">
-
-                        <label for="loginUsername">
-                            USERNAME OR EMAIL:
-                        </label>
-
-                        <input
-                            type="text"
-                            id="loginUsername"
-                            name="identifier"
-                            class="pill-input"
-                            placeholder="name@parish.org or username"
-                            autocomplete="username"
-                            required
-                        >
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label for="loginPassword">
-                            PASSWORD:
-                        </label>
-
-                        {{ password_input('password', id='loginPassword',
-                                          autocomplete='current-password') }}
-
-                    </div>
-
-
-                    <button type="submit" class="submit-login-btn">
-                        SIGN IN SECURELY &rarr;
-                    </button>
-
-                    <div id="portalLoginMsg"></div>
-
-                </form>
-
-            </div>
-
-        </main>
-
-    </div>
-
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
     <script src="{{ url_for('static', filename='password_toggle.js') }}"></script>

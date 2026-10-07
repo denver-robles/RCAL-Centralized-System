@@ -38,8 +38,10 @@
         {{ field('purpose', form, 'Purpose', value=form.purpose,
         hint='e.g. marriage documentation, school requirement.') }}
 
-        <button type="submit" class="submit-login-btn">FILE REQUEST</button>
-        <a href="{{ url_for('certificates.index') }}" class="link-btn">Cancel</a>
+        <div class="form-actions">
+            <button type="submit" class="submit-login-btn">FILE REQUEST &rarr;</button>
+            <a href="{{ url_for('certificates.index') }}" class="btn-cancel">Cancel</a>
+        </div>
     </form>
 
     {% endif %}

@@ -123,8 +123,10 @@
             </div>
         </fieldset>
 
-        <button type="submit" class="submit-login-btn">CREATE SACRAMENT SCHEDULE</button>
-        <a href="{{ url_for('records.schedules') }}" class="link-btn">Cancel</a>
+        <div class="form-actions">
+            <button type="submit" class="submit-login-btn">CREATE SACRAMENT SCHEDULE &rarr;</button>
+            <a href="{{ url_for('records.schedules') }}" class="btn-cancel">Cancel</a>
+        </div>
     </form>
 
 </div>

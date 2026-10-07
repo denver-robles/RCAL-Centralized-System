@@ -98,8 +98,10 @@
             {{ textarea('register_notes', form, 'Register notes', form.register_notes, rows=3) }}
         </fieldset>
 
-        <button type="submit" class="submit-login-btn">RECORD ENTRY</button>
-        <a href="{{ url_for('records.search') }}" class="link-btn">Cancel</a>
+        <div class="form-actions">
+            <button type="submit" class="submit-login-btn">RECORD ENTRY &rarr;</button>
+            <a href="{{ url_for('records.search') }}" class="btn-cancel">Cancel</a>
+        </div>
     </form>
 
     {% endif %}

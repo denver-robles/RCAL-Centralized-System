@@ -141,6 +141,79 @@
     transform: translateY(-1px);
 }
 
+/* Portal Header Scope & Calendar Chips */
+.portal-header-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.portal-scope-chip,
+.portal-date-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--color-slate-200);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    white-space: nowrap;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.portal-scope-chip {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--color-amber-300);
+    border-color: rgba(245, 158, 11, 0.35);
+}
+
+@media (max-width: 900px) {
+    .portal-header-meta .portal-date-chip {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .portal-header-meta {
+        display: none;
+    }
+}
+
+@media (max-width: 680px) {
+    .portal-header {
+        padding: 10px 14px;
+    }
+
+    .portal-brand-link {
+        gap: 8px;
+        font-size: 13.5px;
+    }
+
+    .portal-brand-link img {
+        width: 32px;
+        height: 32px;
+    }
+
+    .portal-header-user {
+        gap: 8px;
+        font-size: 12px;
+    }
+
+    .portal-header-user .portal-user-name {
+        display: none;
+    }
+
+    .portal-header .link-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+}
+
 /* ==========================================================================
    PORTAL FOOTER (RICH 4-COLUMN DIOCESAN EDITION)
    ========================================================================== */
@@ -817,6 +890,77 @@
 .btn-row.wrap {
     flex-wrap: wrap;
     margin-bottom: 22px;
+}
+
+/* ==========================================================================
+   UNIFIED FORM ACTIONS & CANCEL BUTTONS
+   ========================================================================== */
+
+.form-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 2rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--color-slate-200);
+    flex-wrap: wrap;
+}
+
+.form-actions .submit-login-btn,
+.form-actions .btn-primary {
+    width: auto !important;
+    min-width: 160px;
+    margin: 0;
+}
+
+.btn-cancel,
+.form-actions .btn-cancel,
+.form-actions .btn-secondary,
+.form-actions .link-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background-color: #ffffff;
+    color: var(--color-slate-700);
+    border: 1px solid var(--color-slate-300);
+    padding: 10px 22px;
+    border-radius: var(--radius-md);
+    font-family: var(--font-sans);
+    font-size: 13.5px;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    width: auto !important;
+    margin: 0;
+}
+
+.btn-cancel:hover,
+.form-actions .btn-cancel:hover,
+.form-actions .btn-secondary:hover,
+.form-actions .link-btn:hover {
+    background-color: var(--color-slate-100);
+    color: var(--color-slate-950);
+    border-color: var(--color-slate-400);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+}
+
+@media (max-width: 640px) {
+    .form-actions {
+        flex-direction: column-reverse;
+        gap: 12px;
+    }
+    .form-actions .submit-login-btn,
+    .form-actions .btn-primary,
+    .form-actions .btn-cancel,
+    .form-actions .btn-secondary,
+    .form-actions .link-btn {
+        width: 100% !important;
+        text-align: center;
+    }
 }
 
 /* ==========================================================================
@@ -1970,4 +2114,80 @@
 .tab-link:hover {
     transform: translateY(-1px);
 }
+
+/* ==========================================================================
+   PASSWORD RECOVERY MODAL CONTROL
+   ========================================================================== */
+
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    padding: 20px;
+    animation: modalBackdropFadeIn 0.2s ease;
+}
+
+.modal-dialog.forgot-password-dialog {
+    background: #ffffff;
+    border-radius: var(--radius-xl);
+    max-width: 520px;
+    width: 100%;
+    padding: 28px 26px;
+    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    position: relative;
+    animation: modalDialogPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 26px;
+    cursor: pointer;
+    color: var(--color-slate-400);
+    line-height: 1;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+}
+
+.modal-close-btn:hover {
+    color: var(--color-slate-900);
+    background: var(--color-slate-100);
+}
+
+.forgot-password-link:hover {
+    text-decoration: underline !important;
+    color: #d97706 !important;
+}
+
+@keyframes modalBackdropFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes modalDialogPop {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
 

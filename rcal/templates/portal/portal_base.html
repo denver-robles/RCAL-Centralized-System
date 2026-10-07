@@ -28,8 +28,20 @@
         </a>
 
         {% if current_user.is_authenticated %}
+        <div class="portal-header-meta">
+            <span class="portal-scope-chip" title="Parishioner Document & Sacrament Access">
+                ✝ Parishioner Services &bull; Lipa, Batangas
+            </span>
+            <span class="portal-date-chip">
+                📅 Curia Calendar &bull; Archdiocese of Lipa
+            </span>
+        </div>
+
         <div class="portal-header-user">
-            <span class="badge badge-portal" style="background: rgba(255,255,255,0.12); color: #f8fafc; border: 1px solid rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 9999px; font-weight: 600;">
+            <span class="avatar-badge amber" title="{{ current_user.display_name or current_user.username }}">
+                {{ (current_user.display_name or current_user.username)[:2].upper() }}
+            </span>
+            <span class="portal-user-name badge badge-portal" style="background: rgba(255,255,255,0.12); color: #f8fafc; border: 1px solid rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 9999px; font-weight: 600;">
                 {{ current_user.display_name or current_user.username }}
             </span>
             <form method="post" action="{{ url_for('auth.logout') }}" style="margin: 0; display: inline;">
@@ -46,10 +58,18 @@
     public/office split is that a parishioner has only these links. #}
     <nav class="portal-nav">
         {% if current_user.is_authenticated %}
-        <a href="{{ url_for('portal.dashboard') }}" class="{{ 'active' if request.endpoint == 'portal.dashboard' else '' }}">My requests</a>
-        <a href="{{ url_for('portal.schedules') }}" class="{{ 'active' if request.endpoint in ('portal.schedules', 'portal.schedule_detail') else '' }}">Sacrament schedules</a>
-        <a href="{{ url_for('portal.new_request') }}" class="{{ 'active' if request.endpoint == 'portal.new_request' else '' }}">Request a document</a>
-        <a href="{{ url_for('portal.new_schedule') }}" class="{{ 'active' if request.endpoint == 'portal.new_schedule' else '' }}">Schedule a sacrament</a>
+        <a href="{{ url_for('portal.dashboard') }}" class="{{ 'active' if request.endpoint == 'portal.dashboard' else '' }}">
+            <span class="nav-icon">📋</span> <span>My requests</span>
+        </a>
+        <a href="{{ url_for('portal.schedules') }}" class="{{ 'active' if request.endpoint in ('portal.schedules', 'portal.schedule_detail') else '' }}">
+            <span class="nav-icon">📅</span> <span>Sacrament schedules</span>
+        </a>
+        <a href="{{ url_for('portal.new_request') }}" class="{{ 'active' if request.endpoint == 'portal.new_request' else '' }}">
+            <span class="nav-icon">✍️</span> <span>Request a document</span>
+        </a>
+        <a href="{{ url_for('portal.new_schedule') }}" class="{{ 'active' if request.endpoint == 'portal.new_schedule' else '' }}">
+            <span class="nav-icon">🕊️</span> <span>Schedule a sacrament</span>
+        </a>
         {% endif %}
     </nav>
 

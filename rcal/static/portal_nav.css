@@ -93,19 +93,41 @@
     }
 }
 
+.portal-nav a .nav-icon {
+    font-size: 15px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+}
+
+.portal-nav a:hover .nav-icon {
+    transform: scale(1.15);
+}
+
 @media (max-width: 768px) {
     .portal-nav {
-        padding: 8px 3%;
-        gap: 4px;
+        padding: 8px 16px;
+        gap: 6px;
         overflow-x: auto;
         flex-wrap: nowrap;
         -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        mask-image: linear-gradient(to right, black 88%, transparent 100%);
+        -webkit-mask-image: linear-gradient(to right, black 88%, transparent 100%);
+    }
+
+    .portal-nav::-webkit-scrollbar {
+        display: none;
     }
 
     .portal-nav a {
-        padding: 7px 14px;
+        padding: 8px 14px;
         font-size: 12.5px;
         white-space: nowrap;
+        min-height: 44px;
+        box-sizing: border-box;
     }
 
     .portal-nav a::after {

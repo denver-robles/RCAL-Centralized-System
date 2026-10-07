@@ -88,8 +88,10 @@
             {% endif %}
         </div>
 
-        <button type="submit" class="submit-login-btn">SAVE ACCOUNT</button>
-        <a href="{{ url_for('admin.users') }}" class="link-btn">Cancel</a>
+        <div class="form-actions">
+            <button type="submit" class="submit-login-btn">{{ "UPDATE ACCOUNT" if editing else "SAVE ACCOUNT" }} &rarr;</button>
+            <a href="{{ url_for('admin.users') }}" class="btn-cancel">Cancel</a>
+        </div>
     </form>
 
 </div>

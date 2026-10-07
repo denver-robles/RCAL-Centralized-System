@@ -1,80 +1,74 @@
-// MAIN VIEW AND LOGIN VIEW
-const mainView = document.getElementById("mainView");
-const loginView = document.getElementById("loginView");
-
-function showMainView() {
-    mainView.classList.add("active");
-    loginView.classList.remove("active");
+// DIRECT PORTAL NAVIGATION
+const portalBtn = document.getElementById("portalBtn");
+if (portalBtn && portalBtn.tagName === "BUTTON") {
+    portalBtn.addEventListener("click", function() {
+        window.location.href = "/login";
+    });
 }
 
-function showLoginView() {
-    mainView.classList.remove("active");
-    loginView.classList.add("active");
-}
-
-// OPEN LOGIN PORTAL
-document.getElementById("portalBtn").addEventListener("click", function() {
-    showLoginView();
-});
-
-// BACK TO MAIN PAGE
-document.getElementById("backToPageBtn").addEventListener("click", function() {
-    showMainView();
-});
-
-// MOBILE MENU
+// MOBILE MENU WITH ANIMATED TOGGLE
 const menuToggle = document.getElementById("menuToggle");
 const mainNav = document.getElementById("mainNav");
 
-menuToggle.addEventListener("click", function() {
-    mainNav.classList.toggle("open");
-});
-
-// CLOSE MOBILE MENU WHEN CLICKING A LINK
-const navLinks = document.querySelectorAll("nav a");
-
-navLinks.forEach(function(link) {
-    link.addEventListener("click", function() {
-        mainNav.classList.remove("open");
+if (menuToggle && mainNav) {
+    menuToggle.addEventListener("click", function() {
+        mainNav.classList.toggle("open");
+        if (mainNav.classList.contains("open")) {
+            menuToggle.textContent = "✕";
+            menuToggle.setAttribute("aria-expanded", "true");
+        } else {
+            menuToggle.textContent = "☰";
+            menuToggle.setAttribute("aria-expanded", "false");
+        }
     });
-});
 
-// INLINE LOGIN — submits to the real /login endpoint instead of faking a
-// welcome message, so the form is handled by the server's auth logic.
-const inlineLoginForm = document.getElementById("inlineLoginForm");
+    // CLOSE MOBILE MENU WHEN CLICKING A LINK
+    const navLinks = mainNav.querySelectorAll("a");
+    navLinks.forEach(function(link) {
+        link.addEventListener("click", function() {
+            mainNav.classList.remove("open");
+            menuToggle.textContent = "☰";
+            menuToggle.setAttribute("aria-expanded", "false");
+        });
+    });
+}
 
-inlineLoginForm.addEventListener("submit", function(event) {
-    event.preventDefault();
+// SCROLL-SPY ACTIVE NAVIGATION TRACKER
+const spySections = document.querySelectorAll("main section[id]");
+const spyNavLinks = document.querySelectorAll("#mainNav a[href^='#']");
 
-    const username = document.getElementById("inlineUsername").value;
-    const message = document.getElementById("inlineLoginMsg");
+function updateScrollSpy() {
+    const scrollPosition = window.scrollY + 140;
+    spySections.forEach(function(section) {
+        const top = section.offsetTop;
+        const height = section.offsetHeight;
+        const id = section.getAttribute("id");
+        if (scrollPosition >= top && scrollPosition < top + height) {
+            spyNavLinks.forEach(function(link) {
+                if (link.getAttribute("href") === "#" + id) {
+                    link.classList.add("active");
+                } else {
+                    link.classList.remove("active");
+                }
+            });
+        }
+    });
+}
 
-    if (username == "") {
-        message.textContent = "Please enter your username or email.";
-        message.style.color = "red";
-        return;
+window.addEventListener("scroll", updateScrollSpy, { passive: true });
+window.addEventListener("DOMContentLoaded", updateScrollSpy);
+
+// FAQ ACCORDION TOGGLE WITH FLUID TRANSITION
+function toggleFaq(index) {
+    const item = document.getElementById("faqItem" + index);
+    if (!item) return;
+    const isOpen = item.classList.contains("open");
+    item.classList.toggle("open");
+    const toggleIcon = item.querySelector(".faq-toggle-icon");
+    if (toggleIcon) {
+        toggleIcon.textContent = isOpen ? "+" : "−";
     }
-
-    inlineLoginForm.submit();
-});
-
-// LOGIN PORTAL — same endpoint, full page.
-const portalLoginForm = document.getElementById("portalLoginForm");
-
-portalLoginForm.addEventListener("submit", function(event) {
-    event.preventDefault();
-
-    const username = document.getElementById("loginUsername").value;
-    const message = document.getElementById("portalLoginMsg");
-
-    if (username == "") {
-        message.textContent = "Please enter your username or email.";
-        message.style.color = "red";
-        return;
-    }
-
-    portalLoginForm.submit();
-});
+}
 
 // ==========================================================================
 // INTERACTIVE STEPPER SIMULATOR

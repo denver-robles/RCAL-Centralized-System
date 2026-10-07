@@ -45,8 +45,10 @@
             {% endif %}
         </div>
 
-        <button type="submit" class="submit-login-btn">ADD NOTE</button>
-        <a href="{{ url_for('records.detail', record_id=record.id) }}" class="link-btn">Cancel</a>
+        <div class="form-actions">
+            <button type="submit" class="submit-login-btn">ADD NOTE &rarr;</button>
+            <a href="{{ url_for('records.detail', record_id=record.id) }}" class="btn-cancel">Cancel</a>
+        </div>
     </form>
 
 </div>

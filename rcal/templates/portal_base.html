@@ -28,9 +28,27 @@
         </a>
 
         {% if current_user.is_authenticated %}
+        <div class="portal-header-meta">
+            <span class="portal-scope-chip" title="Active Jurisdiction Scope">
+                {% if current_user.parish %}
+                    🏛️ {{ current_user.parish.name }}
+                {% elif current_user.role.value == 'admin' %}
+                    🛡️ Chancery Curia &bull; System Administrator
+                {% else %}
+                    ⚜️ Archdiocesan Curia &bull; All Parishes
+                {% endif %}
+            </span>
+            <span class="portal-date-chip">
+                📅 Curia Calendar &bull; Archdiocese of Lipa
+            </span>
+        </div>
+
         <div class="portal-header-user">
-            <span>{{ current_user.display_name or current_user.username }}</span>
-            <form method="post" action="{{ url_for('auth.logout') }}">
+            <span class="avatar-badge amber" title="{{ current_user.display_name or current_user.username }}">
+                {{ (current_user.display_name or current_user.username)[:2].upper() }}
+            </span>
+            <span class="portal-user-name">{{ current_user.display_name or current_user.username }}</span>
+            <form method="post" action="{{ url_for('auth.logout') }}" style="margin: 0; display: inline;">
                 {% include "_csrf.html" %}
                 <button type="submit" class="link-btn">Sign out</button>
             </form>
@@ -44,19 +62,19 @@
        flex row it would sit beside the brand and wrap onto two lines. #}
     <nav class="portal-nav">
         {% if current_user.is_authenticated %}
-        <a href="{{ url_for('records.search') }}">Registers</a>
-        <a href="{{ url_for('directory.parishes') }}">Parishes</a>
-        <a href="{{ url_for('directory.clergy') }}">Clergy</a>
-        <a href="{{ url_for('certificates.index') }}">Certificates</a>
-        <a href="{{ url_for('records.schedules') }}">Sacrament schedules</a>
+        <a href="{{ url_for('records.search') }}"><span class="nav-icon">📖</span> <span>Registers</span></a>
+        <a href="{{ url_for('directory.parishes') }}"><span class="nav-icon">🏛️</span> <span>Parishes</span></a>
+        <a href="{{ url_for('directory.clergy') }}"><span class="nav-icon">✝</span> <span>Clergy</span></a>
+        <a href="{{ url_for('certificates.index') }}"><span class="nav-icon">📜</span> <span>Certificates</span></a>
+        <a href="{{ url_for('records.schedules') }}"><span class="nav-icon">📅</span> <span>Sacrament schedules</span></a>
         {% if current_user.role.value in ('admin', 'chancery', 'parish_staff', 'clergy') %}
-        <a href="{{ url_for('records.analytics') }}">Analytics</a>
+        <a href="{{ url_for('records.analytics') }}"><span class="nav-icon">📊</span> <span>Analytics</span></a>
         {% endif %}
         {% if current_user.role.can_view_audit_log %}
-        <a href="{{ url_for('audit.index') }}">Audit</a>
+        <a href="{{ url_for('audit.index') }}"><span class="nav-icon">🛡️</span> <span>Audit</span></a>
         {% endif %}
         {% if current_user.role.can_manage_users %}
-        <a href="{{ url_for('admin.users') }}">Accounts</a>
+        <a href="{{ url_for('admin.users') }}"><span class="nav-icon">👥</span> <span>Accounts</span></a>
         {% endif %}
         {% endif %}
     </nav>

@@ -29,11 +29,13 @@
         {{ field('email', form, 'Email', type='email',
         value=form.email or (parish.email if parish else '')) }}
 
-        <button type="submit" class="submit-login-btn">
-            {{ "SAVE CHANGES" if editing else "ADD PARISH" }}
-        </button>
-        <a href="{{ url_for('directory.parish_detail', parish_id=parish.id) if parish
-                    else url_for('directory.parishes') }}" class="link-btn">Cancel</a>
+        <div class="form-actions">
+            <button type="submit" class="submit-login-btn">
+                {{ "SAVE CHANGES" if editing else "ADD PARISH" }} &rarr;
+            </button>
+            <a href="{{ url_for('directory.parish_detail', parish_id=parish.id) if parish
+                        else url_for('directory.parishes') }}" class="btn-cancel">Cancel</a>
+        </div>
     </form>
 
 </div>

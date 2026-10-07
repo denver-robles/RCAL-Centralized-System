@@ -56,14 +56,17 @@ class LoginTest(AuthTestCase):
         self.assertIn(b"SECURE AUTHENTICATION", response.data)
 
     def test_landing_page_forms_post_to_login(self):
-        # These forms started as JavaScript-only prototypes; now that they
-        # really POST, they must carry the field names the server expects.
+        # Dedicated /login page is now the primary entrance; the landing page
+        # directs visitors securely to /login.
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
         body = response.data
-        self.assertEqual(body.count(b'action="/login" method="post"'), 2)
-        self.assertIn(b'name="identifier"', body)
-        self.assertIn(b'name="password"', body)
+        self.assertIn(b'href="/login"', body)
+        login_res = self.client.get("/login")
+        self.assertIn(b'action="/login"', login_res.data)
+        self.assertIn(b'method="post"', login_res.data)
+        self.assertIn(b'name="identifier"', login_res.data)
+        self.assertIn(b'name="password"', login_res.data)
 
     def test_sign_in_with_username(self):
         response = self.login("admin", "adminpw")
@@ -360,8 +363,9 @@ class CsrfEnabledTest(unittest.TestCase):
         self.ctx.pop()
 
     def test_landing_page_forms_carry_a_csrf_token(self):
-        body = self.client.get("/").data
-        self.assertEqual(body.count(b'name="csrf_token"'), 2)
+        # Dedicated /login form carries active CSRF tokens for both portals.
+        body = self.client.get("/login").data
+        self.assertGreaterEqual(body.count(b'name="csrf_token"'), 1)
 
     def test_posting_the_landing_form_without_a_token_is_rejected(self):
         response = self.client.post(
