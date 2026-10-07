@@ -1,30 +1,47 @@
 {% extends "portal/portal_base.html" %}
 
-{% block title %}Schedule Request - {{ config['APP_NAME'] }}{% endblock %}
+{% block title %}{{ event.event_type.label }} Schedule Request - {{ config['APP_NAME'] }}{% endblock %}
 
 {% block content %}
 
-<h1 class="portal-title">{{ event.event_type.label }} Schedule Request</h1>
-<p class="muted">
-    Submitted {{ event.created_at.strftime('%d %B %Y') }}
-    &middot;
-    {% if event.status.value == 'requested' %}
-    <span class="badge badge-pending">Pending Approval</span>
-    {% elif event.status.value in ('scheduled', 'confirmed') %}
-    <span class="badge badge-ok">{{ event.status.label }}</span>
-    {% elif event.status.value == 'completed' %}
-    <span class="badge badge-ok">Completed</span>
-    {% elif event.status.value == 'cancelled' %}
-    <span class="badge badge-rejected">Cancelled</span>
-    {% else %}
-    <span class="badge badge-pending">{{ event.status.label }}</span>
-    {% endif %}
-</p>
+{# Appointment Header Row with Calendar Badge #}
+<div class="title-row" style="margin-bottom: 1.75rem; align-items: center;">
+    <div style="display: flex; align-items: center; gap: 1.25rem;">
+        <div class="appointment-header-badge">
+            <div class="month">{{ event.starts_at.strftime('%b') }}</div>
+            <div class="day">{{ event.starts_at.strftime('%d') }}</div>
+        </div>
+        <div>
+            <h1 class="portal-title" style="margin: 0 0 0.25rem; font-size: 26px;">{{ event.event_type.label }} Schedule Request</h1>
+            <p class="muted" style="margin: 0;">
+                Submitted {{ event.created_at.strftime('%d %B %Y') }}
+                &middot;
+                {% if event.status.value == 'requested' %}
+                <span class="badge badge-pending">Pending Approval</span>
+                {% elif event.status.value in ('scheduled', 'confirmed') %}
+                <span class="badge badge-ok">{{ event.status.label }}</span>
+                {% elif event.status.value == 'completed' %}
+                <span class="badge badge-ok">Completed</span>
+                {% elif event.status.value == 'cancelled' %}
+                <span class="badge badge-rejected">Cancelled</span>
+                {% else %}
+                <span class="badge badge-pending">{{ event.status.label }}</span>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+    <div>
+        <a href="{{ url_for('portal.schedules') }}" class="link-btn">
+            &larr; Back to all schedules
+        </a>
+    </div>
+</div>
 
 <div class="portal-grid">
 
-    <div class="portal-card">
-        <h2>SCHEDULE DETAILS</h2>
+    {# Details Card #}
+    <div class="portal-card" style="margin: 0;">
+        <h2>LITURGY &amp; APPOINTMENT DETAILS</h2>
         <div class="portal-card-line"></div>
 
         <dl class="detail-list">
@@ -35,18 +52,18 @@
             <dd>{{ event.title }}</dd>
 
             <dt>Parish</dt>
-            <dd>{{ event.parish.name }} ({{ event.parish.municipality }})</dd>
+            <dd><strong>{{ event.parish.name }}</strong> ({{ event.parish.municipality }})</dd>
 
             <dt>Date &amp; Time</dt>
-            <dd>
-                <strong>{{ event.starts_at.strftime('%A, %d %B %Y at %I:%M %p') }}</strong>
+            <dd style="color: #0f172a; font-weight: 700;">
+                {{ event.starts_at.strftime('%A, %d %B %Y at %I:%M %p') }}
             </dd>
 
             <dt>Venue</dt>
-            <dd>{{ event.venue.name if event.venue else "To be assigned by parish" }}</dd>
+            <dd>{{ event.venue.name if event.venue else "To be assigned by parish office" }}</dd>
 
             <dt>Presiding Clergy</dt>
-            <dd>{{ event.presiding_clergy.titled_name if event.presiding_clergy else "To be assigned by parish" }}</dd>
+            <dd>{{ event.presiding_clergy.titled_name if event.presiding_clergy else "To be assigned by parish office" }}</dd>
 
             <dt>Expected Attendees</dt>
             <dd>{{ event.expected_attendees or "Not specified" }}</dd>
@@ -54,53 +71,82 @@
             <dt>Contact Person</dt>
             <dd>{{ event.requester_name or "Not given" }} ({{ event.requester_contact or "No phone" }})</dd>
 
-            <dt>Notes / Details</dt>
+            <dt>Notes &amp; Details</dt>
             <dd>{{ event.description or "None provided" }}</dd>
         </dl>
     </div>
 
-    <div class="portal-card">
-        <h2>STATUS &amp; ACTIONS</h2>
+    {# Status & Actions Card #}
+    <div class="portal-card" style="margin: 0;">
+        <h2>OFFICE REVIEW &amp; STATUS</h2>
         <div class="portal-card-line"></div>
 
         {% if event.status.value == 'requested' %}
-        <p>
-            Your request is currently awaiting review by the parish staff.
-            They will verify the availability of the church and priest.
-        </p>
-        <form method="post" action="{{ url_for('portal.cancel_schedule', event_id=event.id) }}"
-              onsubmit="return confirm('Are you sure you want to cancel this sacrament schedule request?');">
-            {% include "_csrf.html" %}
-            <button type="submit" class="link-btn danger">Cancel this request</button>
-        </form>
+        <div class="callout-banner callout-amber" style="margin-bottom: 1.5rem;">
+            <h3 style="margin: 0 0 0.35rem; font-size: 15px; font-weight: 700;">Awaiting Parish Office Review</h3>
+            <p style="margin: 0; font-size: 13.5px;">
+                Your request is currently being reviewed by parish staff.
+                They will verify priest and church calendar availability and get in touch with you if additional documents are required.
+            </p>
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
+            <p class="muted small" style="margin: 0 0 1rem;">
+                Need to change your plans? You may cancel this appointment request before the parish office confirms it.
+            </p>
+            <form method="post" action="{{ url_for('portal.cancel_schedule', event_id=event.id) }}"
+                  onsubmit="return confirm('Are you sure you want to cancel this sacrament schedule request?');"
+                  style="margin: 0;">
+                {% include "_csrf.html" %}
+                <button type="submit" class="link-btn danger">Cancel this request</button>
+            </form>
+        </div>
+
         {% elif event.status.value in ('scheduled', 'confirmed') %}
-        <p class="badge-ok" style="display:inline-block; padding: 0.5rem 1rem; border-radius: 4px; margin-bottom: 1rem;">
-            ✓ Your schedule request has been approved by the parish office.
-        </p>
+        <div class="callout-banner callout-emerald" style="margin-bottom: 1.5rem;">
+            <h3 style="margin: 0 0 0.35rem; font-size: 15px; font-weight: 700;">✓ Schedule Request Approved</h3>
+            <p style="margin: 0; font-size: 13.5px;">
+                Your sacramental appointment has been approved and confirmed on the parish calendar.
+            </p>
+        </div>
+
         <p class="muted small">
-            Please be at {{ event.parish.name }} 15-30 minutes before the scheduled time.
-            Bring any necessary documents required by the parish office.
+            Please arrive at <strong>{{ event.parish.name }}</strong> 15&ndash;30 minutes before the scheduled ceremony time.
+            Ensure all requirements requested by the parish office (e.g. seminars, certificates, godparent documents) have been settled.
         </p>
+
         {% elif event.status.value == 'completed' %}
-        <p class="badge-ok" style="display:inline-block; padding: 0.5rem 1rem; border-radius: 4px; margin-bottom: 1rem;">
-            ✓ The sacrament has been celebrated and completed.
-        </p>
+        <div class="callout-banner callout-emerald" style="margin-bottom: 1.5rem;">
+            <h3 style="margin: 0 0 0.35rem; font-size: 15px; font-weight: 700;">✓ Ceremony Celebrated &amp; Completed</h3>
+            <p style="margin: 0; font-size: 13.5px;">
+                The sacrament celebration has taken place and been marked complete.
+            </p>
+        </div>
+
         {% if event.record_id %}
-        <p class="muted small">
-            This celebration has been canonically inscribed into the parish sacramental registers.
-        </p>
-        {% endif %}
-        {% elif event.status.value == 'cancelled' %}
-        <p class="badge-rejected" style="display:inline-block; padding: 0.5rem 1rem; border-radius: 4px; margin-bottom: 1rem;">
-            ✕ This request was cancelled.
-        </p>
-        {% if event.cancellation_reason %}
-        <p><strong>Reason:</strong> {{ event.cancellation_reason }}</p>
-        {% endif %}
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
+            <p class="muted small" style="margin: 0;">
+                ✓ This celebration has been canonically inscribed into the parish sacramental registers.
+            </p>
+        </div>
         {% endif %}
 
-        <div style="margin-top: 2rem;">
-            <a href="{{ url_for('portal.schedules') }}" class="link-btn">&larr; Back to all schedules</a>
+        {% elif event.status.value == 'cancelled' %}
+        <div class="callout-banner callout-rose" style="margin-bottom: 1.5rem;">
+            <h3 style="margin: 0 0 0.35rem; font-size: 15px; font-weight: 700;">✕ Request Cancelled</h3>
+            <p style="margin: 0; font-size: 13.5px;">
+                This schedule request was cancelled.
+                {% if event.cancellation_reason %}
+                <br><strong>Reason:</strong> {{ event.cancellation_reason }}
+                {% endif %}
+            </p>
+        </div>
+        {% endif %}
+
+        <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e2e8f0;">
+            <a href="{{ url_for('portal.schedules') }}" class="link-btn">
+                &larr; Back to all schedules
+            </a>
         </div>
     </div>
 

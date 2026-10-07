@@ -1,19 +1,25 @@
 {% extends "portal/portal_base.html" %}
 {% from "_fields.html" import field %}
 
-{% block title %}New request - {{ config['APP_NAME'] }}{% endblock %}
+{% block title %}Request a Church Document - {{ config['APP_NAME'] }}{% endblock %}
 
 {% block content %}
 
-<h1 class="portal-title">Request a Church Document</h1>
+<div class="title-row" style="margin-bottom: 1.5rem;">
+    <div>
+        <h1 class="portal-title" style="margin-bottom: 0.25rem;">Request a Church Document</h1>
+        <p class="muted" style="margin: 0;">
+            Provide the details as they appear on the canonical record. The parish will verify them against the registers before preparation.
+        </p>
+    </div>
+    <div>
+        <a href="{{ url_for('portal.dashboard') }}" class="link-btn">
+            &larr; Back to my requests
+        </a>
+    </div>
+</div>
 
-<div class="portal-card">
-
-    <p class="muted">
-        Give the details as they appear on the record. The parish will check
-        them against the register before preparing anything, so an
-        approximate date is more useful than a guess.
-    </p>
+<div class="portal-card" style="max-width: 800px; margin: 0 auto 2rem;">
 
     <form method="post" novalidate>
         {% include "_csrf.html" %}
@@ -113,8 +119,10 @@
             </div>
         </fieldset>
 
-        <button type="submit" class="submit-login-btn">SUBMIT REQUEST</button>
-        <a href="{{ url_for('portal.dashboard') }}" class="link-btn">Cancel</a>
+        <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1.5rem; flex-wrap: wrap;">
+            <button type="submit" class="submit-login-btn">SUBMIT REQUEST</button>
+            <a href="{{ url_for('portal.dashboard') }}" class="link-btn">Cancel</a>
+        </div>
     </form>
 
 </div>

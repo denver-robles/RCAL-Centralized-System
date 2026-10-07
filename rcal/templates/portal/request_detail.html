@@ -1,30 +1,166 @@
 {% extends "portal/portal_base.html" %}
 
-{% block title %}Request - {{ config['APP_NAME'] }}{% endblock %}
+{% block title %}Request Details - {{ config['APP_NAME'] }}{% endblock %}
 
 {% block content %}
 
-<h1 class="portal-title">{{ item.sacrament_type.label }} Certificate</h1>
-<p class="muted">
-    Submitted {{ item.created_at.strftime('%d %B %Y') }}
-    &middot;
-    <span class="badge badge-{{ 'ok' if item.status.is_closed else 'pending' }}">
-        {{ item.status.label }}
-    </span>
-</p>
+{# Header Title Row #}
+<div class="title-row" style="margin-bottom: 1.5rem;">
+    <div>
+        <h1 class="portal-title" style="margin-bottom: 0.35rem;">{{ item.sacrament_type.label }} Certificate</h1>
+        <p class="muted" style="margin: 0;">
+            Reference <strong class="mono" style="color: var(--color-slate-900);">RCAL-DR-{{ '%05d' % item.id }}</strong>
+            &middot; Submitted {{ item.created_at.strftime('%d %B %Y') }}
+            &middot;
+            {% if item.status.value == 'completed' %}
+            <span class="badge badge-ok">Completed</span>
+            {% elif item.status.value in ('rejected', 'record_not_found', 'cancelled') %}
+            <span class="badge badge-rejected">{{ item.status.label }}</span>
+            {% elif item.status.value in ('under_review', 'processing', 'awaiting_payment', 'ready', 'out_for_delivery') %}
+            <span class="badge badge-info">{{ item.status.label }}</span>
+            {% else %}
+            <span class="badge badge-pending">{{ item.status.label }}</span>
+            {% endif %}
+        </p>
+    </div>
+    <div>
+        <a href="{{ url_for('portal.dashboard') }}" class="link-btn">
+            &larr; Back to my requests
+        </a>
+    </div>
+</div>
 
+{# Progress Stepper Card #}
+<div class="portal-card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="margin: 0; text-align: left; font-size: 1.15rem;">REQUEST PROGRESS</h2>
+        <span class="badge badge-notes">Current: {{ item.status.label }}</span>
+    </div>
+    <div class="portal-card-line" style="margin-left: 0; margin-right: 0;"></div>
+
+    {# Stepper logic calculations #}
+    {% set status_val = item.status.value %}
+    {% set is_failed = status_val in ('record_not_found', 'rejected', 'cancelled') %}
+
+    {% set step1_done = status_val in ('under_review', 'processing', 'awaiting_payment', 'ready', 'out_for_delivery', 'completed') %}
+    {% set step1_active = status_val == 'submitted' %}
+
+    {% set step2_done = status_val in ('processing', 'awaiting_payment', 'ready', 'out_for_delivery', 'completed') %}
+    {% set step2_active = status_val == 'under_review' %}
+
+    {% set step3_done = status_val in ('ready', 'out_for_delivery', 'completed') %}
+    {% set step3_active = status_val in ('processing', 'awaiting_payment') %}
+
+    {% set step4_done = status_val == 'completed' %}
+    {% set step4_active = status_val in ('ready', 'out_for_delivery') %}
+
+    {% set step5_done = status_val == 'completed' %}
+
+    {% if status_val == 'completed' %}
+        {% set progress_width = '100%' %}
+    {% elif status_val in ('ready', 'out_for_delivery') %}
+        {% set progress_width = '75%' %}
+    {% elif status_val in ('processing', 'awaiting_payment') %}
+        {% set progress_width = '50%' %}
+    {% elif status_val == 'under_review' %}
+        {% set progress_width = '25%' %}
+    {% else %}
+        {% set progress_width = '0%' %}
+    {% endif %}
+
+    <div class="stepper-wrapper">
+        <div class="stepper">
+            <div class="stepper-progress" style="width: {{ progress_width }};"></div>
+
+            <div class="step-node {{ 'is-done' if step1_done else ('is-active' if step1_active else '') }}">
+                <div class="step-circle">{{ '✓' if step1_done else '1' }}</div>
+                <div class="step-label">Submitted</div>
+                <div class="step-caption">Claim filed</div>
+            </div>
+
+            <div class="step-node {{ 'is-done' if step2_done else ('is-active' if step2_active else '') }}">
+                <div class="step-circle">{{ '✓' if step2_done else '2' }}</div>
+                <div class="step-label">Being Verified</div>
+                <div class="step-caption">Archive search</div>
+            </div>
+
+            <div class="step-node {{ 'is-done' if step3_done else ('is-active' if step3_active else '') }}">
+                <div class="step-circle">{{ '✓' if step3_done else '3' }}</div>
+                <div class="step-label">Being Prepared</div>
+                <div class="step-caption">Transcription</div>
+            </div>
+
+            <div class="step-node {{ 'is-done' if step4_done else ('is-active' if step4_active else '') }}">
+                <div class="step-circle">{{ '✓' if step4_done else '4' }}</div>
+                <div class="step-label">Ready / In Transit</div>
+                <div class="step-caption">Pickup / Delivery</div>
+            </div>
+
+            <div class="step-node {{ 'is-done' if step5_done else '' }}">
+                <div class="step-circle">{{ '✓' if step5_done else '5' }}</div>
+                <div class="step-label">Completed</div>
+                <div class="step-caption">Claimed</div>
+            </div>
+        </div>
+    </div>
+
+    {# Contextual Callouts depending on current state #}
+    {% if item.status.value == 'record_not_found' %}
+    <div class="callout-banner callout-amber" style="margin-top: 1.25rem;">
+        <h3 style="margin: 0 0 0.35rem; font-size: 15px; font-weight: 700;">Record Not Found in Parish Archives</h3>
+        <p style="margin: 0; font-size: 13.5px;">
+            The parish office could not locate a sacramental register entry matching the details you supplied.
+            This usually means a slight difference in name spelling, dates, or parish boundaries.
+            You may visit the parish office or submit a revised request with corrected details.
+        </p>
+    </div>
+    {% elif item.status.value == 'rejected' %}
+    <div class="callout-banner callout-rose" style="margin-top: 1.25rem;">
+        <h3 style="margin: 0 0 0.35rem; font-size: 15px; font-weight: 700;">Request Could Not Be Processed</h3>
+        <p style="margin: 0; font-size: 13.5px;">
+            This request could not be processed by the parish office.
+            {% if item.rejection_reason %}
+            <br><strong>Reason given:</strong> {{ item.rejection_reason }}
+            {% endif %}
+        </p>
+    </div>
+    {% elif item.status.value == 'completed' %}
+    <div class="callout-banner callout-emerald" style="margin-top: 1.25rem;">
+        <h3 style="margin: 0 0 0.35rem; font-size: 15px; font-weight: 700;">Document Ready &amp; Completed</h3>
+        <p style="margin: 0; font-size: 13.5px;">
+            Your document is complete. Please contact or visit the parish office to claim your certified copy, quoting reference <strong>RCAL-DR-{{ '%05d' % item.id }}</strong>.
+        </p>
+    </div>
+    {% elif item.status.value == 'cancelled' %}
+    <div class="callout-banner callout-rose" style="margin-top: 1.25rem;">
+        <h3 style="margin: 0 0 0.35rem; font-size: 15px; font-weight: 700;">Request Cancelled</h3>
+        <p style="margin: 0; font-size: 13.5px;">
+            This document claim has been cancelled.
+        </p>
+    </div>
+    {% else %}
+    <div class="callout-banner callout-blue" style="margin-top: 1.25rem;">
+        <p style="margin: 0; font-size: 13.5px;">
+            Your request is with the parish office. Nothing further is needed from you at this stage; this page will automatically update as the parish verifies the record.
+        </p>
+    </div>
+    {% endif %}
+
+</div>
+
+{# Details Cards Grid #}
 <div class="portal-grid">
 
-    <div class="portal-card">
+    <div class="portal-card" style="margin: 0;">
         <h2>WHAT YOU ASKED FOR</h2>
         <div class="portal-card-line"></div>
 
         <dl class="detail-list">
             <dt>Document</dt>
-            <dd>{{ item.sacrament_type.label }} certificate</dd>
+            <dd><strong>{{ item.sacrament_type.label }} Certificate</strong></dd>
 
             <dt>Name on record</dt>
-            <dd>{{ item.name_on_record }}</dd>
+            <dd><strong>{{ item.name_on_record }}</strong></dd>
 
             <dt>Date of birth</dt>
             <dd>
@@ -41,7 +177,7 @@
             </dd>
 
             <dt>Church</dt>
-            <dd>{{ item.place_of_sacrament or "Not given" }}</dd>
+            <dd>{{ item.place_of_sacrament or (item.targeted_parish.name if item.targeted_parish else "Not given") }}</dd>
 
             <dt>Parents or spouse</dt>
             <dd>{{ item.parents_or_spouse or "Not given" }}</dd>
@@ -51,39 +187,15 @@
         </dl>
     </div>
 
-    <div class="portal-card">
-        <h2>PROGRESS</h2>
+    <div class="portal-card" style="margin: 0;">
+        <h2>LEGAL &amp; SYSTEM AUDIT</h2>
         <div class="portal-card-line"></div>
-
-        {% if item.status.value == 'record_not_found' %}
-        <p>
-            The parish could not find a record matching these details. This
-            usually means a slightly different spelling or date. You may
-            submit a new request with the corrected details.
-        </p>
-        {% elif item.status.value == 'rejected' %}
-        <p>
-            This request could not be processed.
-            {% if item.rejection_reason %}
-            <br><strong>Reason:</strong> {{ item.rejection_reason }}
-            {% endif %}
-        </p>
-        {% elif item.status.value == 'completed' %}
-        <p>
-            Your document is complete. Please contact the parish office to
-            arrange collection, quoting your request reference.
-        </p>
-        {% else %}
-        <p>
-            Your request is with the parish office. Nothing further is
-            needed from you at this stage; this page will show the status
-            as it changes.
-        </p>
-        {% endif %}
 
         <dl class="detail-list">
             <dt>Reference</dt>
-            <dd class="mono">RCAL-DR-{{ '%05d' % item.id }}</dd>
+            <dd class="mono" style="font-weight: 700; color: #1e293b;">
+                RCAL-DR-{{ '%05d' % item.id }}
+            </dd>
 
             <dt>Consent given</dt>
             <dd>
@@ -91,11 +203,33 @@
                 {{ item.consent_given_at.strftime('%d %B %Y at %H:%M') }} UTC
                 {% else %}Not recorded{% endif %}
             </dd>
+
+            <dt>Privacy scope</dt>
+            <dd>Protected under RA 10173</dd>
+
+            <dt>Archival match</dt>
+            <dd>
+                {% if item.is_matched %}
+                <span class="badge badge-ok">Matched in canonical register</span>
+                {% else %}
+                <span class="badge badge-notes">Awaiting parish archive verification</span>
+                {% endif %}
+            </dd>
         </dl>
+
+        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e2e8f0;">
+            <p class="muted small" style="margin: 0;">
+                If you have questions regarding this request, present this reference code to the parish office.
+            </p>
+        </div>
     </div>
 
 </div>
 
-<a href="{{ url_for('portal.dashboard') }}" class="link-btn">Back to my requests</a>
+<div style="margin-top: 2rem;">
+    <a href="{{ url_for('portal.dashboard') }}" class="link-btn">
+        &larr; Back to my requests
+    </a>
+</div>
 
 {% endblock %}

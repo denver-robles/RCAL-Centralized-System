@@ -63,109 +63,111 @@
 
 <div class="portal-card">
 
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Sacrament</th>
-                <th>Title / Intended Person</th>
-                <th>Parish &amp; Venue</th>
-                <th>Date &amp; Time</th>
-                <th>Requester</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in pagination.items %}
-            <tr>
-                <td><strong>{{ item.event_type.label }}</strong></td>
-                <td>
-                    <a href="{{ url_for('records.schedule_detail', event_id=item.id) }}">
-                        <strong>{{ item.title }}</strong>
-                    </a>
-                    {% if item.description %}
-                    <div class="muted small">{{ item.description | truncate(60) }}</div>
-                    {% endif %}
-                </td>
-                <td>
-                    {{ item.parish.name }}
-                    {% if item.venue %}
-                    <div class="muted small">{{ item.venue.name }}</div>
-                    {% endif %}
-                </td>
-                <td>
-                    {{ item.starts_at.strftime('%d %b %Y') }}
-                    <div class="muted small">{{ item.starts_at.strftime('%I:%M %p') }}</div>
-                </td>
-                <td>
-                    {{ item.requester_name or "Parish Office" }}
-                    {% if item.requester_contact %}
-                    <div class="muted small">{{ item.requester_contact }}</div>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if item.status.value == 'requested' %}
-                    <span class="badge badge-pending">Pending Approval</span>
-                    {% elif item.status.value in ('scheduled', 'confirmed') %}
-                    <span class="badge badge-ok">{{ item.status.label }}</span>
-                    {% elif item.status.value == 'completed' %}
-                        {% if item.record_id %}
-                        <span class="badge badge-ok">Recorded #{{ item.record_id }}</span>
-                        {% else %}
-                        <span class="badge badge-pending">Needs Register</span>
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Sacrament</th>
+                    <th>Title / Intended Person</th>
+                    <th>Parish &amp; Venue</th>
+                    <th>Date &amp; Time</th>
+                    <th>Requester</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in pagination.items %}
+                <tr>
+                    <td><strong>{{ item.event_type.label }}</strong></td>
+                    <td>
+                        <a href="{{ url_for('records.schedule_detail', event_id=item.id) }}">
+                            <strong>{{ item.title }}</strong>
+                        </a>
+                        {% if item.description %}
+                        <div class="muted small cell-truncate" title="{{ item.description }}">{{ item.description | truncate(60) }}</div>
                         {% endif %}
-                    {% elif item.status.value == 'cancelled' %}
-                    <span class="badge badge-rejected">Cancelled</span>
-                    {% else %}
-                    <span class="badge badge-pending">{{ item.status.label }}</span>
-                    {% endif %}
-                </td>
-                <td style="white-space: nowrap;">
-                    {% if item.status.value == 'requested' %}
-                    <a href="{{ url_for('records.schedule_detail', event_id=item.id) }}" class="link-btn small primary">
-                        Review &amp; Approve
-                    </a>
-                    {% elif item.status.value in ('scheduled', 'confirmed') %}
-                    <form method="post" action="{{ url_for('records.complete_schedule', event_id=item.id) }}" style="display:inline;">
-                        {% include "_csrf.html" %}
-                        <button type="submit" class="link-btn small ok"
-                                onclick="return confirm('Mark this ceremony as completed and transcribe directly to the register?');">
-                            Complete &amp; Register &rarr;
-                        </button>
-                    </form>
-                    <a href="{{ url_for('records.schedule_detail', event_id=item.id) }}" class="link-btn small">
-                        Manage
-                    </a>
-                    {% elif item.status.value == 'completed' %}
-                        {% if item.record_id %}
-                        <a href="{{ url_for('records.detail', record_id=item.record_id) }}" class="link-btn small">
-                            View Record
+                    </td>
+                    <td>
+                        {{ item.parish.name }}
+                        {% if item.venue %}
+                        <div class="muted small">{{ item.venue.name }}</div>
+                        {% endif %}
+                    </td>
+                    <td style="white-space: nowrap;">
+                        {{ item.starts_at.strftime('%d %b %Y') }}
+                        <div class="muted small">{{ item.starts_at.strftime('%I:%M %p') }}</div>
+                    </td>
+                    <td>
+                        <div class="cell-truncate" title="{{ item.requester_name or 'Parish Office' }}">{{ item.requester_name or "Parish Office" }}</div>
+                        {% if item.requester_contact %}
+                        <div class="muted small">{{ item.requester_contact }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.status.value == 'requested' %}
+                        <span class="badge badge-pending">Pending Approval</span>
+                        {% elif item.status.value in ('scheduled', 'confirmed') %}
+                        <span class="badge badge-ok">{{ item.status.label }}</span>
+                        {% elif item.status.value == 'completed' %}
+                            {% if item.record_id %}
+                            <span class="badge badge-ok">Recorded #{{ item.record_id }}</span>
+                            {% else %}
+                            <span class="badge badge-pending">Needs Register</span>
+                            {% endif %}
+                        {% elif item.status.value == 'cancelled' %}
+                        <span class="badge badge-rejected">Cancelled</span>
+                        {% else %}
+                        <span class="badge badge-pending">{{ item.status.label }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="white-space: nowrap;">
+                        {% if item.status.value == 'requested' %}
+                        <a href="{{ url_for('records.schedule_detail', event_id=item.id) }}" class="link-btn small primary">
+                            Review &amp; Approve
                         </a>
-                        {% elif item.event_type.is_sacrament %}
-                        <a href="{{ url_for('records.create', from_event_id=item.id) }}" class="link-btn small ok">
-                            Transcribe to Register &rarr;
+                        {% elif item.status.value in ('scheduled', 'confirmed') %}
+                        <form method="post" action="{{ url_for('records.complete_schedule', event_id=item.id) }}" style="display:inline;">
+                            {% include "_csrf.html" %}
+                            <button type="submit" class="link-btn small ok"
+                                    onclick="return confirm('Mark this ceremony as completed and transcribe directly to the register?');">
+                                Complete &amp; Register &rarr;
+                            </button>
+                        </form>
+                        <a href="{{ url_for('records.schedule_detail', event_id=item.id) }}" class="link-btn small">
+                            Manage
                         </a>
+                        {% elif item.status.value == 'completed' %}
+                            {% if item.record_id %}
+                            <a href="{{ url_for('records.detail', record_id=item.record_id) }}" class="link-btn small">
+                                View Record
+                            </a>
+                            {% elif item.event_type.is_sacrament %}
+                            <a href="{{ url_for('records.create', from_event_id=item.id) }}" class="link-btn small ok">
+                                Transcribe to Register &rarr;
+                            </a>
+                            {% else %}
+                            <a href="{{ url_for('records.schedule_detail', event_id=item.id) }}" class="link-btn small">
+                                View
+                            </a>
+                            {% endif %}
                         {% else %}
                         <a href="{{ url_for('records.schedule_detail', event_id=item.id) }}" class="link-btn small">
                             View
                         </a>
                         {% endif %}
-                    {% else %}
-                    <a href="{{ url_for('records.schedule_detail', event_id=item.id) }}" class="link-btn small">
-                        View
-                    </a>
-                    {% endif %}
-                </td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="7" class="muted">
-                    No sacrament schedules found matching the current filter.
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="muted" style="text-align: center; padding: 2.5rem 1rem;">
+                        No sacrament schedules found matching the current filter.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
     {{ pagination_nav(pagination, 'records.schedules', extra={'status': status_filter, 'parish': current_parish}) }}
 

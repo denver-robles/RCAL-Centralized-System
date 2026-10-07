@@ -4,10 +4,10 @@
 
 {% block content %}
 
-<div class="title-row">
+<div class="title-row" style="margin-bottom: 1.5rem;">
     <div>
-        <h1 class="portal-title">Sacrament Schedule Requests</h1>
-        <p class="muted">
+        <h1 class="portal-title" style="margin-bottom: 0.25rem;">Sacrament Schedule Requests</h1>
+        <p class="muted" style="margin: 0;">
             {{ pending_count }} pending parish staff review
             {%- if events | length > pending_count %},
             {{ events | length - pending_count }} scheduled or completed
@@ -15,7 +15,7 @@
         </p>
     </div>
     <a href="{{ url_for('portal.new_schedule') }}" class="submit-login-btn as-link">
-        REQUEST A SCHEDULE
+        + Request a Schedule
     </a>
 </div>
 
@@ -54,16 +54,17 @@
                     <span class="badge badge-pending">{{ item.status.label }}</span>
                     {% endif %}
                 </td>
-                <td>
-                    <a href="{{ url_for('portal.schedule_detail', event_id=item.id) }}">
+                <td style="text-align: right;">
+                    <a href="{{ url_for('portal.schedule_detail', event_id=item.id) }}" class="small link-btn" style="padding: 4px 10px;">
                         View
                     </a>
                 </td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="6" class="muted">
+                <td colspan="6" class="muted" style="text-align: center; padding: 2rem 1rem;">
                     You have not submitted any sacrament schedule requests yet.
+                    <br>
                     <a href="{{ url_for('portal.new_schedule') }}">Request a schedule</a>.
                 </td>
             </tr>
@@ -73,7 +74,7 @@
 
 </div>
 
-<p class="muted small">
+<p class="muted small" style="margin-top: 1rem;">
     Once you submit a request, parish staff will review venue and clergy availability to confirm your appointment.
 </p>
 

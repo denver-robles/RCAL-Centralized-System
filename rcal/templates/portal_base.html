@@ -48,7 +48,7 @@
         <a href="{{ url_for('directory.parishes') }}">Parishes</a>
         <a href="{{ url_for('directory.clergy') }}">Clergy</a>
         <a href="{{ url_for('certificates.index') }}">Certificates</a>
-        <a href="{{ url_for('records.schedules') }}">Schedules</a>
+        <a href="{{ url_for('records.schedules') }}">Sacrament schedules</a>
         {% if current_user.role.value in ('admin', 'chancery', 'parish_staff', 'clergy') %}
         <a href="{{ url_for('records.analytics') }}">Analytics</a>
         {% endif %}
@@ -70,7 +70,14 @@
     </main>
 
     <footer class="portal-footer">
-        <p>{{ config['ORGANISATION'] }} — Centralized Records System</p>
+        <div style="max-width: 1280px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 13px;">
+            <div>
+                <strong>{{ config['ORGANISATION'] }}</strong> &mdash; Centralized Records &amp; Chancery System
+            </div>
+            <div style="color: var(--color-slate-400);">
+                &copy; 2026 Roman Catholic Archdiocese of Lipa &bull; Republic Act No. 10173 Protected
+            </div>
+        </div>
     </footer>
 
 </body>

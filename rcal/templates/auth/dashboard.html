@@ -4,116 +4,333 @@
 
 {% block content %}
 
-<h1 class="portal-title">Welcome, {{ current_user.display_name or current_user.username }}</h1>
+{# Elevated Command Center Hero Banner #}
+<div class="portal-hero" style="background: linear-gradient(135deg, #091322 0%, #152744 60%, #1e3a5f 100%); border-radius: var(--radius-xl); padding: 28px 32px; color: #ffffff; margin-bottom: 24px; position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 10px 30px -10px rgba(2, 6, 23, 0.35);">
+    <div style="position: absolute; right: -20px; top: -20px; width: 220px; height: 220px; background: radial-gradient(circle, rgba(245, 158, 11, 0.15) 0%, transparent 70%); border-radius: 50%; pointer-events: none;"></div>
 
-<div class="portal-grid">
-
-    <div class="portal-card">
-        <h2>YOUR ACCOUNT</h2>
-        <div class="portal-card-line"></div>
-
-        <dl class="detail-list">
-            <dt>Username</dt>
-            <dd>{{ current_user.username }}</dd>
-
-            <dt>Role</dt>
-            <dd>{{ current_user.role.label }}</dd>
-
-            <dt>Home parish</dt>
-            <dd>
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; position: relative; z-index: 2;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;">
+                    {{ current_user.role.label }}
+                </span>
                 {% if current_user.home_parish %}
-                {{ current_user.home_parish.name }}
+                <span class="badge" style="background: rgba(255,255,255,0.1); color: #f8fafc; font-size: 11px;">
+                    📍 {{ current_user.home_parish.name }} ({{ current_user.home_parish.municipality }})
+                </span>
                 {% else %}
-                <span class="muted">All parishes (archdiocese-wide)</span>
+                <span class="badge" style="background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); font-size: 11px;">
+                    🌐 Archdiocese-wide Scope
+                </span>
                 {% endif %}
-            </dd>
+            </div>
 
-            <dt>Scope</dt>
-            <dd>
-                {% if current_user.is_archdiocese_wide %}
-                May view records for every parish.
-                {% else %}
-                Limited to your own parish.
-                {% endif %}
-            </dd>
+            <h1 style="font-family: var(--font-display); font-size: 28px; font-weight: 800; margin: 0 0 6px; letter-spacing: -0.01em; color: #ffffff;">
+                Welcome, {{ current_user.display_name or current_user.username }}
+            </h1>
+            <p style="margin: 0; color: #94a3b8; font-size: 14px; max-width: 620px;">
+                Archdiocesan Parish Administration &amp; Chancery Command Center. Review incoming liturgy schedules, transcribe register entries, and manage certified records.
+            </p>
+        </div>
 
-            <dt>Certificates</dt>
-            <dd>
-                {% if current_user.can_issue_certificates %}
-                May verify and issue certified copies.
-                {% else %}
-                Read-only for sacramental records.
-                {% endif %}
-            </dd>
-        </dl>
+        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+            <a href="{{ url_for('records.create') }}" class="submit-login-btn as-link" style="text-decoration: none; padding: 0.65rem 1.25rem; font-size: 13.5px;">
+                + Inscribe Register Entry
+            </a>
+            <a href="{{ url_for('records.new_schedule') }}" class="link-btn" style="text-decoration: none; background: rgba(255,255,255,0.12); color: #ffffff; border: 1px solid rgba(255,255,255,0.25); padding: 0.65rem 1.25rem; font-size: 13.5px;">
+                + Schedule Sacrament
+            </a>
+            <a href="{{ url_for('records.schedules') }}" class="link-btn" style="text-decoration: none; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); padding: 0.65rem 1.1rem; font-size: 13.5px;">
+                Sacrament schedules &rarr;
+            </a>
+        </div>
     </div>
+</div>
 
-    <div class="portal-card">
-        <h2>QUICK LINKS</h2>
-        <div class="portal-card-line"></div>
+{# Operational KPI Cards Grid #}
+<div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
 
-        <ul class="link-list">
-            <li><a href="{{ url_for('records.search') }}">Search the registers</a></li>
-            <li><a href="{{ url_for('records.create') }}">Record a register entry</a></li>
-            <li><a href="{{ url_for('certificates.index') }}">Certificate requests</a></li>
-            <li><a href="{{ url_for('certificates.document_requests') }}">Parishioner requests</a></li>
-            <li><a href="{{ url_for('directory.parishes') }}">Parish directory</a></li>
-            <li><a href="{{ url_for('directory.clergy') }}">Clergy directory</a></li>
-            <li><a href="{{ url_for('records.schedules') }}">Sacrament schedules</a></li>
-            <li><a href="{{ url_for('records.analytics') }}">Analytics</a></li>
-            <li><a href="{{ url_for('auth.change_password') }}">Change password</a></li>
-            {% if current_user.role.can_manage_users %}
-            <li><a href="{{ url_for('admin.users') }}">Manage accounts</a></li>
+    <a href="{{ url_for('records.schedules', status='pending') }}" class="kpi-card" style="text-decoration: none; display: block;">
+        <div class="kpi-card-inner" style="background: #ffffff; border: 1px solid #e2e8f0; border-top: 4px solid #f59e0b; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                <span style="font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #b45309;">
+                    ⏳ Pending Requests
+                </span>
+                <span class="badge {{ 'badge-pending' if pending_schedules_count > 0 else 'badge-notes' }}">
+                    {{ pending_schedules_count }}
+                </span>
+            </div>
+            <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1.1; margin-bottom: 0.35rem;">
+                {{ pending_schedules_count }}
+            </div>
+            <div style="font-size: 0.85rem; color: #64748b; font-weight: 500;">
+                Awaiting Sacrament Approval &rarr;
+            </div>
+        </div>
+    </a>
+
+    <a href="{{ url_for('records.schedules', status='unrecorded') }}" class="kpi-card" style="text-decoration: none; display: block;">
+        <div class="kpi-card-inner" style="background: #ffffff; border: 1px solid #e2e8f0; border-top: 4px solid #3b82f6; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                <span style="font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #1d4ed8;">
+                    ✍️ Awaiting Inscription
+                </span>
+                <span class="badge {{ 'badge-processing' if unrecorded_count > 0 else 'badge-notes' }}">
+                    {{ unrecorded_count }}
+                </span>
+            </div>
+            <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1.1; margin-bottom: 0.35rem;">
+                {{ unrecorded_count }}
+            </div>
+            <div style="font-size: 0.85rem; color: #64748b; font-weight: 500;">
+                Completed Liturgies to Record &rarr;
+            </div>
+        </div>
+    </a>
+
+    <a href="{{ url_for('certificates.document_requests') }}" class="kpi-card" style="text-decoration: none; display: block;">
+        <div class="kpi-card-inner" style="background: #ffffff; border: 1px solid #e2e8f0; border-top: 4px solid #10b981; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                <span style="font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #047857;">
+                    📜 Document Queue
+                </span>
+                <span class="badge {{ 'badge-ok' if open_requests_count > 0 else 'badge-notes' }}">
+                    {{ open_requests_count }}
+                </span>
+            </div>
+            <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1.1; margin-bottom: 0.35rem;">
+                {{ open_requests_count }}
+            </div>
+            <div style="font-size: 0.85rem; color: #64748b; font-weight: 500;">
+                Open Certificate Claims &rarr;
+            </div>
+        </div>
+    </a>
+
+    <a href="{{ url_for('records.search') }}" class="kpi-card" style="text-decoration: none; display: block;">
+        <div class="kpi-card-inner" style="background: #ffffff; border: 1px solid #e2e8f0; border-top: 4px solid #64748b; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                <span style="font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #475569;">
+                    🏛️ Canonical Archives
+                </span>
+                <span class="badge badge-notes">Total</span>
+            </div>
+            <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1.1; margin-bottom: 0.35rem;">
+                {{ records_count }}
+            </div>
+            <div style="font-size: 0.85rem; color: #64748b; font-weight: 500;">
+                Inscribed Records in Scope &rarr;
+            </div>
+        </div>
+    </a>
+
+</div>
+
+{# Asymmetric 2-Column Command Grid #}
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+
+    {# Left Column: Liturgies Worklist & Registers #}
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+
+        {# Pending Sacrament Requests Worklist #}
+        <div class="portal-card" style="margin: 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <div>
+                    <h2 style="margin: 0; text-align: left; font-size: 1.2rem;">Pending Sacrament Requests</h2>
+                    <p class="muted small" style="margin: 0.2rem 0 0;">Parishioner bookings awaiting staff confirmation</p>
+                </div>
+                <a href="{{ url_for('records.schedules', status='pending') }}" class="small link-btn" style="padding: 4px 10px;">
+                    View All ({{ pending_schedules_count }}) &rarr;
+                </a>
+            </div>
+            <div class="portal-card-line" style="margin-left: 0; margin-right: 0;"></div>
+
+            {% if pending_schedules %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Liturgy</th>
+                        <th>Subject / Intended For</th>
+                        <th>Date &amp; Time</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in pending_schedules %}
+                    <tr>
+                        <td>
+                            <strong style="color: #0f172a;">{{ item.event_type.label }}</strong>
+                        </td>
+                        <td>
+                            <div style="font-weight: 600;">{{ item.title }}</div>
+                            {% if item.requester_name %}
+                            <div class="muted small">Submitted by: {{ item.requester_name }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="small">{{ item.starts_at.strftime('%d %b %Y, %I:%M %p') }}</td>
+                        <td>
+                            <a href="{{ url_for('records.schedule_detail', event_id=item.id) }}" class="badge badge-pending" style="text-decoration: none; display: inline-block; padding: 4px 10px;">
+                                Review &rarr;
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state-card" style="padding: 32px 16px; margin: 8px 0;">
+                <div class="empty-state-icon">📅</div>
+                <h3 class="empty-state-title" style="font-size: 16px;">No Pending Liturgy Requests</h3>
+                <p class="empty-state-desc" style="font-size: 13px; margin-bottom: 12px;">
+                    All sacrament requests have been processed or scheduled.
+                </p>
+                <a href="{{ url_for('records.new_schedule') }}" class="small link-btn">
+                    + Schedule Liturgy Directly
+                </a>
+            </div>
             {% endif %}
-        </ul>
+        </div>
 
-        <form method="post" action="{{ url_for('auth.logout') }}" class="logout-form">
-            {% include "_csrf.html" %}
-            <button type="submit" class="submit-login-btn muted-btn">SIGN OUT</button>
-        </form>
+        {# Recent Register Entries Table #}
+        <div class="portal-card" style="margin: 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <div>
+                    <h2 style="margin: 0; text-align: left; font-size: 1.2rem;">Recent Register Inscriptions</h2>
+                    <p class="muted small" style="margin: 0.2rem 0 0;">Latest entries transcribed into canonical books</p>
+                </div>
+                <a href="{{ url_for('records.search') }}" class="small link-btn" style="padding: 4px 10px;">
+                    Search Registers &rarr;
+                </a>
+            </div>
+            <div class="portal-card-line" style="margin-left: 0; margin-right: 0;"></div>
+
+            {% if recent %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Register</th>
+                        <th>Event Date</th>
+                        <th>Parish</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in recent %}
+                    <tr>
+                        <td>
+                            <strong>
+                                <a href="{{ url_for('records.detail', record_id=record.id) }}" style="color: #0f172a; text-decoration: none;">
+                                    {{ record.person.sort_name }}
+                                </a>
+                            </strong>
+                        </td>
+                        <td>
+                            <span class="badge badge-ok">{{ record.sacrament_type.label }}</span>
+                        </td>
+                        <td class="small">{{ record.event_date.strftime('%d %b %Y') }}</td>
+                        <td class="small">{{ record.originating_parish.name }}</td>
+                        <td style="text-align: right;">
+                            <a href="{{ url_for('records.detail', record_id=record.id) }}" class="small link-btn" style="padding: 3px 8px;">
+                                Open
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state-card" style="padding: 32px 16px; margin: 8px 0;">
+                <div class="empty-state-icon">📖</div>
+                <h3 class="empty-state-title" style="font-size: 16px;">No Recent Inscriptions</h3>
+                <p class="empty-state-desc" style="font-size: 13px; margin-bottom: 12px;">
+                    No register entries found in your current parish scope.
+                </p>
+                <a href="{{ url_for('records.create') }}" class="small link-btn">
+                    + Transcribe a Record
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
     </div>
 
-</div>
+    {# Right Column: Account Scope & Compliance #}
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
 
-<div class="portal-card">
-    <h2>RECENT REGISTER ENTRIES</h2>
-    <div class="portal-card-line"></div>
+        {# Account & Scope Widget #}
+        <div class="portal-card" style="margin: 0;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 1rem;">
+                <div class="avatar-badge amber" style="width: 44px; height: 44px; font-size: 16px;">
+                    {{ (current_user.display_name or current_user.username)[:2]|upper }}
+                </div>
+                <div>
+                    <h2 style="margin: 0; text-align: left; font-size: 1.1rem;">{{ current_user.username }}</h2>
+                    <span class="badge badge-notes" style="font-size: 11px;">{{ current_user.role.label }}</span>
+                </div>
+            </div>
+            <div class="portal-card-line" style="margin-left: 0; margin-right: 0;"></div>
 
-    {% if recent %}
-    <table class="data-table">
-        <thead>
-            <tr><th>Subject</th><th>Register</th><th>Date</th><th>Parish</th></tr>
-        </thead>
-        <tbody>
-            {% for record in recent %}
-            <tr>
-                <td>
-                    <a href="{{ url_for('records.detail', record_id=record.id) }}">
-                        {{ record.person.sort_name }}
-                    </a>
-                </td>
-                <td>{{ record.sacrament_type.label }}</td>
-                <td>{{ record.event_date.strftime('%d %b %Y') }}</td>
-                <td>{{ record.originating_parish.name }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <p class="muted">
-        No register entries have been recorded yet.
-    </p>
-    {% endif %}
-</div>
+            <dl class="detail-list" style="font-size: 13.5px;">
+                <dt>Home parish</dt>
+                <dd>
+                    {% if current_user.home_parish %}
+                    <strong>{{ current_user.home_parish.name }}</strong>
+                    {% else %}
+                    <span class="muted">All parishes (archdiocese-wide)</span>
+                    {% endif %}
+                </dd>
 
-<div class="portal-card">
-    <h2>ABOUT THIS AREA</h2>
-    <div class="portal-card-line"></div>
-    <p class="muted">
-        Your dashboard shows what your account is permitted to do. The parish
-        directory, register search, sacrament schedules, and the certificate
-        workflow are all live.
-    </p>
+                <dt>Scope</dt>
+                <dd>
+                    {% if current_user.is_archdiocese_wide %}
+                    May view records for every parish (archdiocese-wide).
+                    {% else %}
+                    Limited to your own parish.
+                    {% endif %}
+                </dd>
+
+                <dt>Certificates</dt>
+                <dd>
+                    {% if current_user.can_issue_certificates %}
+                    May verify and issue certified copies.
+                    {% else %}
+                    Read-only for sacramental records.
+                    {% endif %}
+                </dd>
+            </dl>
+
+            <div style="display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid #e2e8f0;">
+                <a href="{{ url_for('auth.change_password') }}" class="link-btn" style="text-align: center; text-decoration: none;">
+                    Change password
+                </a>
+                {% if current_user.role.can_manage_users %}
+                <a href="{{ url_for('admin.users') }}" class="link-btn" style="text-align: center; text-decoration: none;">
+                    Manage accounts
+                </a>
+                {% endif %}
+                <form method="post" action="{{ url_for('auth.logout') }}" style="margin: 0;">
+                    {% include "_csrf.html" %}
+                    <button type="submit" class="link-btn danger" style="width: 100%; text-align: center;">
+                        Sign out
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        {# Canonical Archiving & Data Privacy Notice #}
+        <div class="portal-card" style="margin: 0; background: #f8fafc; border: 1px solid #e2e8f0;">
+            <h3 style="font-size: 14px; font-weight: 700; color: #0f172a; margin: 0 0 8px; display: flex; align-items: center; gap: 6px;">
+                <span>⚖️</span> Canonical &amp; Legal Notice
+            </h3>
+            <p class="muted small" style="margin: 0; line-height: 1.6; font-size: 12.5px;">
+                Sacramental registers are immutable legal church records governed by RCAL canonical archiving guidelines.
+                Handling of parishioner personal information is strictly safeguarded under the <strong>Data Privacy Act of 2012 (RA 10173)</strong>.
+            </p>
+        </div>
+
+    </div>
+
 </div>
 
 {% endblock %}

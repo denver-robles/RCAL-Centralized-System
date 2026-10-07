@@ -36,44 +36,46 @@
 
 <div class="portal-card">
 
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Reference</th>
-                <th>Document</th>
-                <th>Name claimed</th>
-                <th>Targeted parish</th>
-                <th>Status</th>
-                <th>Submitted</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in pagination.items %}
-            <tr>
-                <td class="mono small">
-                    <a href="{{ url_for('certificates.document_request_detail', request_id=item.id) }}">
-                        RCAL-DR-{{ '%05d' % item.id }}
-                    </a>
-                </td>
-                <td>{{ item.sacrament_type.label }}</td>
-                <td>{{ item.name_on_record }}</td>
-                <td class="small">{{ item.targeted_parish.name if item.targeted_parish else '—' }}</td>
-                <td>{{ status_badge(item.status) }}</td>
-                <td class="small">{{ item.created_at.strftime('%d %b %Y') }}</td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="6" class="muted">
-                    {% if selected_status %}
-                    No request matches that filter.
-                    {% else %}
-                    No parishioner requests have been received yet.
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Reference</th>
+                    <th>Document</th>
+                    <th>Name claimed</th>
+                    <th>Targeted parish</th>
+                    <th>Status</th>
+                    <th>Submitted</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in pagination.items %}
+                <tr>
+                    <td class="mono small" style="white-space: nowrap;">
+                        <a href="{{ url_for('certificates.document_request_detail', request_id=item.id) }}">
+                            RCAL-DR-{{ '%05d' % item.id }}
+                        </a>
+                    </td>
+                    <td>{{ item.sacrament_type.label }}</td>
+                    <td class="cell-truncate" title="{{ item.name_on_record }}">{{ item.name_on_record }}</td>
+                    <td class="small cell-truncate" title="{{ item.targeted_parish.name if item.targeted_parish else '—' }}">{{ item.targeted_parish.name if item.targeted_parish else '—' }}</td>
+                    <td>{{ status_badge(item.status) }}</td>
+                    <td class="small" style="white-space: nowrap;">{{ item.created_at.strftime('%d %b %Y') }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="muted" style="text-align: center; padding: 2rem 1rem;">
+                        {% if selected_status %}
+                        No request matches that filter.
+                        {% else %}
+                        No parishioner requests have been received yet.
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
     {{ pagination_nav(pagination, 'certificates.document_requests',
         {'status': selected_status}) }}

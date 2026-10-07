@@ -5,28 +5,33 @@
 
 {% block content %}
 
-<div class="title-row">
-    <h1 class="portal-title">Parish Directory</h1>
+<div class="title-row" style="margin-bottom: 1.25rem;">
+    <div>
+        <h1 class="portal-title" style="margin-bottom: 0.25rem;">Parish Directory</h1>
+        <p class="muted" style="margin: 0;">
+            {{ pagination.total }} {{ "parish" if pagination.total == 1 else "parishes" }}
+            {% if current_user.is_archdiocese_wide %}
+            across the archdiocese.
+            {% else %}
+            visible to your account.
+            {% endif %}
+        </p>
+    </div>
     {% if current_user.role.value in ('admin', 'chancery') %}
-    <a href="{{ url_for('directory.create_parish') }}" class="submit-login-btn as-link">ADD PARISH</a>
+    <div>
+        <a href="{{ url_for('directory.create_parish') }}" class="submit-login-btn as-link">
+            + Add Parish
+        </a>
+    </div>
     {% endif %}
 </div>
-
-<p class="muted">
-    {{ pagination.total }} {{ "parish" if pagination.total == 1 else "parishes" }}
-    {% if current_user.is_archdiocese_wide %}
-    across the archdiocese.
-    {% else %}
-    visible to your account.
-    {% endif %}
-</p>
 
 <form method="get" action="{{ url_for('directory.parishes') }}" class="search-bar">
     <input
         type="text"
         name="q"
         value="{{ query }}"
-        placeholder="Parish, municipality or address"
+        placeholder="Parish name, municipality or address"
         class="pill-input"
     >
     {{ dict_select('vicariate', form, 'Vicariate', vicariate_choices,
@@ -44,25 +49,35 @@
                 <th>City / Municipality</th>
                 <th>Clergy</th>
                 <th>Status</th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
             {% for parish in pagination.items %}
             <tr>
                 <td>
-                    <a href="{{ url_for('directory.parish_detail', parish_id=parish.id) }}">
-                        {{ parish.name }}
-                    </a>
-                    {% if parish.address %}<div class="muted small">{{ parish.address }}</div>{% endif %}
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span class="avatar-badge amber">
+                            {{ parish.name[:2]|upper }}
+                        </span>
+                        <div>
+                            <a href="{{ url_for('directory.parish_detail', parish_id=parish.id) }}" style="font-weight: 700; color: #0f172a; text-decoration: none;">
+                                {{ parish.name }}
+                            </a>
+                            {% if parish.address %}
+                            <div class="muted small">{{ parish.address }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </td>
-                <td>{{ parish.vicariate.name }}</td>
+                <td><span class="badge badge-notes">{{ parish.vicariate.name }}</span></td>
                 <td>{{ parish.municipality or "—" }}</td>
                 <td>
                     {% set current = parish.clergy_assignments | selectattr('is_current') | list %}
                     {% if current | length %}
-                        {{ current | length }} serving
+                        <span class="badge badge-ok">{{ current | length }} serving</span>
                     {% else %}
-                        <span class="muted">None assigned</span>
+                        <span class="muted small">None assigned</span>
                     {% endif %}
                 </td>
                 <td>
@@ -72,14 +87,25 @@
                     <span class="badge badge-off">Inactive</span>
                     {% endif %}
                 </td>
+                <td style="text-align: right;">
+                    <a href="{{ url_for('directory.parish_detail', parish_id=parish.id) }}" class="table-action-pill">
+                        View &rarr;
+                    </a>
+                </td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="5" class="muted">
+                <td colspan="6" class="muted" style="text-align: center; padding: 2.5rem 1rem;">
                     {% if query or selected_vicariate %}
                     No parish matches that search.
+                    <br>
+                    <a href="{{ url_for('directory.parishes') }}" class="small link-btn" style="margin-top: 0.5rem;">Reset search filter</a>
                     {% else %}
                     No parishes have been added yet.
+                    {% if current_user.role.value in ('admin', 'chancery') %}
+                    <br>
+                    <a href="{{ url_for('directory.create_parish') }}" class="small link-btn" style="margin-top: 0.5rem;">+ Add a parish</a>
+                    {% endif %}
                     {% endif %}
                 </td>
             </tr>

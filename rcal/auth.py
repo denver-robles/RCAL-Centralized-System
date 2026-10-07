@@ -28,8 +28,8 @@ from sqlalchemy import func, or_, select
 from . import audit, services
 from .extensions import db
 from .forms import ChangePasswordForm, LoginForm, UserForm
-from .models import User
-from .models.enums import AuditAction, Role
+from .models import ParishEvent, SacramentalRecord, User
+from .models.enums import AuditAction, EventStatus, Role
 
 auth_bp = Blueprint("auth", __name__)
 admin_bp = Blueprint("admin", __name__)
@@ -262,17 +262,74 @@ def dashboard():
         return redirect(landing_url())
 
     recent = services.recent_records(current_user, 5)
-    return render_template("auth/dashboard.html", recent=recent)
+
+    pending_sched_query = services.events_query(current_user, status=EventStatus.REQUESTED)
+    pending_schedules = list(
+        db.session.scalars(pending_sched_query.order_by(ParishEvent.created_at.desc()).limit(5)).all()
+    )
+    pending_schedules_count = db.session.scalar(
+        select(func.count(ParishEvent.id)).where(
+            ParishEvent.id.in_(pending_sched_query.with_only_columns(ParishEvent.id))
+        )
+    ) or 0
+
+    unrecorded_events = list(services.awaiting_register_entry(current_user))
+    unrecorded_count = len(unrecorded_events)
+
+    req_stats = services.combined_request_stats(current_user)
+    open_requests_count = req_stats.get("open", 0)
+
+    records_count = db.session.scalar(
+        select(func.count(SacramentalRecord.id)).where(
+            SacramentalRecord.id.in_(
+                services.records_query(current_user).with_only_columns(SacramentalRecord.id)
+            )
+        )
+    ) or 0
+
+    return render_template(
+        "auth/dashboard.html",
+        recent=recent,
+        pending_schedules=pending_schedules,
+        pending_schedules_count=pending_schedules_count,
+        unrecorded_count=unrecorded_count,
+        open_requests_count=open_requests_count,
+        records_count=records_count,
+    )
 
 
 @admin_bp.route("/admin/users")
 @roles_required(Role.ADMIN)
 def users():
-    """List every account, newest first."""
+    """List accounts with optional role filtering."""
     page = request.args.get("page", 1, type=int)
-    statement = select(User).order_by(User.username)
+    role_filter = request.args.get("role", "all").strip().lower()
+
+    # Aggregate counts for quick tabs
+    total_count = db.session.scalar(select(func.count(User.id))) or 0
+    staff_count = db.session.scalar(
+        select(func.count(User.id)).where(User.role != Role.PARISHIONER)
+    ) or 0
+    parishioner_count = db.session.scalar(
+        select(func.count(User.id)).where(User.role == Role.PARISHIONER)
+    ) or 0
+
+    statement = select(User)
+    if role_filter == "parishioner":
+        statement = statement.where(User.role == Role.PARISHIONER)
+    elif role_filter == "staff":
+        statement = statement.where(User.role != Role.PARISHIONER)
+
+    statement = statement.order_by(User.username)
     pagination = db.paginate(statement, page=page, per_page=50, error_out=False)
-    return render_template("admin/users.html", pagination=pagination)
+    return render_template(
+        "admin/users.html",
+        pagination=pagination,
+        role_filter=role_filter,
+        total_count=total_count,
+        staff_count=staff_count,
+        parishioner_count=parishioner_count,
+    )
 
 
 @admin_bp.route("/admin/users/new", methods=["GET", "POST"])

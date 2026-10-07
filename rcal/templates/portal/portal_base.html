@@ -29,8 +29,10 @@
 
         {% if current_user.is_authenticated %}
         <div class="portal-header-user">
-            <span>{{ current_user.display_name or current_user.username }}</span>
-            <form method="post" action="{{ url_for('auth.logout') }}">
+            <span class="badge badge-portal" style="background: rgba(255,255,255,0.12); color: #f8fafc; border: 1px solid rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 9999px; font-weight: 600;">
+                {{ current_user.display_name or current_user.username }}
+            </span>
+            <form method="post" action="{{ url_for('auth.logout') }}" style="margin: 0; display: inline;">
                 {% include "_csrf.html" %}
                 <button type="submit" class="link-btn">Sign out</button>
             </form>
@@ -44,10 +46,10 @@
     public/office split is that a parishioner has only these links. #}
     <nav class="portal-nav">
         {% if current_user.is_authenticated %}
-        <a href="{{ url_for('portal.dashboard') }}">My requests</a>
-        <a href="{{ url_for('portal.schedules') }}">Sacrament schedules</a>
-        <a href="{{ url_for('portal.new_request') }}">Request a document</a>
-        <a href="{{ url_for('portal.new_schedule') }}">Schedule a sacrament</a>
+        <a href="{{ url_for('portal.dashboard') }}" class="{{ 'active' if request.endpoint == 'portal.dashboard' else '' }}">My requests</a>
+        <a href="{{ url_for('portal.schedules') }}" class="{{ 'active' if request.endpoint in ('portal.schedules', 'portal.schedule_detail') else '' }}">Sacrament schedules</a>
+        <a href="{{ url_for('portal.new_request') }}" class="{{ 'active' if request.endpoint == 'portal.new_request' else '' }}">Request a document</a>
+        <a href="{{ url_for('portal.new_schedule') }}" class="{{ 'active' if request.endpoint == 'portal.new_schedule' else '' }}">Schedule a sacrament</a>
         {% endif %}
     </nav>
 
@@ -57,11 +59,83 @@
     </main>
 
     <footer class="portal-footer">
-        <p>{{ config['ORGANISATION'] }} — Parishioner Portal</p>
-        <p class="muted small">
-            Personal data is held under RA 10173. Parish registers are never
-            shown in this portal.
-        </p>
+        <div class="portal-footer-grid">
+
+            {# Col 1: Chancery Identity & Copyright #}
+            <div class="portal-footer-col">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="Archdiocese of Lipa" style="width: 38px; height: 38px; object-fit: contain;">
+                    <div>
+                        <div style="color: #ffffff; font-weight: 800; font-size: 14px; letter-spacing: -0.01em;">ARCHDIOCESE OF LIPA</div>
+                        <div style="color: var(--color-amber-400); font-size: 11px; font-weight: 700;">PARISHIONER PORTAL</div>
+                    </div>
+                </div>
+                <p>
+                    Modernized Parish Information Management System (PIMS) serving parish communities across the Province of Batangas, Philippines.
+                </p>
+                <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(245, 158, 11, 0.15); padding: 4px 10px; border-radius: 9999px; border: 1px solid rgba(245, 158, 11, 0.3); font-size: 11.5px; color: #fbbf24; font-weight: 600;">
+                    🛡️ RA 10173 Protected
+                </div>
+            </div>
+
+            {# Col 2: Chancery & Administrative Office #}
+            <div class="portal-footer-col">
+                <h4>Chancery Office</h4>
+                <p>
+                    Archbishop’s Residence &amp; Chancery<br>
+                    St. Sebastian Cathedral Compound<br>
+                    C.M. Recto Ave., Poblacion, Lipa City<br>
+                    4217 Batangas, Philippines
+                </p>
+                <p style="margin-bottom: 4px;">
+                    📞 <strong>Hotline:</strong> (043) 756-2142 &bull; (043) 756-2572
+                </p>
+                <p style="margin-bottom: 4px;">
+                    ✉️ <strong>Email:</strong> <a href="mailto:chancery@archdioceseoflipa.ph">chancery@archdioceseoflipa.ph</a>
+                </p>
+                <p style="font-size: 12px; color: #94a3b8;">
+                    🕒 <strong>Hours:</strong> Mon &ndash; Fri: 8:00 AM &ndash; 4:00 PM
+                </p>
+            </div>
+
+            {# Col 3: Parishioner Quick Services #}
+            <div class="portal-footer-col">
+                <h4>Parishioner Services</h4>
+                <ul class="portal-footer-links">
+                    <li><a href="{{ url_for('portal.new_request') }}">📄 Request Church Document</a></li>
+                    <li><a href="{{ url_for('portal.new_schedule') }}">📅 Schedule a Sacrament</a></li>
+                    <li><a href="{{ url_for('portal.dashboard') }}">📊 Track Document Claims</a></li>
+                    <li><a href="{{ url_for('portal.schedules') }}">⛪ Sacrament Appointments</a></li>
+                    <li><a href="{{ url_for('pages.home') }}">🌐 Archdiocesan Home Page</a></li>
+                </ul>
+            </div>
+
+            {# Col 4: Legal & Canonical Protection #}
+            <div class="portal-footer-col">
+                <h4>Canonical &amp; Privacy Notice</h4>
+                <p style="font-size: 12px; line-height: 1.5; color: #94a3b8;">
+                    Personal data collected through this portal is processed strictly in accordance with <strong>Republic Act No. 10173 (Data Privacy Act of 2012)</strong>.
+                </p>
+                <p style="font-size: 12px; line-height: 1.5; color: #94a3b8;">
+                    Sacramental registers are permanent public ecclesial instruments governed by Roman Canon Law. Original register books are safeguarded in parish archives and are never shown publicly.
+                </p>
+                <p style="font-size: 12px; margin-bottom: 0;">
+                    🔒 Data Protection Officer: <a href="mailto:dpo@archdioceseoflipa.ph">dpo@archdioceseoflipa.ph</a>
+                </p>
+            </div>
+
+        </div>
+
+        <div class="portal-footer-bottom">
+            <div>
+                &copy; 2026 Roman Catholic Archdiocese of Lipa. All Rights Reserved.
+            </div>
+            <div style="display: flex; gap: 16px; align-items: center;">
+                <span>Modernized PIMS v2.4</span>
+                <span>&bull;</span>
+                <span>Ecclesiastical Province of Lipa</span>
+            </div>
+        </div>
     </footer>
 
 </body>

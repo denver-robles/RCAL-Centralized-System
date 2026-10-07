@@ -4,125 +4,347 @@
 
 {% block content %}
 
-<h1 class="portal-title">Analytics</h1>
-<p class="muted">
-    {% if scoped_parish %}
-    Figures for {{ scoped_parish.name }}.
-    {% else %}
-    Figures for the whole archdiocese.
-    {% endif %}
-    Every number here is computed from the database.
-</p>
+{# Header & Jurisdiction Scope Banner #}
+<div class="portal-hero" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #334155 100%); border-radius: var(--radius-xl); padding: 28px 32px; color: #ffffff; margin-bottom: 24px; position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.35);">
+    <div style="position: absolute; right: -20px; top: -20px; width: 220px; height: 220px; background: radial-gradient(circle, rgba(245, 158, 11, 0.15) 0%, transparent 70%); border-radius: 50%; pointer-events: none;"></div>
 
-<div class="stat-grid">
+    <div style="position: relative; z-index: 2;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;">
+                📊 Archdiocesan Reporting
+            </span>
+            {% if scoped_parish %}
+            <span class="badge" style="background: rgba(255,255,255,0.1); color: #f8fafc; font-size: 11px;">
+                📍 {{ scoped_parish.name }}
+            </span>
+            {% else %}
+            <span class="badge" style="background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); font-size: 11px;">
+                🌐 All Parishes
+            </span>
+            {% endif %}
+        </div>
 
-    <div class="stat-card">
-        <span class="stat-value">{{ counts.parishes }}</span>
-        <span class="stat-label">Parishes</span>
+        <h1 style="font-family: var(--font-display); font-size: 28px; font-weight: 800; margin: 0 0 6px; letter-spacing: -0.01em; color: #ffffff;">
+            Analytics &amp; Canonical Metrics
+        </h1>
+        <p style="margin: 0; color: #94a3b8; font-size: 14px; max-width: 650px;">
+            {% if scoped_parish %}
+            Figures for {{ scoped_parish.name }}.
+            {% else %}
+            Figures for the whole archdiocese.
+            {% endif %}
+            Every number here is computed from the database in real-time.
+        </p>
+    </div>
+</div>
+
+{# Top Summary Metric Cards #}
+<div class="stat-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 24px;">
+
+    <div class="stat-card" style="background: #ffffff; border: 1px solid #e2e8f0; border-top: 4px solid #f59e0b; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <span class="stat-value" style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1.1; display: block; margin-bottom: 4px;">{{ counts.parishes }}</span>
+        <span class="stat-label" style="font-size: 0.85rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">Parishes</span>
     </div>
 
-    <div class="stat-card">
-        <span class="stat-value">{{ counts.vicariates }}</span>
-        <span class="stat-label">Vicariates</span>
+    <div class="stat-card" style="background: #ffffff; border: 1px solid #e2e8f0; border-top: 4px solid #3b82f6; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <span class="stat-value" style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1.1; display: block; margin-bottom: 4px;">{{ counts.vicariates }}</span>
+        <span class="stat-label" style="font-size: 0.85rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">Vicariates</span>
     </div>
 
-    <div class="stat-card">
-        <span class="stat-value">{{ counts.municipalities }}</span>
-        <span class="stat-label">Cities &amp; municipalities</span>
+    <div class="stat-card" style="background: #ffffff; border: 1px solid #e2e8f0; border-top: 4px solid #10b981; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <span class="stat-value" style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1.1; display: block; margin-bottom: 4px;">{{ counts.municipalities }}</span>
+        <span class="stat-label" style="font-size: 0.85rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">Cities &amp; municipalities</span>
     </div>
 
-    <div class="stat-card">
-        <span class="stat-value">{{ counts.priests }}</span>
-        <span class="stat-label">Priests in post</span>
+    <div class="stat-card" style="background: #ffffff; border: 1px solid #e2e8f0; border-top: 4px solid #8b5cf6; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <span class="stat-value" style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1.1; display: block; margin-bottom: 4px;">{{ counts.priests }}</span>
+        <span class="stat-label" style="font-size: 0.85rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">Priests in post</span>
     </div>
 
-    <div class="stat-card">
-        <span class="stat-value">{{ counts.records }}</span>
-        <span class="stat-label">Register entries</span>
+    <div class="stat-card" style="background: #ffffff; border: 1px solid #e2e8f0; border-top: 4px solid #0f172a; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <span class="stat-value" style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1.1; display: block; margin-bottom: 4px;">{{ counts.records }}</span>
+        <span class="stat-label" style="font-size: 0.85rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">Register entries</span>
     </div>
 
-    <div class="stat-card">
-        <span class="stat-value">{{ counts.persons }}</span>
-        <span class="stat-label">Persons on file</span>
+    <div class="stat-card" style="background: #ffffff; border: 1px solid #e2e8f0; border-top: 4px solid #f43f5e; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <span class="stat-value" style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1.1; display: block; margin-bottom: 4px;">{{ counts.persons }}</span>
+        <span class="stat-label" style="font-size: 0.85rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">Persons on file</span>
     </div>
 
 </div>
 
-<div class="portal-grid">
+{# Visual Analytics Charts Grid #}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
 
-    <div class="portal-card">
+    {# Chart 1: Sacramental Distribution Doughnut #}
+    <div class="portal-card" style="margin: 0; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <h2 style="margin: 0; font-size: 1.15rem;">Sacraments Distribution</h2>
+            <span class="badge badge-portal" style="font-size: 11px;">By Rite</span>
+        </div>
+        <div class="portal-card-line" style="margin-left: 0; margin-right: 0;"></div>
+        <div style="position: relative; flex: 1; min-height: 250px; display: flex; align-items: center; justify-content: center;">
+            <canvas id="sacramentsChart"></canvas>
+        </div>
+    </div>
+
+    {# Chart 2: Certificate Queue Pipeline Bar Chart #}
+    <div class="portal-card" style="margin: 0; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <h2 style="margin: 0; font-size: 1.15rem;">Certificate Processing Queue</h2>
+            <span class="badge badge-info" style="font-size: 11px;">Pipeline</span>
+        </div>
+        <div class="portal-card-line" style="margin-left: 0; margin-right: 0;"></div>
+        <div style="position: relative; flex: 1; min-height: 250px; display: flex; align-items: center; justify-content: center;">
+            <canvas id="certificatesChart"></canvas>
+        </div>
+    </div>
+
+    {# Chart 3: Top Parishes by Activity Bar Chart #}
+    <div class="portal-card" style="margin: 0; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <h2 style="margin: 0; font-size: 1.15rem;">Top Parishes by Volume</h2>
+            <span class="badge badge-ok" style="font-size: 11px;">Inscriptions</span>
+        </div>
+        <div class="portal-card-line" style="margin-left: 0; margin-right: 0;"></div>
+        <div style="position: relative; flex: 1; min-height: 250px; display: flex; align-items: center; justify-content: center;">
+            <canvas id="parishesChart"></canvas>
+        </div>
+    </div>
+
+</div>
+
+{# Tabular Detail Breakdown #}
+<div class="portal-grid" style="margin-bottom: 2rem;">
+
+    {# Table 1: Entries by Register #}
+    <div class="portal-card" style="margin: 0;">
         <h2>ENTRIES BY REGISTER</h2>
         <div class="portal-card-line"></div>
 
-        <table class="data-table">
-            <tbody>
-                {% for kind, count in sacraments.items() %}
-                <tr>
-                    <td>{{ kind.label }}</td>
-                    <td class="numeric">{{ count }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Sacrament Rite</th>
+                        <th class="numeric" style="text-align: right;">Total Inscribed</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for kind, count in sacraments.items() %}
+                    <tr>
+                        <td>
+                            <strong>{{ kind.label }}</strong>
+                        </td>
+                        <td class="numeric" style="text-align: right; font-weight: 700; color: #0f172a;">
+                            {{ count }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    <div class="portal-card">
+    {# Table 2: Certificate Queue Breakdown #}
+    <div class="portal-card" style="margin: 0;">
         <h2>CERTIFICATE QUEUE</h2>
         <div class="portal-card-line"></div>
 
-        <table class="data-table">
-            <tbody>
-                <tr>
-                    <td>Awaiting action</td>
-                    <td class="numeric"><a href="{{ url_for('certificates.index', open=1) }}">{{ certificates.open
-                            }}</a></td>
-                </tr>
-                {% for status, count in certificates.items() %}
-                {% if status != 'open' %}
-                <tr>
-                    <td>{{ status.label }}</td>
-                    <td class="numeric">
-                        <a href="{{ url_for('certificates.index', status=status.value) }}">{{ count }}</a>
-                    </td>
-                </tr>
-                {% endif %}
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Queue Stage</th>
+                        <th class="numeric" style="text-align: right;">Claims</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <span class="badge badge-pending">Awaiting action</span>
+                        </td>
+                        <td class="numeric" style="text-align: right; font-weight: 700;">
+                            <a href="{{ url_for('certificates.index', open=1) }}" style="color: #b45309; text-decoration: none;">
+                                {{ certificates.open }} &rarr;
+                            </a>
+                        </td>
+                    </tr>
+                    {% for status, count in certificates.items() %}
+                    {% if status != 'open' %}
+                    <tr>
+                        <td>
+                            <span class="badge badge-notes">{{ status.label }}</span>
+                        </td>
+                        <td class="numeric" style="text-align: right; font-weight: 600;">
+                            <a href="{{ url_for('certificates.index', status=status.value) }}" style="color: #0f172a; text-decoration: none;">
+                                {{ count }}
+                            </a>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
 </div>
 
+{# Table 3: Parishes by Entries Recorded #}
 <div class="portal-card">
-    <h2>PARISHES BY ENTRIES RECORDED</h2>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+        <h2 style="margin: 0;">PARISHES BY ENTRIES RECORDED</h2>
+        <a href="{{ url_for('directory.parishes') }}" class="small link-btn">
+            View All Parishes &rarr;
+        </a>
+    </div>
     <div class="portal-card-line"></div>
 
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Parish</th>
-                <th>Vicariate</th>
-                <th class="numeric">Entries</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for parish, count in activity %}
-            <tr>
-                <td>
-                    <a href="{{ url_for('directory.parish_detail', parish_id=parish.id) }}">
-                        {{ parish.name }}
-                    </a>
-                </td>
-                <td>{{ parish.vicariate.name }}</td>
-                <td class="numeric">{{ count }}</td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="3" class="muted">No register entries have been recorded yet.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Parish Church</th>
+                    <th>Vicariate</th>
+                    <th class="numeric" style="text-align: right;">Canonical Entries</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for parish, count in activity %}
+                <tr>
+                    <td>
+                        <strong>
+                            <a href="{{ url_for('directory.parish_detail', parish_id=parish.id) }}" style="color: #0f172a; text-decoration: none;">
+                                {{ parish.name }}
+                            </a>
+                        </strong>
+                        <div class="muted small">{{ parish.municipality }}</div>
+                    </td>
+                    <td>
+                        <span class="badge badge-notes">{{ parish.vicariate.name }}</span>
+                    </td>
+                    <td class="numeric" style="text-align: right; font-weight: 700; color: #0f172a;">
+                        {{ count }}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3" class="muted" style="text-align: center; padding: 2rem;">
+                        No register entries have been recorded yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
+
+{# Chart.js Initialization Script #}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // 1. Sacraments Doughnut Chart
+    const sacramentLabels = [{% for kind in sacraments.keys() %}"{{ kind.label }}",{% endfor %}];
+    const sacramentData = [{% for count in sacraments.values() %}{{ count }},{% endfor %}];
+    const sacramentColors = ['#f59e0b', '#3b82f6', '#10b981', '#be123c', '#8b5cf6'];
+
+    const ctxSacraments = document.getElementById('sacramentsChart');
+    if (ctxSacraments) {
+        new Chart(ctxSacraments, {
+            type: 'doughnut',
+            data: {
+                labels: sacramentLabels,
+                datasets: [{
+                    data: sacramentData,
+                    backgroundColor: sacramentColors,
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { boxWidth: 12, font: { size: 12, family: "'DM Sans', sans-serif" } }
+                    }
+                },
+                cutout: '62%'
+            }
+        });
+    }
+
+    // 2. Certificate Queue Pipeline Chart
+    const certLabels = [];
+    const certData = [];
+    {% for status, count in certificates.items() %}
+    {% if status != 'open' %}
+    certLabels.push("{{ status.label }}");
+    certData.push({{ count }});
+    {% endif %}
+    {% endfor %}
+
+    const ctxCerts = document.getElementById('certificatesChart');
+    if (ctxCerts) {
+        new Chart(ctxCerts, {
+            type: 'bar',
+            data: {
+                labels: certLabels,
+                datasets: [{
+                    label: 'Requests',
+                    data: certData,
+                    backgroundColor: '#3b82f6',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 } },
+                    x: { ticks: { font: { size: 10 } } }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    // 3. Top Parishes Chart
+    const parishLabels = [{% for parish, count in activity[:6] %}"{{ parish.name }}",{% endfor %}];
+    const parishData = [{% for parish, count in activity[:6] %}{{ count }},{% endfor %}];
+
+    const ctxParishes = document.getElementById('parishesChart');
+    if (ctxParishes) {
+        new Chart(ctxParishes, {
+            type: 'bar',
+            data: {
+                labels: parishLabels,
+                datasets: [{
+                    label: 'Entries',
+                    data: parishData,
+                    backgroundColor: '#10b981',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { beginAtZero: true, ticks: { precision: 0 } },
+                    y: { ticks: { font: { size: 11 } } }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+});
+</script>
 
 {% endblock %}

@@ -4,123 +4,242 @@
 
 {% block content %}
 
-<div class="title-row">
-    <div>
-        <h1 class="portal-title">Parishioner Portal</h1>
-        <p class="muted">
-            Track your certificate requests and sacramental appointments.
-        </p>
-    </div>
-    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-        <a href="{{ url_for('portal.new_request') }}" class="submit-login-btn as-link">
-            REQUEST DOCUMENT
-        </a>
-        <a href="{{ url_for('portal.new_schedule') }}" class="submit-login-btn as-link">
-            SCHEDULE SACRAMENT
-        </a>
+{# Welcoming Hero Banner #}
+<div class="portal-hero" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #334155 100%); border-radius: var(--radius-xl); padding: 32px 36px; color: #ffffff; margin-bottom: 24px; position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.4);">
+    <div style="position: absolute; right: -30px; top: -30px; width: 240px; height: 240px; background: radial-gradient(circle, rgba(245, 158, 11, 0.18) 0%, transparent 70%); border-radius: 50%; pointer-events: none;"></div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; position: relative; z-index: 2;">
+        <div>
+            <div style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 8px; background: rgba(245, 158, 11, 0.2); padding: 4px 12px; border-radius: 9999px; border: 1px solid rgba(245, 158, 11, 0.35);">
+                <span style="font-size: 11px; font-weight: 700; color: #fbbf24; text-transform: uppercase; letter-spacing: 0.05em;">
+                    🏛️ Parishioner Self-Service
+                </span>
+            </div>
+            <h1 style="font-family: var(--font-display); font-size: 28px; font-weight: 800; margin: 0 0 8px; letter-spacing: -0.01em; color: #ffffff;">
+                Welcome, {{ current_user.display_name or current_user.username }}
+            </h1>
+            <p style="margin: 0; color: #cbd5e1; font-size: 14.5px; max-width: 560px; line-height: 1.5;">
+                Track your sacramental certificate requests and coordinate liturgical appointments with archdiocesan parish offices.
+            </p>
+        </div>
+        <div class="portal-hero-actions" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <a href="{{ url_for('portal.new_request') }}" class="submit-login-btn as-link" style="text-decoration: none; padding: 0.7rem 1.35rem; font-size: 13.5px;">
+                + Request a Document
+            </a>
+            <a href="{{ url_for('portal.new_schedule') }}" class="link-btn" style="text-decoration: none; background: rgba(255,255,255,0.12); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); padding: 0.7rem 1.35rem; font-size: 13.5px;">
+                + Schedule a Sacrament
+            </a>
+        </div>
     </div>
 </div>
 
-<h2 style="margin-top: 1.5rem; margin-bottom: 0.5rem; font-size: 1.25rem;">Church Document Requests</h2>
+{# Summary Overview KPI Cards #}
+<div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+
+    <div class="kpi-card-inner" style="background: #ffffff; border: 1px solid #e2e8f0; border-top: 4px solid #3b82f6; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #1d4ed8;">
+                📄 Active Claims
+            </span>
+            <span class="badge {{ 'badge-info' if open_count > 0 else 'badge-notes' }}">
+                {{ open_count }}
+            </span>
+        </div>
+        <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1.1; margin-bottom: 0.35rem;">
+            {{ open_count }}
+        </div>
+        <div style="font-size: 0.85rem; color: #64748b; font-weight: 500;">
+            Document requests in progress
+        </div>
+    </div>
+
+    <div class="kpi-card-inner" style="background: #ffffff; border: 1px solid #e2e8f0; border-top: 4px solid #f59e0b; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #b45309;">
+                ⏳ Pending Review
+            </span>
+            <span class="badge {{ 'badge-pending' if pending_schedules_count > 0 else 'badge-notes' }}">
+                {{ pending_schedules_count }}
+            </span>
+        </div>
+        <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1.1; margin-bottom: 0.35rem;">
+            {{ pending_schedules_count }}
+        </div>
+        <div style="font-size: 0.85rem; color: #64748b; font-weight: 500;">
+            Sacrament schedules awaiting review
+        </div>
+    </div>
+
+    <div class="kpi-card-inner" style="background: #ffffff; border: 1px solid #e2e8f0; border-top: 4px solid #10b981; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #047857;">
+                ✅ Completed Records
+            </span>
+            <span class="badge badge-notes">
+                {{ requests|length - open_count }}
+            </span>
+        </div>
+        <div style="font-size: 2.2rem; font-weight: 800; color: #0f172a; line-height: 1.1; margin-bottom: 0.35rem;">
+            {{ requests|length - open_count }}
+        </div>
+        <div style="font-size: 0.85rem; color: #64748b; font-weight: 500;">
+            Fulfilled certificate requests
+        </div>
+    </div>
+
+</div>
+
+{# Document Requests Section #}
 <div class="portal-card" style="margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.75rem;">
+        <div>
+            <h2 style="margin: 0; text-align: left; font-size: 1.25rem;">Church Document Requests</h2>
+            <p class="muted small" style="margin: 0.25rem 0 0;">Certificates filed under your parishioner account</p>
+        </div>
+        <a href="{{ url_for('portal.new_request') }}" class="small link-btn" style="padding: 6px 12px;">
+            + Request Document
+        </a>
+    </div>
+    <div class="portal-card-line" style="margin-left: 0; margin-right: 0;"></div>
 
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Document</th>
-                <th>Name on record</th>
-                <th>Status</th>
-                <th>Submitted</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in requests %}
-            <tr>
-                <td>{{ item.sacrament_type.label }}</td>
-                <td>
-                    {{ item.name_on_record }}
-                    {% if item.date_of_sacrament %}
-                    <div class="muted small">
-                        {{ item.date_of_sacrament.strftime('%d %b %Y') }}
-                    </div>
-                    {% endif %}
-                </td>
-                <td>
-                    <span class="badge badge-{{ 'ok' if item.status.is_closed else 'pending' }}">
-                        {{ item.status.label }}
-                    </span>
-                </td>
-                <td class="small">{{ item.created_at.strftime('%d %b %Y') }}</td>
-                <td>
-                    <a href="{{ url_for('portal.request_detail', request_id=item.id) }}">
-                        View
-                    </a>
-                </td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="5" class="muted">
-                    You have not requested a document yet.
-                    <a href="{{ url_for('portal.new_request') }}">Request one</a>.
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    {% if requests %}
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Document</th>
+                    <th>Name on record</th>
+                    <th>Status</th>
+                    <th>Submitted</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in requests %}
+                <tr>
+                    <td>
+                        <strong style="color: #0f172a;">{{ item.sacrament_type.label }} Certificate</strong>
+                        <div class="mono small muted" style="margin-top: 2px;">
+                            RCAL-DR-{{ '%05d' % item.id }}
+                        </div>
+                    </td>
+                    <td>
+                        <span style="font-weight: 600; color: #0f172a;" class="cell-truncate" title="{{ item.name_on_record }}">{{ item.name_on_record }}</span>
+                        {% if item.date_of_sacrament %}
+                        <div class="muted small">
+                            Sacrament: {{ item.date_of_sacrament.strftime('%d %b %Y') }}
+                        </div>
+                        {% elif item.date_of_birth %}
+                        <div class="muted small">
+                            DOB: {{ item.date_of_birth.strftime('%d %b %Y') }}
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.status.value == 'completed' %}
+                        <span class="badge badge-ok">Completed</span>
+                        {% elif item.status.value in ('rejected', 'record_not_found', 'cancelled') %}
+                        <span class="badge badge-rejected">{{ item.status.label }}</span>
+                        {% elif item.status.value in ('under_review', 'processing', 'awaiting_payment', 'ready', 'out_for_delivery') %}
+                        <span class="badge badge-info">{{ item.status.label }}</span>
+                        {% else %}
+                        <span class="badge badge-pending">{{ item.status.label }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="small" style="white-space: nowrap;">{{ item.created_at.strftime('%d %b %Y') }}</td>
+                    <td style="text-align: right; white-space: nowrap;">
+                        <a href="{{ url_for('portal.request_detail', request_id=item.id) }}" class="small link-btn" style="padding: 4px 10px;">
+                            View Claim &rarr;
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state-card">
+        <div class="empty-state-icon">📜</div>
+        <h3 class="empty-state-title">No Document Requests Yet</h3>
+        <p class="empty-state-desc">
+            You haven't requested any church records or certificates yet.
+        </p>
+        <a href="{{ url_for('portal.new_request') }}" class="submit-login-btn as-link" style="text-decoration: none; padding: 0.6rem 1.25rem;">
+            + Request a Document
+        </a>
+    </div>
+    {% endif %}
 
 </div>
 
-<h2 style="margin-top: 1.5rem; margin-bottom: 0.5rem; font-size: 1.25rem;">Sacrament Schedules</h2>
+{# Sacrament Schedules Section #}
 <div class="portal-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.75rem;">
+        <div>
+            <h2 style="margin: 0; text-align: left; font-size: 1.25rem;">Sacrament Schedules</h2>
+            <p class="muted small" style="margin: 0.25rem 0 0;">Liturgy and ceremony appointments with parish offices</p>
+        </div>
+        <a href="{{ url_for('portal.new_schedule') }}" class="small link-btn" style="padding: 6px 12px;">
+            + Schedule Sacrament
+        </a>
+    </div>
+    <div class="portal-card-line" style="margin-left: 0; margin-right: 0;"></div>
 
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Sacrament</th>
-                <th>Title / Intended For</th>
-                <th>Parish</th>
-                <th>Date &amp; Time</th>
-                <th>Status</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in schedules %}
-            <tr>
-                <td><strong>{{ item.event_type.label }}</strong></td>
-                <td>{{ item.title }}</td>
-                <td>{{ item.parish.name }}</td>
-                <td>{{ item.starts_at.strftime('%d %b %Y, %I:%M %p') }}</td>
-                <td>
-                    {% if item.status.value == 'requested' %}
-                    <span class="badge badge-pending">Pending Approval</span>
-                    {% elif item.status.value in ('scheduled', 'confirmed') %}
-                    <span class="badge badge-ok">{{ item.status.label }}</span>
-                    {% elif item.status.value == 'completed' %}
-                    <span class="badge badge-ok">Completed</span>
-                    {% elif item.status.value == 'cancelled' %}
-                    <span class="badge badge-rejected">Cancelled</span>
-                    {% else %}
-                    <span class="badge badge-pending">{{ item.status.label }}</span>
-                    {% endif %}
-                </td>
-                <td>
-                    <a href="{{ url_for('portal.schedule_detail', event_id=item.id) }}">
-                        View
-                    </a>
-                </td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="6" class="muted">
-                    You have not requested a sacrament schedule yet.
-                    <a href="{{ url_for('portal.new_schedule') }}">Schedule a sacrament</a>.
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    {% if schedules %}
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Sacrament</th>
+                    <th>Title / Intended For</th>
+                    <th>Parish</th>
+                    <th>Date &amp; Time</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in schedules %}
+                <tr>
+                    <td><strong style="color: #0f172a;">{{ item.event_type.label }}</strong></td>
+                    <td><span class="cell-truncate" title="{{ item.title }}">{{ item.title }}</span></td>
+                    <td><span class="cell-truncate" title="{{ item.parish.name }}">{{ item.parish.name }}</span></td>
+                    <td class="small" style="white-space: nowrap;">{{ item.starts_at.strftime('%d %b %Y, %I:%M %p') }}</td>
+                    <td>
+                        {% if item.status.value == 'requested' %}
+                        <span class="badge badge-pending">Pending Approval</span>
+                        {% elif item.status.value in ('scheduled', 'confirmed') %}
+                        <span class="badge badge-ok">{{ item.status.label }}</span>
+                        {% elif item.status.value == 'completed' %}
+                        <span class="badge badge-ok">Completed</span>
+                        {% elif item.status.value == 'cancelled' %}
+                        <span class="badge badge-rejected">Cancelled</span>
+                        {% else %}
+                        <span class="badge badge-pending">{{ item.status.label }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right; white-space: nowrap;">
+                        <a href="{{ url_for('portal.schedule_detail', event_id=item.id) }}" class="small link-btn" style="padding: 4px 10px;">
+                            View Schedule &rarr;
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state-card">
+        <div class="empty-state-icon">📅</div>
+        <h3 class="empty-state-title">No Sacrament Schedules Yet</h3>
+        <p class="empty-state-desc">
+            You don't have any scheduled sacramental liturgies or ceremony requests yet.
+        </p>
+        <a href="{{ url_for('portal.new_schedule') }}" class="submit-login-btn as-link" style="text-decoration: none; padding: 0.6rem 1.25rem;">
+            + Schedule a Sacrament
+        </a>
+    </div>
+    {% endif %}
 
 </div>
 

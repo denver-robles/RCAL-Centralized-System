@@ -80,33 +80,33 @@
                 <div class="hero-preview-card">
                     <div class="hero-card-header">
                         <div>
-                            <div style="font-weight: 700; font-size: 15px;">Document Request</div>
-                            <div style="font-size: 12px; color: var(--color-slate-400); margin-top: 2px;">REQ-2025-0842</div>
+                            <div style="font-weight: 700; font-size: 15px;">Document Request Simulation</div>
+                            <div style="font-size: 12px; color: var(--color-slate-400); margin-top: 2px;">Click steps below to preview</div>
                         </div>
-                        <span class="hero-card-badge">In progress</span>
+                        <span class="hero-card-badge" id="stepperBadge">In progress</span>
                     </div>
 
-                    <div class="hero-stepper">
-                        <div class="stepper-item">
+                    <div class="hero-stepper" id="heroStepper">
+                        <div class="stepper-item clickable" onclick="selectStepperStep(0)" title="Click to view Step 1 details">
                             <span class="step-circle step-completed">&#10003;</span>
-                            <span>Request submitted</span>
+                            <span class="step-label">Request submitted</span>
                         </div>
-                        <div class="stepper-item">
+                        <div class="stepper-item clickable" onclick="selectStepperStep(1)" title="Click to view Step 2 details">
                             <span class="step-circle step-completed">&#10003;</span>
-                            <span>Identity verified</span>
+                            <span class="step-label">Identity verified</span>
                         </div>
-                        <div class="stepper-item">
+                        <div class="stepper-item clickable" onclick="selectStepperStep(2)" title="Click to view Step 3 details">
                             <span class="step-circle step-current">3</span>
-                            <span style="color: var(--color-amber-300); font-weight: 700;">Certificate processing</span>
+                            <span class="step-label" style="color: var(--color-amber-300); font-weight: 700;">Certificate processing</span>
                         </div>
-                        <div class="stepper-item">
+                        <div class="stepper-item clickable" onclick="selectStepperStep(3)" title="Click to view Step 4 details">
                             <span class="step-circle step-next">4</span>
-                            <span style="color: var(--color-slate-400);">Ready for release</span>
+                            <span class="step-label" style="color: var(--color-slate-400);">Ready for release</span>
                         </div>
                     </div>
 
-                    <div style="background: rgba(2, 6, 23, 0.6); padding: 12px 16px; border-radius: 12px; font-size: 12px; color: var(--color-slate-300);">
-                        Your parish will notify you as soon as your certificate is ready.
+                    <div id="stepperDesc" style="background: rgba(2, 6, 23, 0.6); padding: 12px 16px; border-radius: 12px; font-size: 12px; color: var(--color-slate-300); min-height: 48px; display: flex; align-items: center;">
+                        Clergy and archive clerks search canonical books, folio numbers, and annotate records.
                     </div>
                 </div>
 
@@ -243,13 +243,9 @@
                             </svg>
                         </div>
 
-<<<<<<< HEAD
-                        <h4>Sacrament Scheduling</h4>
-=======
                         <div class="service-num">03</div>
 
-                        <h4>Masses & Schedules</h4>
->>>>>>> 087d4bc53ed0c31f18dbd7f0e31c7ef03da01ab5
+                        <h4>Sacrament Scheduling</h4>
 
                         <p>
                             Request schedules for sacraments and blessings,
@@ -258,6 +254,148 @@
 
                     </div>
 
+                </div>
+
+                {# Interactive Sacramental Guidelines & Eligibility Accordion #}
+                <div class="guidelines-box">
+                    <div class="guidelines-header">
+                        <div class="section-tag" style="margin-bottom: 6px;">Canonical Guidelines</div>
+                        <h3 style="font-family: var(--font-display); font-size: 24px; font-weight: 800; color: var(--color-slate-950); margin: 0 0 6px;">
+                            Document Requirements by Sacrament
+                        </h3>
+                        <p class="muted small" style="margin: 0;">
+                            Review canonical prerequisites and required documents before filing your certificate claim or scheduling a rite.
+                        </p>
+                    </div>
+
+                    <div class="guidelines-tabs">
+                        <button type="button" class="guideline-tab-btn active" data-tab="baptism" onclick="switchGuideline('baptism')">
+                            🕊️ Baptism
+                        </button>
+                        <button type="button" class="guideline-tab-btn" data-tab="confirmation" onclick="switchGuideline('confirmation')">
+                            🕊️ Confirmation
+                        </button>
+                        <button type="button" class="guideline-tab-btn" data-tab="matrimony" onclick="switchGuideline('matrimony')">
+                            💍 Holy Matrimony
+                        </button>
+                        <button type="button" class="guideline-tab-btn" data-tab="burial" onclick="switchGuideline('burial')">
+                            ✝️ Catholic Burial
+                        </button>
+                    </div>
+
+                    <div id="guideline-baptism" class="guideline-panel active">
+                        <div class="guideline-grid">
+                            <div class="guideline-card">
+                                <h5>📜 For Certificate Requests</h5>
+                                <ul class="guideline-list">
+                                    <li>Exact full name of candidate and date of birth</li>
+                                    <li>Parents' full names (including mother's maiden surname)</li>
+                                    <li>Parish where the baptism took place</li>
+                                    <li>Approximate year or date of ceremony</li>
+                                </ul>
+                            </div>
+                            <div class="guideline-card">
+                                <h5>📅 For Scheduling a Baptism</h5>
+                                <ul class="guideline-list">
+                                    <li>PSA Birth Certificate of child</li>
+                                    <li>Parents' Catholic Marriage Contract (or civil certificate)</li>
+                                    <li>Confirmation certificate of principal sponsors/godparents</li>
+                                    <li>Attendance at parish Pre-Jordan Catechetical Seminar</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="guideline-confirmation" class="guideline-panel">
+                        <div class="guideline-grid">
+                            <div class="guideline-card">
+                                <h5>📜 For Certificate Requests</h5>
+                                <ul class="guideline-list">
+                                    <li>Candidate's full name as recorded in the baptismal registry</li>
+                                    <li>Name of officiating bishop or parish priest</li>
+                                    <li>Year of confirmation and parish church location</li>
+                                    <li>Valid government-issued ID of requester</li>
+                                </ul>
+                            </div>
+                            <div class="guideline-card">
+                                <h5>📅 For Scheduling a Confirmation</h5>
+                                <ul class="guideline-list">
+                                    <li>Recent Baptismal Certificate marked <em>"For Confirmation"</em></li>
+                                    <li>Sponsor's Catholic confirmation record</li>
+                                    <li>Catechetical seminar completion slip</li>
+                                    <li>Parish vicar or parish priest endorsement</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="guideline-matrimony" class="guideline-panel">
+                        <div class="guideline-grid">
+                            <div class="guideline-card">
+                                <h5>📜 For Certificate Requests</h5>
+                                <ul class="guideline-list">
+                                    <li>Full names of groom and bride (including bride's maiden name)</li>
+                                    <li>Date and church where the marriage was solemnized</li>
+                                    <li>Canonical purpose (e.g. legal, passport, child baptism)</li>
+                                    <li>Proof of kinship if claimed on behalf of spouse</li>
+                                </ul>
+                            </div>
+                            <div class="guideline-card">
+                                <h5>📅 For Scheduling a Wedding</h5>
+                                <ul class="guideline-list">
+                                    <li>PSA Birth Certificates &amp; CENOMAR of both parties</li>
+                                    <li>Baptismal &amp; Confirmation certificates marked <em>"For Marriage"</em></li>
+                                    <li>Canonical interview with Parish Priest &amp; Pre-Cana seminar</li>
+                                    <li>Publication of Church Banns for three consecutive Sundays</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="guideline-burial" class="guideline-panel">
+                        <div class="guideline-grid">
+                            <div class="guideline-card">
+                                <h5>📜 For Certificate Requests</h5>
+                                <ul class="guideline-list">
+                                    <li>Full name of the deceased</li>
+                                    <li>Date of death and date of church funeral blessing</li>
+                                    <li>Parish where the funeral Mass or burial was recorded</li>
+                                    <li>Immediate family authorization</li>
+                                </ul>
+                            </div>
+                            <div class="guideline-card">
+                                <h5>📅 For Scheduling a Funeral</h5>
+                                <ul class="guideline-list">
+                                    <li>Official Death Certificate (duly registered)</li>
+                                    <li>Burial permit from municipal health office</li>
+                                    <li>Coordination with cemetery or columbarium</li>
+                                    <li>Parish priest blessing schedule coordination</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {# Directory Search Teaser #}
+                <div class="dir-finder-box">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+                        <div>
+                            <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); font-size: 11px; font-weight: 700; text-transform: uppercase;">
+                                📍 Archdiocesan Coverage
+                            </span>
+                            <h3 style="font-family: var(--font-display); font-size: 22px; font-weight: 800; margin: 8px 0 4px; color: #ffffff;">
+                                Looking for your Home Parish Church?
+                            </h3>
+                            <p style="margin: 0; color: #94a3b8; font-size: 13.5px; max-width: 520px;">
+                                Serving parishes across Lipa City, Batangas City, Tanauan City, and all municipalities in the Province of Batangas.
+                            </p>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('auth.login') }}" class="submit-login-btn as-link" style="text-decoration: none; padding: 0.75rem 1.4rem; font-size: 13.5px; font-weight: 700;">
+                                Sign in to Find &amp; Request &rarr;
+                            </a>
+                        </div>
+                    </div>
                 </div>
 
             </section>

@@ -5,9 +5,18 @@
 
 {% block content %}
 
-<div class="title-row">
-    <h1 class="portal-title">Certificate Requests</h1>
-    <a href="{{ url_for('certificates.create') }}" class="submit-login-btn as-link">NEW REQUEST</a>
+<div class="title-row" style="margin-bottom: 1.25rem;">
+    <div>
+        <h1 class="portal-title" style="margin-bottom: 0.25rem;">Certificate Requests</h1>
+        <p class="muted" style="margin: 0;">
+            Manage and issue canonical certified true copies and review parishioner document claims.
+        </p>
+    </div>
+    <div>
+        <a href="{{ url_for('certificates.create') }}" class="submit-login-btn as-link">
+            + New Request
+        </a>
+    </div>
 </div>
 
 <div class="stat-grid compact">
@@ -78,6 +87,7 @@
                 <th>Parish</th>
                 <th>Status</th>
                 <th>Filed</th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
@@ -85,34 +95,34 @@
             <tr>
                 <td class="mono small">
                     {% if item.is_document_request %}
-                    <a href="{{ url_for('certificates.document_request_detail', request_id=item.id) }}">
+                    <a href="{{ url_for('certificates.document_request_detail', request_id=item.id) }}" style="font-weight: 700; color: #0f172a;">
                         RCAL-DR-{{ '%05d' % item.id }}
                     </a>
-                    <span class="badge badge-portal">Online</span>
+                    <span class="badge badge-portal" style="font-size: 11px;">Online</span>
                     {% else %}
-                    <a href="{{ url_for('certificates.detail', request_id=item.id) }}">
+                    <a href="{{ url_for('certificates.detail', request_id=item.id) }}" style="font-weight: 700; color: #0f172a;">
                         {{ item.certificate_number or "#" ~ item.id }}
                     </a>
                     {% endif %}
                 </td>
                 <td>
                     {% if item.is_document_request %}
-                    {{ item.parishioner.display_name or item.name_on_record }}
+                    <strong>{{ item.parishioner.display_name or item.name_on_record }}</strong>
                     {% else %}
-                    {{ item.requester_name }}
+                    <strong>{{ item.requester_name }}</strong>
                     {% endif %}
                 </td>
                 <td class="small">
                     {% if item.is_document_request %}
                         {% if item.matched_record %}
-                        {{ item.matched_record.sacrament_type.label }} &middot;
+                        <span class="badge badge-notes">{{ item.matched_record.sacrament_type.label }}</span>
                         {{ item.matched_record.person.full_name }}
                         {% else %}
-                        {{ item.sacrament_type.label }} &middot;
+                        <span class="badge badge-notes">{{ item.sacrament_type.label }}</span>
                         {{ item.name_on_record }}
                         {% endif %}
                     {% else %}
-                        {{ item.record.sacrament_type.label }} &middot;
+                        <span class="badge badge-notes">{{ item.record.sacrament_type.label }}</span>
                         {{ item.record.person.full_name }}
                     {% endif %}
                 </td>
@@ -125,12 +135,25 @@
                 </td>
                 <td>{{ status_badge(item.status) }}</td>
                 <td class="small">{{ item.created_at.strftime('%d %b %Y') }}</td>
+                <td style="text-align: right;">
+                    {% if item.is_document_request %}
+                    <a href="{{ url_for('certificates.document_request_detail', request_id=item.id) }}" class="table-action-pill">
+                        Process &rarr;
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('certificates.detail', request_id=item.id) }}" class="table-action-pill">
+                        View &rarr;
+                    </a>
+                    {% endif %}
+                </td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="6" class="muted">
+                <td colspan="7" class="muted" style="text-align: center; padding: 2.5rem 1rem;">
                     {% if selected_status or open_only %}
                     No request matches that filter.
+                    <br>
+                    <a href="{{ url_for('certificates.index', view=view) }}" class="small link-btn" style="margin-top: 0.5rem;">Reset filter</a>
                     {% else %}
                     No requests have been received yet.
                     {% endif %}

@@ -5,21 +5,28 @@
 
 {% block content %}
 
-<h1 class="portal-title">Request a Sacrament Schedule</h1>
+<div class="title-row" style="margin-bottom: 1.5rem;">
+    <div>
+        <h1 class="portal-title" style="margin-bottom: 0.25rem;">Request a Sacrament Schedule</h1>
+        <p class="muted" style="margin: 0;">
+            Parishioners may submit a schedule request for any sacrament or blessing.
+            The parish office will review church availability, assign a priest, and confirm your liturgy.
+        </p>
+    </div>
+    <div>
+        <a href="{{ url_for('portal.schedules') }}" class="link-btn">
+            &larr; Back to schedules
+        </a>
+    </div>
+</div>
 
-<div class="portal-card">
-
-    <p class="muted">
-        Parishioners may submit a schedule request for any sacrament or blessing.
-        The parish office will review availability, assign a priest and venue,
-        and update your request status.
-    </p>
+<div class="portal-card" style="max-width: 800px; margin: 0 auto 2rem;">
 
     <form method="post" novalidate>
         {% include "_csrf.html" %}
 
         <fieldset class="fieldset">
-            <legend>Sacrament &amp; Parish</legend>
+            <legend>Ceremony &amp; Parish</legend>
 
             <div class="form-group">
                 <label for="parish_id">PARISH:</label>
@@ -34,7 +41,7 @@
                 {% if form.errors.parish_id %}
                 <span class="field-error">{{ form.errors.parish_id }}</span>
                 {% else %}
-                <span class="field-hint">Choose the parish where you want the ceremony celebrated.</span>
+                <span class="field-hint">Choose the parish church where the sacrament will be celebrated.</span>
                 {% endif %}
             </div>
 
@@ -59,29 +66,30 @@
         </fieldset>
 
         <fieldset class="fieldset">
-            <legend>Proposed Date &amp; Time</legend>
+            <legend>Preferred Date &amp; Time</legend>
 
             {{ field('preferred_date', form, 'Preferred Date', type='date',
             value=form.preferred_date, required=true, extra='min="' ~ today ~ '"',
-            hint='Proposed date of the ceremony.') }}
+            hint='Proposed date for the sacrament celebration.') }}
 
             {{ field('preferred_time', form, 'Preferred Time',
             value=form.preferred_time, placeholder='e.g. 10:00 AM or 14:00', required=true,
             hint='Preferred time of day (e.g. 9:00 AM, 10:30 AM, 2:00 PM).') }}
 
             {{ field('expected_attendees', form, 'Expected Attendees (approximate)', type='number',
-            value=form.expected_attendees, placeholder='e.g. 50', required=false, extra='min="1" max="5000"') }}
+            value=form.expected_attendees, placeholder='e.g. 50', required=false, extra='min="1" max="5000"',
+            hint='Estimated number of family members and guests attending.') }}
         </fieldset>
 
         <fieldset class="fieldset">
             <legend>Contact &amp; Details</legend>
 
             {{ field('requester_name', form, 'Contact Person Full Name', value=form.requester_name,
-            required=true) }}
+            required=true, hint='Full name of the contact person responsible for this booking.') }}
 
             {{ field('requester_contact', form, 'Contact Phone Number', type='tel',
             value=form.requester_contact, placeholder='e.g. 0917-123-4567', required=true,
-            hint='Parish staff will call or message this number to confirm details.') }}
+            hint='Parish staff will call or message this number to confirm requirements and schedule.') }}
 
             <div class="form-group">
                 <label for="description">DETAILS / SPECIAL REQUESTS:</label>
@@ -93,8 +101,10 @@
             </div>
         </fieldset>
 
-        <button type="submit" class="submit-login-btn">SUBMIT SCHEDULE REQUEST</button>
-        <a href="{{ url_for('portal.schedules') }}" class="link-btn">Cancel</a>
+        <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1.5rem; flex-wrap: wrap;">
+            <button type="submit" class="submit-login-btn">SUBMIT SCHEDULE REQUEST</button>
+            <a href="{{ url_for('portal.schedules') }}" class="link-btn">Cancel</a>
+        </div>
     </form>
 
 </div>

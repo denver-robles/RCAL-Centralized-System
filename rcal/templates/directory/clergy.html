@@ -5,14 +5,17 @@
 
 {% block content %}
 
-<h1 class="portal-title">Clergy</h1>
-
-<p class="muted">
-    {{ pagination.total }} {{ "member" if pagination.total == 1 else "members" }} of the clergy.
-</p>
+<div class="title-row" style="margin-bottom: 1.25rem;">
+    <div>
+        <h1 class="portal-title" style="margin-bottom: 0.25rem;">Clergy Directory</h1>
+        <p class="muted" style="margin: 0;">
+            {{ pagination.total }} {{ "member" if pagination.total == 1 else "members" }} of the archdiocesan clergy.
+        </p>
+    </div>
+</div>
 
 <form method="get" action="{{ url_for('directory.clergy') }}" class="search-bar">
-    <input type="text" name="q" value="{{ query }}" placeholder="First or surname" class="pill-input">
+    <input type="text" name="q" value="{{ query }}" placeholder="Search by first name or surname..." class="pill-input">
     <button type="submit" class="submit-login-btn as-button">SEARCH</button>
 </form>
 
@@ -21,10 +24,11 @@
     <table class="data-table">
         <thead>
             <tr>
-                <th>Name</th>
+                <th>Cleric</th>
                 <th>Title</th>
                 <th>Ordained</th>
                 <th>Current post</th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
@@ -32,11 +36,18 @@
             {% set current = person.assignments | selectattr('is_current') | list %}
             <tr>
                 <td>
-                    <a href="{{ url_for('directory.clergy_detail', clergy_id=person.id) }}">
-                        {{ person.sort_name }}
-                    </a>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span class="avatar-badge emerald">
+                            {{ person.first_name[0] if person.first_name else 'C' }}{{ person.last_name[0] if person.last_name else '' }}
+                        </span>
+                        <div>
+                            <a href="{{ url_for('directory.clergy_detail', clergy_id=person.id) }}" style="font-weight: 700; color: #0f172a; text-decoration: none;">
+                                {{ person.sort_name }}
+                            </a>
+                        </div>
+                    </div>
                 </td>
-                <td>{{ person.title.label }}</td>
+                <td><span class="badge badge-portal">{{ person.title.label }}</span></td>
                 <td>
                     {% if person.ordination_date %}
                     {{ person.ordination_date.strftime('%d %b %Y') }}
@@ -46,18 +57,25 @@
                 </td>
                 <td>
                     {% if current | length %}
-                    {{ current[0].parish.name }}
+                    <strong>{{ current[0].parish.name }}</strong>
                     <div class="muted small">{{ current[0].role.label }}</div>
                     {% else %}
-                    <span class="muted">Unassigned</span>
+                    <span class="badge badge-notes">Unassigned</span>
                     {% endif %}
+                </td>
+                <td style="text-align: right;">
+                    <a href="{{ url_for('directory.clergy_detail', clergy_id=person.id) }}" class="table-action-pill">
+                        Profile &rarr;
+                    </a>
                 </td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="4" class="muted">
+                <td colspan="5" class="muted" style="text-align: center; padding: 2.5rem 1rem;">
                     {% if query %}
                     No cleric matches that search.
+                    <br>
+                    <a href="{{ url_for('directory.clergy') }}" class="small link-btn" style="margin-top: 0.5rem;">Reset search filter</a>
                     {% else %}
                     No clergy have been entered yet.
                     {% endif %}

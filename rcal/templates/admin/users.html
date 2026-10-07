@@ -4,69 +4,130 @@
 
 {% block content %}
 
-<div class="title-row">
-    <h1 class="portal-title">Accounts</h1>
-    <a href="{{ url_for('admin.create_user') }}" class="submit-login-btn as-link">NEW ACCOUNT</a>
+<div class="title-row" style="margin-bottom: 1.5rem;">
+    <div>
+        <h1 class="portal-title">Accounts Directory</h1>
+        <p class="muted">
+            Manage clergy, chancery personnel, parish staff, and registered parishioner self-service accounts.
+        </p>
+    </div>
+    <a href="{{ url_for('admin.create_user') }}" class="submit-login-btn as-link" style="text-decoration: none; padding: 0.6rem 1.25rem;">
+        + New Account
+    </a>
+</div>
+
+{# Filter Tabs with Counts and Smooth Active Styling #}
+<div class="tab-row" style="margin-bottom: 1.5rem;">
+    <a href="{{ url_for('admin.users', role='all') }}"
+       class="tab-link {{ 'active' if not role_filter or role_filter == 'all' else '' }}">
+        All Accounts ({{ total_count }})
+    </a>
+    <a href="{{ url_for('admin.users', role='staff') }}"
+       class="tab-link {{ 'active' if role_filter == 'staff' else '' }}">
+        Parish Staff &amp; Chancery ({{ staff_count }})
+    </a>
+    <a href="{{ url_for('admin.users', role='parishioner') }}"
+       class="tab-link {{ 'active' if role_filter == 'parishioner' else '' }}">
+        Registered Parishioners ({{ parishioner_count }})
+    </a>
 </div>
 
 <div class="portal-card">
 
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Username</th>
-                <th>Name</th>
-                <th>Role</th>
-                <th>Home parish</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for user in pagination.items %}
-            <tr>
-                <td class="mono">{{ user.username }}</td>
-                <td>{{ user.display_name or "—" }}</td>
-                <td>{{ user.role.label }}</td>
-                <td>{{ user.home_parish.name if user.home_parish else "All" }}</td>
-                <td>
-                    {% if user.is_active %}
-                    <span class="badge badge-ok">Active</span>
-                    {% else %}
-                    <span class="badge badge-off">Deactivated</span>
-                    {% endif %}
-                </td>
-                <td class="actions">
-                    <a href="{{ url_for('admin.create_user', user_id=user.id) }}">Edit</a>
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Account</th>
+                    <th>Name &amp; Contact</th>
+                    <th>Role</th>
+                    <th>Home parish</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in pagination.items %}
+                <tr>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <span class="avatar-badge {{ 'amber' if user.role.value == 'admin' else ('emerald' if user.role.is_parishioner else 'blue') }}">
+                                {{ (user.display_name or user.username)[:2]|upper }}
+                            </span>
+                            <div class="cell-truncate" title="{{ user.username }}">
+                                <span class="mono" style="font-weight: 700; color: #0f172a;">{{ user.username }}</span>
+                                {% if user.email and user.email != user.username %}
+                                <div class="muted small cell-truncate" title="{{ user.email }}">{{ user.email }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 600;" class="cell-truncate" title="{{ user.display_name or '—' }}">{{ user.display_name or "—" }}</div>
+                        {% if user.phone %}
+                        <div class="muted small">📞 {{ user.phone }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user.role.is_parishioner %}
+                        <span class="badge badge-info">{{ user.role.label }}</span>
+                        {% elif user.role.value == 'admin' %}
+                        <span class="badge badge-pending">{{ user.role.label }}</span>
+                        {% else %}
+                        <span class="badge badge-notes">{{ user.role.label }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user.home_parish %}
+                        <strong>{{ user.home_parish.name }}</strong>
+                        <div class="muted small">{{ user.home_parish.municipality }}</div>
+                        {% else %}
+                        <span class="muted">All parishes</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user.is_active %}
+                        <span class="badge badge-ok">Active</span>
+                        {% else %}
+                        <span class="badge badge-off">Deactivated</span>
+                        {% endif %}
+                    </td>
+                    <td class="actions" style="white-space: nowrap;">
+                        <a href="{{ url_for('admin.create_user', user_id=user.id) }}" class="small link-btn" style="padding: 3px 8px;">
+                            Edit
+                        </a>
 
-                    <form method="post" action="{{ url_for('admin.reset_password', user_id=user.id) }}">
-                        {% include "_csrf.html" %}
-                        <button type="submit" class="link-btn">Reset password</button>
-                    </form>
+                        <form method="post" action="{{ url_for('admin.reset_password', user_id=user.id) }}" style="display: inline;">
+                            {% include "_csrf.html" %}
+                            <button type="submit" class="link-btn small" style="padding: 3px 8px;">Reset password</button>
+                        </form>
 
-                    {% if user.id != current_user.id %}
-                    <form method="post" action="{{ url_for('admin.toggle_user', user_id=user.id) }}">
-                        {% include "_csrf.html" %}
-                        <button type="submit" class="link-btn">
-                            {{ "Deactivate" if user.is_active else "Activate" }}
-                        </button>
-                    </form>
-                    {% endif %}
-                </td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="6" class="muted">No accounts yet.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                        {% if user.id != current_user.id %}
+                        <form method="post" action="{{ url_for('admin.toggle_user', user_id=user.id) }}" style="display: inline;">
+                            {% include "_csrf.html" %}
+                            <button type="submit" class="link-btn small {{ 'danger' if user.is_active else '' }}" style="padding: 3px 8px;">
+                                {{ "Deactivate" if user.is_active else "Activate" }}
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="muted" style="text-align: center; padding: 2.5rem 1rem;">
+                        No accounts found in this category.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
     {% if pagination.pages > 1 %}
     <nav class="pagination">
         {% for number in pagination.iter_pages() %}
             {% if number %}
-            <a href="{{ url_for('admin.users', page=number) }}"
+            <a href="{{ url_for('admin.users', page=number, role=role_filter) }}"
                class="{{ 'current' if number == pagination.page else '' }}">{{ number }}</a>
             {% else %}
             <span>…</span>

@@ -5,27 +5,50 @@
 
 {% block content %}
 
-<div class="title-row">
-    <h1 class="portal-title">Search the Registers</h1>
+<div class="title-row" style="margin-bottom: 1.25rem;">
+    <div>
+        <h1 class="portal-title" style="margin-bottom: 0.25rem;">Search the Registers</h1>
+        <p class="muted" style="margin: 0;">
+            {% if current_user.is_archdiocese_wide %}
+            <span class="badge badge-portal">Archdiocese-wide Scope</span> Searching registers across all archdiocesan parishes.
+            {% else %}
+            <span class="badge badge-notes">Parish Scope</span> Canonical sacramental registers of <strong>{{ current_user.home_parish.name }}</strong>.
+            {% endif %}
+        </p>
+    </div>
     {% if current_user.role.value in ('admin', 'chancery', 'parish_staff', 'clergy') %}
-    <a href="{{ url_for('records.create') }}" class="submit-login-btn as-link">RECORD AN ENTRY</a>
+    <div>
+        <a href="{{ url_for('records.create') }}" class="submit-login-btn as-link">
+            + Record an Entry
+        </a>
+    </div>
     {% endif %}
 </div>
 
-<p class="muted">
-    {% if current_user.is_archdiocese_wide %}
-    Every parish register in the archdiocese.
-    {% else %}
-    The registers of {{ current_user.home_parish.name }}.
-    {% endif %}
-    Names are matched against both parties of a marriage.
-</p>
+{# Quick Register Filter Chips #}
+<div class="filter-chips">
+    <span class="muted small" style="font-weight: 700; margin-right: 4px; text-transform: uppercase; letter-spacing: 0.05em;">Register:</span>
+    <a href="{{ url_for('records.search', name=name, parish=parish_id, year=year) }}" class="filter-chip {{ 'active' if not sacrament_type else '' }}">
+        All Registers
+    </a>
+    <a href="{{ url_for('records.search', name=name, type='baptism', parish=parish_id, year=year) }}" class="filter-chip {{ 'active' if sacrament_type == 'baptism' else '' }}">
+        Baptisms
+    </a>
+    <a href="{{ url_for('records.search', name=name, type='confirmation', parish=parish_id, year=year) }}" class="filter-chip {{ 'active' if sacrament_type == 'confirmation' else '' }}">
+        Confirmations
+    </a>
+    <a href="{{ url_for('records.search', name=name, type='marriage', parish=parish_id, year=year) }}" class="filter-chip {{ 'active' if sacrament_type == 'marriage' else '' }}">
+        Marriages
+    </a>
+    <a href="{{ url_for('records.search', name=name, type='death', parish=parish_id, year=year) }}" class="filter-chip {{ 'active' if sacrament_type == 'death' else '' }}">
+        Deaths
+    </a>
+</div>
 
 <form method="get" action="{{ url_for('records.search') }}" class="search-bar wide">
     <input type="text" name="name" value="{{ name }}" placeholder="Surname or first name" class="pill-input">
     {{ select_field('type', form, 'Register', sacraments.labels(), sacrament_type) }}
-    {{ select_field('parish', form, 'Parish', parish_choices, parish_id|string if parish_id else none, blank='All
-    parishes') }}
+    {{ select_field('parish', form, 'Parish', parish_choices, parish_id|string if parish_id else none, blank='All parishes') }}
     <input type="number" name="year" value="{{ year or '' }}" placeholder="Year" min="1600" max="2100"
         class="pill-input year-input">
     <button type="submit" class="submit-login-btn as-button">SEARCH</button>
@@ -33,58 +56,91 @@
 
 <div class="portal-card">
 
-    <p class="muted">
-        {{ pagination.total }} {{ "entry" if pagination.total == 1 else "entries" }} found.
-    </p>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <p class="muted" style="margin: 0; font-weight: 600;">
+            {{ pagination.total }} {{ "entry" if pagination.total == 1 else "entries" }} found.
+        </p>
+    </div>
 
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Subject</th>
-                <th>Register</th>
-                <th>Date</th>
-                <th>Parish</th>
-                <th>Citation</th>
-                <th>Notes</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for record in pagination.items %}
-            <tr>
-                <td>
-                    <a href="{{ url_for('records.detail', record_id=record.id) }}">
-                        {{ record.person.sort_name }}
-                    </a>
-                    {% if record.spouse %}
-                    <div class="muted small">spouse: {{ record.spouse.sort_name }}</div>
-                    {% endif %}
-                </td>
-                <td>{{ record.sacrament_type.label }}</td>
-                <td>{{ record.event_date.strftime('%d %b %Y') }}</td>
-                <td>{{ record.originating_parish.name }}</td>
-                <td class="mono small">{{ record.citation }}</td>
-                <td>
-                    {% set notes = record.annotations | length %}
-                    {% if notes %}
-                    <span class="badge badge-notes">{{ notes }}</span>
-                    {% else %}
-                    <span class="muted">—</span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="6" class="muted">
-                    {% if name or sacrament_type or parish_id or year %}
-                    No register entry matches that search.
-                    {% else %}
-                    No entries have been recorded yet.
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Subject</th>
+                    <th>Register</th>
+                    <th>Date</th>
+                    <th>Parish</th>
+                    <th>Citation</th>
+                    <th>Notes</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in pagination.items %}
+                <tr>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span class="avatar-badge {{ 'emerald' if record.sacrament_type.value == 'marriage' else ('amber' if record.sacrament_type.value == 'confirmation' else 'blue') }}">
+                                {{ record.person.first_name[0] if record.person.first_name else 'R' }}{{ record.person.last_name[0] if record.person.last_name else '' }}
+                            </span>
+                            <div class="cell-truncate wide" title="{{ record.person.sort_name }}">
+                                <a href="{{ url_for('records.detail', record_id=record.id) }}" style="font-weight: 700; color: #0f172a; text-decoration: none;">
+                                    {{ record.person.sort_name }}
+                                </a>
+                                {% if record.spouse %}
+                                <div class="muted small cell-truncate" title="{{ record.spouse.sort_name }}">spouse: {{ record.spouse.sort_name }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        {% if record.sacrament_type.value == 'baptism' %}
+                        <span class="badge badge-info">Baptism</span>
+                        {% elif record.sacrament_type.value == 'confirmation' %}
+                        <span class="badge badge-pending">Confirmation</span>
+                        {% elif record.sacrament_type.value == 'marriage' %}
+                        <span class="badge badge-ok">Marriage</span>
+                        {% else %}
+                        <span class="badge badge-notes">{{ record.sacrament_type.label }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="white-space: nowrap;">{{ record.event_date.strftime('%d %b %Y') }}</td>
+                    <td class="cell-truncate" title="{{ record.originating_parish.name }}">{{ record.originating_parish.name }}</td>
+                    <td class="mono small" style="white-space: nowrap;">{{ record.citation }}</td>
+                    <td>
+                        {% set notes = record.annotations | length %}
+                        {% if notes %}
+                        <span class="badge badge-notes">{{ notes }} note{{ 's' if notes != 1 else '' }}</span>
+                        {% else %}
+                        <span class="muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right; white-space: nowrap;">
+                        <a href="{{ url_for('records.detail', record_id=record.id) }}" class="table-action-pill">
+                            Inspect &rarr;
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="muted" style="text-align: center; padding: 2.5rem 1rem;">
+                        {% if name or sacrament_type or parish_id or year %}
+                        No register entry matches that search.
+                        <br>
+                        <a href="{{ url_for('records.search') }}" class="small link-btn" style="margin-top: 0.5rem;">Reset search filters</a>
+                        {% else %}
+                        No entries have been recorded yet.
+                        {% if current_user.role.value in ('admin', 'chancery', 'parish_staff', 'clergy') %}
+                        <br>
+                        <a href="{{ url_for('records.create') }}" class="small link-btn" style="margin-top: 0.5rem;">+ Record an entry</a>
+                        {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
     {{ pagination_nav(pagination, 'records.search', {
     'name': name, 'type': sacrament_type,
