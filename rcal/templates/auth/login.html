@@ -21,10 +21,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='password_toggle.css') }}">
 </head>
 
-<body class="portal-body">
+<body class="portal-body login-page-body">
 
-    {# Unified Full-width Archdiocesan Header #}
-    <header class="portal-header">
+    {# Unified Full-width Archdiocesan Header with Glassmorphism #}
+    <header class="portal-header login-header-glass">
         <a href="{{ url_for('pages.home') }}" class="portal-brand-link">
             <img src="{{ url_for('static', filename='logo.png') }}" alt="Archdiocese of Lipa">
             <div>
@@ -42,187 +42,254 @@
         </div>
     </header>
 
-    {# Elevated Centered Authentication View #}
-    <main class="auth-page-wrapper">
+    {# Left-Aligned Split Authentication View #}
+    <main class="auth-page-wrapper auth-page-split">
 
-        <div class="auth-card">
+        <div class="auth-split-layout">
 
-            {# Archdiocesan Emblem #}
-            <div class="auth-card-badge">
-                <img src="{{ url_for('static', filename='logo.png') }}" alt="Archdiocese of Lipa" class="auth-card-logo">
-            </div>
+            {# LEFT COLUMN: Login Card Container #}
+            <div class="auth-split-left">
 
-            <div style="text-align: center; margin-bottom: 0.85rem;">
-                <span class="badge badge-portal" style="font-size: 11px; letter-spacing: 0.08em; padding: 4px 12px; font-weight: 700;">
-                    SECURE AUTHENTICATION
-                </span>
-            </div>
+                <div class="auth-card">
 
-            {# Animated Tab Switcher #}
-            <div class="auth-tabs" role="tablist">
-                <button type="button"
-                        class="auth-tab-btn active"
-                        id="tabBtnParishioner"
-                        role="tab"
-                        aria-selected="true"
-                        aria-controls="panelParishioner"
-                        onclick="switchAuthMode('parishioner')">
-                    <span style="margin-right: 4px;">👤</span> Parishioner Portal
-                </button>
-                <button type="button"
-                        class="auth-tab-btn"
-                        id="tabBtnStaff"
-                        role="tab"
-                        aria-selected="false"
-                        aria-controls="panelStaff"
-                        onclick="switchAuthMode('staff')">
-                    <span style="margin-right: 4px;">🏛️</span> Staff &amp; Chancery
-                </button>
-            </div>
-
-            {% include "_flashes.html" %}
-
-            {# PANEL 1: PARISHIONER LOGIN (Default) #}
-            <div id="panelParishioner" class="auth-tab-panel active tab-panel-animated">
-
-                <h1 class="auth-card-title">PARISHIONER PORTAL SIGN IN</h1>
-                <p class="auth-card-subtitle">
-                    Access your sacramental certificates, document claims, and schedule appointments.
-                </p>
-                <div class="portal-card-line"></div>
-
-                <form method="post" action="{{ url_for('auth.login') }}" novalidate id="parishionerForm">
-                    {% include "_csrf.html" %}
-
-                    <div class="form-group">
-                        <label for="identifier">REGISTERED EMAIL OR USERNAME:</label>
-                        <input
-                            type="text"
-                            id="identifier"
-                            name="identifier"
-                            class="pill-input"
-                            value="{{ form.identifier or '' }}"
-                            placeholder="e.g. maria.santos@email.ph"
-                            autocomplete="username"
-                            autofocus
-                            required
-                        >
-                        {% if form.errors.identifier %}
-                        <span class="field-error">{{ form.errors.identifier }}</span>
-                        {% endif %}
+                    {# Archdiocesan Emblem #}
+                    <div class="auth-card-badge">
+                        <img src="{{ url_for('static', filename='logo.png') }}" alt="Archdiocese of Lipa" class="auth-card-logo">
                     </div>
 
-                    <div class="form-group">
-                        <label for="password">PASSWORD:</label>
-                        {{ password_input('password', id='password', autocomplete='current-password') }}
-                        {% if form.errors.password %}
-                        <span class="field-error">{{ form.errors.password }}</span>
-                        {% endif %}
+                    <div style="text-align: center; margin-bottom: 0.85rem;">
+                        <span class="badge badge-portal" style="font-size: 11px; letter-spacing: 0.08em; padding: 4px 12px; font-weight: 700;">
+                            SECURE AUTHENTICATION
+                        </span>
                     </div>
 
-                    <div class="form-options" style="display: flex; justify-content: space-between; align-items: center; margin: 0.75rem 0 1.25rem;">
-                        <label class="remember-me" style="margin: 0;">
-                            <input type="checkbox" name="remember" value="1" checked>
-                            <span>Remember me on this computer</span>
-                        </label>
+                    {# Animated Tab Switcher #}
+                    <div class="auth-tabs" role="tablist">
+                        <button type="button"
+                                class="auth-tab-btn active"
+                                id="tabBtnParishioner"
+                                role="tab"
+                                aria-selected="true"
+                                aria-controls="panelParishioner"
+                                onclick="switchAuthMode('parishioner')">
+                            <span style="margin-right: 4px;">👤</span> Parishioner Portal
+                        </button>
+                        <button type="button"
+                                class="auth-tab-btn"
+                                id="tabBtnStaff"
+                                role="tab"
+                                aria-selected="false"
+                                aria-controls="panelStaff"
+                                onclick="switchAuthMode('staff')">
+                            <span style="margin-right: 4px;">🏛️</span> Staff &amp; Chancery
+                        </button>
                     </div>
 
-                    <button type="submit" class="submit-login-btn btn-primary" style="width: 100%;">
-                        SIGN IN TO PARISHIONER PORTAL
-                    </button>
-                </form>
+                    {% include "_flashes.html" %}
 
-                {# Prominent Sign Up Option for Parishioners #}
-                <div class="auth-card-callout" style="margin-top: 1.5rem; padding: 1.15rem; background: #fffbeb; border: 1.5px dashed #f59e0b; border-radius: 12px; text-align: center;">
-                    <div style="font-weight: 700; color: #92400e; font-size: 13.5px; margin-bottom: 0.35rem;">
-                        Don't have a parishioner account yet?
+                    {# PANEL 1: PARISHIONER LOGIN (Default) #}
+                    <div id="panelParishioner" class="auth-tab-panel active tab-panel-animated">
+
+                        <h1 class="auth-card-title">PARISHIONER PORTAL SIGN IN</h1>
+                        <p class="auth-card-subtitle">
+                            Access your sacramental certificates, document claims, and schedule appointments.
+                        </p>
+                        <div class="portal-card-line"></div>
+
+                        <form method="post" action="{{ url_for('auth.login') }}" novalidate id="parishionerForm">
+                            {% include "_csrf.html" %}
+
+                            <div class="form-group" style="margin-bottom: 1.15rem;">
+                                <label for="identifier" style="display: block; font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em; color: var(--color-slate-700); margin-bottom: 6px;">
+                                    REGISTERED EMAIL OR USERNAME:
+                                </label>
+                                <input
+                                    type="text"
+                                    id="identifier"
+                                    name="identifier"
+                                    class="pill-input"
+                                    value="{{ form.identifier or '' }}"
+                                    placeholder="e.g. maria.santos@email.ph"
+                                    autocomplete="username"
+                                    autofocus
+                                    required
+                                >
+                                {% if form.errors.identifier %}
+                                <span class="field-error">{{ form.errors.identifier }}</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 1.15rem;">
+                                <label for="password" style="display: block; font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em; color: var(--color-slate-700); margin-bottom: 6px;">
+                                    PASSWORD:
+                                </label>
+                                {{ password_input('password', id='password', autocomplete='current-password') }}
+                                {% if form.errors.password %}
+                                <span class="field-error">{{ form.errors.password }}</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-options" style="display: flex; justify-content: space-between; align-items: center; margin: 0.75rem 0 1.25rem;">
+                                <label class="remember-me" style="margin: 0; font-size: 13px; color: var(--color-slate-600); cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                    <input type="checkbox" name="remember" value="1" checked style="accent-color: var(--color-amber-500); width: 16px; height: 16px;">
+                                    <span>Remember me on this computer</span>
+                                </label>
+                            </div>
+
+                            <button type="submit" class="submit-login-btn btn-primary" style="width: 100%; padding: 12px; font-weight: 700; font-size: 13.5px; letter-spacing: 0.03em;">
+                                SIGN IN TO PARISHIONER PORTAL
+                            </button>
+                        </form>
+
+                        {# Prominent Sign Up Option for Parishioners #}
+                        <div class="auth-card-callout" style="margin-top: 1.5rem; padding: 1.15rem; background: #fffbeb; border: 1.5px dashed #f59e0b; border-radius: 12px; text-align: center;">
+                            <div style="font-weight: 700; color: #92400e; font-size: 13.5px; margin-bottom: 0.35rem;">
+                                Don't have a parishioner account yet?
+                            </div>
+                            <div class="muted small" style="margin-bottom: 0.85rem; color: #78350f;">
+                                Register to request certificates and schedule sacraments online.
+                            </div>
+                            <a href="{{ url_for('portal.register') }}" class="submit-login-btn as-link" style="text-decoration: none; width: 100%; display: block; text-align: center; background: #ffffff; color: #0f172a; border: 2px solid #f59e0b; box-shadow: none; font-weight: 700; padding: 0.65rem 1rem;">
+                                + Sign Up / Register an Account
+                            </a>
+                        </div>
+
+                        {# Switch to Staff Button #}
+                        <div style="margin-top: 1.25rem; text-align: center; padding-top: 1rem; border-top: 1px solid #e2e8f0;">
+                            <button type="button" class="link-btn small" onclick="switchAuthMode('staff')" style="background: none; border: none; cursor: pointer; color: #1d4ed8; font-weight: 700; font-size: 13px;">
+                                Church Personnel? Sign in with Staff / Chancery Account &rarr;
+                            </button>
+                        </div>
+
                     </div>
-                    <div class="muted small" style="margin-bottom: 0.85rem; color: #78350f;">
-                        Register to request certificates and schedule sacraments online.
+
+                    {# PANEL 2: STAFF & CHANCERY LOGIN #}
+                    <div id="panelStaff" class="auth-tab-panel" style="display: none;">
+
+                        <h1 class="auth-card-title">CHURCH PERSONNEL SIGN IN</h1>
+                        <p class="auth-card-subtitle">
+                            Archdiocesan Parish Administration &amp; Chancery Portal
+                        </p>
+                        <div class="portal-card-line"></div>
+
+                        <form method="post" action="{{ url_for('auth.login') }}" novalidate id="staffForm">
+                            {% include "_csrf.html" %}
+
+                            <div class="form-group" style="margin-bottom: 1.15rem;">
+                                <label for="staff_identifier" style="display: block; font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em; color: var(--color-slate-700); margin-bottom: 6px;">
+                                    STAFF USERNAME OR OFFICIAL EMAIL:
+                                </label>
+                                <input
+                                    type="text"
+                                    id="staff_identifier"
+                                    name="identifier"
+                                    class="pill-input"
+                                    value="{{ form.identifier or '' }}"
+                                    placeholder="e.g. lipasec or clerk@parish.ph"
+                                    autocomplete="username"
+                                    required
+                                >
+                                {% if form.errors.identifier %}
+                                <span class="field-error">{{ form.errors.identifier }}</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 1.15rem;">
+                                <label for="staff_password" style="display: block; font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em; color: var(--color-slate-700); margin-bottom: 6px;">
+                                    PASSWORD:
+                                </label>
+                                {{ password_input('password', id='staff_password', autocomplete='current-password') }}
+                                {% if form.errors.password %}
+                                <span class="field-error">{{ form.errors.password }}</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-options" style="display: flex; justify-content: space-between; align-items: center; margin: 0.75rem 0 1.25rem;">
+                                <label class="remember-me" style="margin: 0; font-size: 13px; color: var(--color-slate-600); cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                    <input type="checkbox" name="remember" value="1" checked style="accent-color: var(--color-amber-500); width: 16px; height: 16px;">
+                                    <span>Remember me on this computer</span>
+                                </label>
+                            </div>
+
+                            <button type="submit" class="submit-login-btn as-link" style="width: 100%; background: #0f172a; color: #ffffff; border: none; text-align: center; padding: 12px; font-weight: 700; font-size: 13.5px; letter-spacing: 0.03em;">
+                                SIGN IN TO STAFF SYSTEM
+                            </button>
+                        </form>
+
+                        {# Switch to Parishioner Button #}
+                        <div style="margin-top: 1.25rem; text-align: center; padding-top: 1rem; border-top: 1px solid #e2e8f0;">
+                            <button type="button" class="link-btn small" onclick="switchAuthMode('parishioner')" style="background: none; border: none; cursor: pointer; color: #475569; font-weight: 700; font-size: 13px;">
+                                &larr; Return to Parishioner Sign In
+                            </button>
+                        </div>
+
+                        <div class="auth-card-footer" style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid #e2e8f0;">
+                            <p class="portal-note" style="margin: 0; font-size: 12px; line-height: 1.5; color: #64748b; text-align: center;">
+                                Access is limited to authorized parish, chancery and clergy accounts. Records held here are personal data protected under <strong>RA 10173</strong>.
+                            </p>
+                        </div>
+
                     </div>
-                    <a href="{{ url_for('portal.register') }}" class="submit-login-btn as-link" style="text-decoration: none; width: 100%; display: block; text-align: center; background: #ffffff; color: #0f172a; border: 2px solid #f59e0b; box-shadow: none; font-weight: 700; padding: 0.65rem 1rem;">
-                        + Sign Up / Register an Account
-                    </a>
+
                 </div>
 
-                {# Switch to Staff Button #}
-                <div style="margin-top: 1.25rem; text-align: center; padding-top: 1rem; border-top: 1px solid #e2e8f0;">
-                    <button type="button" class="link-btn small" onclick="switchAuthMode('staff')" style="background: none; border: none; cursor: pointer; color: #1d4ed8; font-weight: 700; font-size: 13px;">
-                        Church Personnel? Sign in with Staff / Chancery Account &rarr;
-                    </button>
-                </div>
-
             </div>
 
-            {# PANEL 2: STAFF & CHANCERY LOGIN #}
-            <div id="panelStaff" class="auth-tab-panel" style="display: none;">
-
-                <h1 class="auth-card-title">CHURCH PERSONNEL SIGN IN</h1>
-                <p class="auth-card-subtitle">
-                    Archdiocesan Parish Administration &amp; Chancery Portal
-                </p>
-                <div class="portal-card-line"></div>
-
-                <form method="post" action="{{ url_for('auth.login') }}" novalidate id="staffForm">
-                    {% include "_csrf.html" %}
-
-                    <div class="form-group">
-                        <label for="staff_identifier">STAFF USERNAME OR OFFICIAL EMAIL:</label>
-                        <input
-                            type="text"
-                            id="staff_identifier"
-                            name="identifier"
-                            class="pill-input"
-                            value="{{ form.identifier or '' }}"
-                            placeholder="e.g. lipasec or clerk@parish.ph"
-                            autocomplete="username"
-                            required
-                        >
-                        {% if form.errors.identifier %}
-                        <span class="field-error">{{ form.errors.identifier }}</span>
-                        {% endif %}
+            {# RIGHT COLUMN: Archdiocesan Showcase / Cathedral Hero #}
+            <div class="auth-split-right">
+                <div class="auth-showcase-panel">
+                    <div class="auth-showcase-badge">
+                        <img src="{{ url_for('static', filename='logo.png') }}" alt="Archdiocese of Lipa">
+                        <span>ARCHDIOCESE OF LIPA &bull; CHANCERY &bull; EST. 1910</span>
                     </div>
 
-                    <div class="form-group">
-                        <label for="staff_password">PASSWORD:</label>
-                        {{ password_input('password', id='staff_password', autocomplete='current-password') }}
-                        {% if form.errors.password %}
-                        <span class="field-error">{{ form.errors.password }}</span>
-                        {% endif %}
-                    </div>
+                    <h2 class="auth-showcase-title">
+                        Faithful records.<br>
+                        <span class="text-gold">Connected service.</span>
+                    </h2>
 
-                    <div class="form-options" style="display: flex; justify-content: space-between; align-items: center; margin: 0.75rem 0 1.25rem;">
-                        <label class="remember-me" style="margin: 0;">
-                            <input type="checkbox" name="remember" value="1" checked>
-                            <span>Remember me on this computer</span>
-                        </label>
-                    </div>
-
-                    <button type="submit" class="submit-login-btn as-link" style="width: 100%; background: #0f172a; color: #ffffff; border: none; text-align: center;">
-                        SIGN IN TO STAFF SYSTEM
-                    </button>
-                </form>
-
-                {# Switch to Parishioner Button #}
-                <div style="margin-top: 1.25rem; text-align: center; padding-top: 1rem; border-top: 1px solid #e2e8f0;">
-                    <button type="button" class="link-btn small" onclick="switchAuthMode('parishioner')" style="background: none; border: none; cursor: pointer; color: #475569; font-weight: 700; font-size: 13px;">
-                        &larr; Return to Parishioner Sign In
-                    </button>
-                </div>
-
-                <div class="auth-card-footer" style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid #e2e8f0;">
-                    <p class="portal-note" style="margin: 0; font-size: 12px; line-height: 1.5; color: #64748b; text-align: center;">
-                        Access is limited to authorized parish, chancery and clergy accounts. Records held here are personal data protected under <strong>RA 10173</strong>.
+                    <p class="auth-showcase-description">
+                        A centralized canonical records management platform serving our parishioners, clergy, and parish communities with integrity, modern security, and ecclesiastical fidelity.
                     </p>
-                </div>
 
+                    <div class="auth-showcase-features">
+                        <div class="auth-feature-card">
+                            <div class="auth-feature-icon">🛡️</div>
+                            <div>
+                                <div class="auth-feature-name">RA 10173 &amp; Canon Law Protected</div>
+                                <div class="auth-feature-sub">End-to-end data privacy compliant with strict sacramental confidentiality standards.</div>
+                            </div>
+                        </div>
+
+                        <div class="auth-feature-card">
+                            <div class="auth-feature-icon">📜</div>
+                            <div>
+                                <div class="auth-feature-name">Official Sacramental Registers</div>
+                                <div class="auth-feature-sub">Canonical certificates for Baptism, Confirmation, Matrimony, and Christian Burial.</div>
+                            </div>
+                        </div>
+
+                        <div class="auth-feature-card">
+                            <div class="auth-feature-icon">🏛️</div>
+                            <div>
+                                <div class="auth-feature-name">Diocesan-Wide Parish Network</div>
+                                <div class="auth-feature-sub">Connecting parishes, vicariates, and the Archdiocesan Chancery in Lipa City.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="auth-showcase-quote">
+                        <span class="auth-quote-cross">✝</span>
+                        <em>"Ut unum sint"</em> &mdash; "That they may all be one" &bull; In faithful service of the Church
+                    </div>
+                </div>
             </div>
 
         </div>
 
     </main>
 
-    <footer class="portal-footer">
+    <footer class="portal-footer login-footer-dark">
         <p><strong>{{ config['ORGANISATION'] }}</strong> &mdash; Centralized Records System</p>
         <p class="muted small" style="margin-top: 0.35rem;">
             Republic Act No. 10173 &bull; Roman Catholic Archdiocese of Lipa
