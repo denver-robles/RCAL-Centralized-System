@@ -1,0 +1,131 @@
+================================================================================
+RCAL CENTRALIZED SYSTEM (PIMS) - LOCAL SETUP GUIDE
+Stack: Laravel 12 + Inertia.js + React 19 + TypeScript + Tailwind CSS
+Repository: https://github.com/denver-robles/RCAL-Centralized-System
+Branch: laravel-pims
+================================================================================
+
+This guide contains the exact steps to clone, configure, and run this project 
+on another computer using a fresh directory.
+
+
+--------------------------------------------------------------------------------
+PREREQUISITES CHECKLIST
+--------------------------------------------------------------------------------
+Before starting, ensure the following software is installed on the machine:
+
+1. PHP 8.2 or higher
+   - Required extensions: sqlite3, pdo_sqlite, curl, mbstring, openssl
+   - Verify in terminal: php -v
+
+2. Composer (PHP Package Manager)
+   - Download: https://getcomposer.org/
+   - Verify in terminal: composer -V
+
+3. Node.js (v18 or higher) & NPM
+   - Download: https://nodejs.org/
+   - Verify in terminal: node -v && npm -v
+
+4. Git
+   - Download: https://git-scm.com/
+   - Verify in terminal: git --version
+
+
+--------------------------------------------------------------------------------
+STEP 1: CLONE THE SPECIFIC BRANCH INTO A FRESH FOLDER
+--------------------------------------------------------------------------------
+Open PowerShell / Command Prompt and run:
+
+    git clone -b laravel-pims https://github.com/denver-robles/RCAL-Centralized-System.git "RCAL-PIMS"
+    cd "RCAL-PIMS"
+
+
+--------------------------------------------------------------------------------
+STEP 2: INSTALL BACKEND & FRONTEND DEPENDENCIES
+--------------------------------------------------------------------------------
+Run both installation commands:
+
+    # Install PHP packages
+    composer install
+
+    # Install JavaScript / React packages
+    npm install
+
+
+--------------------------------------------------------------------------------
+STEP 3: ENVIRONMENT CONFIGURATION (.env) & APP KEY
+--------------------------------------------------------------------------------
+Copy the example environment file and generate a unique encryption key:
+
+    # On Windows PowerShell:
+    Copy-Item .env.example .env
+
+    # (On macOS / Linux Bash: cp .env.example .env)
+
+    # Generate the application key:
+    php artisan key:generate
+
+
+--------------------------------------------------------------------------------
+STEP 4: INITIALIZE DATABASE & SEED BASELINE ACCOUNTS
+--------------------------------------------------------------------------------
+Create the SQLite database file and run the migrations with seeders:
+
+    # On Windows PowerShell:
+    New-Item -ItemType File -Path "database/database.sqlite" -Force
+
+    # (On macOS / Linux Bash: touch database/database.sqlite)
+
+    # Run database schema migrations and insert default accounts:
+    php artisan migrate --seed
+
+
+--------------------------------------------------------------------------------
+STEP 5: START THE DEVELOPMENT SERVERS
+--------------------------------------------------------------------------------
+You need TWO terminal windows running concurrently:
+
+TERMINAL 1 (Backend Server):
+    php artisan serve
+    --> Application running at: http://127.0.0.1:8000
+
+TERMINAL 2 (Frontend Hot-Reload):
+    npm run dev
+    --> Vite compiling and hot-reloading React components
+
+* Note: If you do not want to keep Vite running in a second terminal,
+  you can compile static production assets once by running:
+    npm run build
+
+
+--------------------------------------------------------------------------------
+ORIGINAL SYSTEM LOGIN CREDENTIALS
+--------------------------------------------------------------------------------
+The database seeder provisions the exact accounts from the original project:
+
+1. ARCHDIOCESE ADMINISTRATOR (Chancery Curia)
+   - Username : admin  (or Email: chancery@rcal.local)
+   - Password : adminpw
+   - Scope    : Full Curia Administrator, Directories & System Controls
+
+2. PARISH STAFF 1 (St. Sebastian Cathedral)
+   - Username : parish1  (or Email: parish1@example.ph)
+   - Password : parishpw
+   - Scope    : Cathedral Canonical Registers, Certificates & Schedules
+
+3. PARISH STAFF 2 (Our Lady of the Assumption)
+   - Username : parish2  (or Email: parish2@example.ph)
+   - Password : parishpw
+   - Scope    : Assumption Parish Registers & Records
+
+4. PARISH STAFF 3 (San Carlos Borromeo)
+   - Username : parish3  (or Email: parish3@example.ph)
+   - Password : parishpw
+   - Scope    : San Carlos Borromeo Registers & Records
+
+5. PARISHIONER (Self-Service)
+   - Email    : juan@example.ph  (or Username: juan@example.ph)
+   - Password : parishpw
+   - Scope    : Personal Document Claims, Request Tracking & Status
+
+================================================================================
