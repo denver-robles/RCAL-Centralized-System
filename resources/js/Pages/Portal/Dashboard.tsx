@@ -57,6 +57,13 @@ export default function Dashboard({ auth, documentRequests, schedules }: Props) 
 
                     <div className="flex flex-wrap items-center gap-3">
                         <Link
+                            href="/portal/schedule-requests/create"
+                            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold rounded-xl text-xs shadow-md transition-all duration-200"
+                        >
+                            <Calendar className="w-4 h-4" />
+                            Book Sacrament Schedule
+                        </Link>
+                        <Link
                             href="/portal/requests/create"
                             className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs shadow-md transition-all duration-200"
                         >
@@ -202,12 +209,13 @@ export default function Dashboard({ auth, documentRequests, schedules }: Props) 
                                     <th className="py-3 px-4">Date & Time</th>
                                     <th className="py-3 px-4">Minister</th>
                                     <th className="py-3 px-4">Status</th>
+                                    <th className="py-3 px-4 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 text-slate-700">
                                 {schedules.length === 0 ? (
                                     <tr>
-                                        <td colSpan={6} className="text-center py-10 text-slate-500">
+                                        <td colSpan={7} className="text-center py-10 text-slate-500">
                                             No liturgical appointments recorded for your account.
                                         </td>
                                     </tr>
@@ -242,7 +250,30 @@ export default function Dashboard({ auth, documentRequests, schedules }: Props) 
                                                     {schedule.presiding_clergy?.titled_name || 'Assigned Officiant'}
                                                 </td>
                                                 <td className="py-3 px-4">
-                                                    <StatusBadge status={schedule.status} />
+                                                    <div className="flex flex-col gap-1">
+                                                        <StatusBadge status={schedule.status} />
+                                                        {schedule.status === 'cancelled' && schedule.cancellation_reason && (
+                                                            <span className="text-[10px] text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 mt-1">
+                                                                <strong>Reason:</strong> {schedule.cancellation_reason}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="py-3 px-4 text-right">
+                                                    {schedule.status === 'confirmed' && schedule.payment_status !== 'paid' && schedule.payment_status !== 'pending_cash' && (
+                                                        <Link
+                                                            href={`/portal/schedule-requests/${schedule.id}/payment`}
+                                                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[10px] uppercase tracking-wider shadow-sm transition-colors"
+                                                        >
+                                                            Pay Now
+                                                        </Link>
+                                                    )}
+                                                    {schedule.payment_status === 'paid' && (
+                                                        <span className="text-[10px] font-bold text-emerald-600 uppercase">Paid</span>
+                                                    )}
+                                                    {schedule.payment_status === 'pending_cash' && (
+                                                        <span className="text-[10px] font-bold text-amber-600 uppercase">Pending Cash</span>
+                                                    )}
                                                 </td>
                                             </tr>
                                         );

@@ -26,6 +26,14 @@ class SacramentSchedule extends Model
         'status',
         'requester_name',
         'requester_contact',
+        'requester_email',
+        'requester_relationship',
+        'requester_address',
+        'alternative_starts_at',
+        'specific_data',
+        'payment_method',
+        'payment_receipt_path',
+        'payment_status',
         'expected_attendees',
         'record_id',
         'cancellation_reason',
@@ -39,6 +47,8 @@ class SacramentSchedule extends Model
             'status' => ScheduleStatusEnum::class,
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
+            'alternative_starts_at' => 'datetime',
+            'specific_data' => 'array',
             'expected_attendees' => 'integer',
         ];
     }
@@ -66,6 +76,11 @@ class SacramentSchedule extends Model
     public function record(): BelongsTo
     {
         return $this->belongsTo(SacramentalRecord::class, 'record_id');
+    }
+
+    public function attachments()
+    {
+        return $this->hasMany(ScheduleAttachment::class, 'sacrament_schedule_id');
     }
 
     public function getDurationMinutesAttribute(): int

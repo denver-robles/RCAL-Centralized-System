@@ -18,6 +18,7 @@ import {
     PlusCircle,
     CheckCircle2,
     AlertCircle,
+    Settings,
 } from 'lucide-react';
 
 interface PortalLayoutProps {
@@ -158,6 +159,14 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
                                 </Link>
 
                                 <Link
+                                    href="/schedules/settings"
+                                    className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-amber-300 hover:bg-slate-850 transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap"
+                                >
+                                    <Settings className="w-4 h-4" />
+                                    <span>Sacrament Settings</span>
+                                </Link>
+
+                                <Link
                                     href="/clergy"
                                     className={`px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap ${
                                         activeTab === 'clergy'
@@ -229,6 +238,14 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
                                 >
                                     <PlusCircle className="w-4 h-4 text-amber-400" />
                                     <span>Request Church Document</span>
+                                </Link>
+
+                                <Link
+                                    href="/portal/schedule-requests/create"
+                                    className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-amber-300 hover:bg-slate-800 transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap"
+                                >
+                                    <Calendar className="w-4 h-4 text-amber-400" />
+                                    <span>Book Sacrament Schedule</span>
                                 </Link>
                             </>
                         )}

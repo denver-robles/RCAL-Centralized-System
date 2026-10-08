@@ -40,6 +40,14 @@ Route::middleware(['auth'])->prefix('portal')->name('portal.')->group(function (
     Route::get('/dashboard', [PortalController::class, 'dashboard'])->name('dashboard');
     Route::get('/requests/create', [PortalController::class, 'createRequest'])->name('requests.create');
     Route::post('/requests', [PortalController::class, 'storeRequest'])->name('requests.store');
+    
+    // Sacrament Schedule Requests
+    Route::get('/schedule-requests/create', [PortalController::class, 'createScheduleRequest'])->name('schedule-requests.create');
+    Route::post('/schedule-requests', [PortalController::class, 'storeScheduleRequest'])->name('schedule-requests.store');
+    
+    // Sacrament Schedule Payment
+    Route::get('/schedule-requests/{schedule}/payment', [PortalController::class, 'paymentForm'])->name('schedule-requests.payment');
+    Route::post('/schedule-requests/{schedule}/payment', [PortalController::class, 'submitPayment'])->name('schedule-requests.payment.submit');
 });
 
 /*
@@ -70,6 +78,8 @@ Route::middleware(['auth', 'staff'])->group(function () {
     // Sacrament Schedules (Zero Mass Intentions)
     Route::get('/schedules', [SchedulesController::class, 'index'])->name('schedules.index');
     Route::get('/schedules/create', [SchedulesController::class, 'create'])->name('schedules.create');
+    Route::get('/schedules/settings', [SchedulesController::class, 'settings'])->name('schedules.settings');
+    Route::post('/schedules/settings', [SchedulesController::class, 'storeSettings'])->name('schedules.settings.store');
     Route::get('/schedules/check-conflict', [SchedulesController::class, 'checkConflict'])->name('schedules.check-conflict');
     Route::post('/schedules', [SchedulesController::class, 'store'])->name('schedules.store');
     Route::post('/schedules/{schedule}/status', [SchedulesController::class, 'updateStatus'])->name('schedules.status');

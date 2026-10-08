@@ -124,4 +124,121 @@ class PortalController extends Controller
         return redirect()->route('portal.dashboard')
             ->with('success', "Your document claim has been filed successfully. Tracking Code: {$doc->tracking_code}");
     }
+
+    /**
+     * Show sacrament schedule request form.
+     */
+    public function createScheduleRequest(): Response
+    {
+        $parishes = Parish::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'city_municipality']);
+
+        return Inertia::render('Portal/ScheduleRequestCreate', [
+            'parishes' => $parishes,
+        ]);
+    }
+
+    /**
+     * Process sacrament schedule request and attachments.
+     */
+    public function storeScheduleRequest(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'requester_name' => ['required', 'string', 'max:160'],
+            'requester_contact' => ['required', 'string', 'max:255'],
+            'requester_email' => ['required', 'email', 'max:160'],
+            'requester_relationship' => ['required', 'string', 'max:100'],
+            'requester_address' => ['required', 'string'],
+            'parish_id' => ['required', 'integer', 'exists:parishes,id'],
+            'sacrament_type' => ['required', 'string'],
+            'starts_at' => ['required', 'date'],
+            'alternative_starts_at' => ['nullable', 'date'],
+            'specific_data' => ['nullable', 'array'],
+        ]);
+
+        $schedule = new SacramentSchedule();
+        $schedule->requester_user_id = $request->user()->id;
+        $schedule->parish_id = $validated['parish_id'];
+        $schedule->sacrament_type = $validated['sacrament_type'];
+        $schedule->title = ucfirst($validated['sacrament_type']) . ' Request - ' . $validated['requester_name'];
+        $schedule->starts_at = $validated['starts_at'];
+        $schedule->ends_at = \Carbon\Carbon::parse($validated['starts_at'])->addHours(1);
+        $schedule->alternative_starts_at = $validated['alternative_starts_at'] ?? null;
+        $schedule->status = \App\Enums\ScheduleStatusEnum::REQUESTED;
+        
+        $schedule->requester_name = $validated['requester_name'];
+        $schedule->requester_contact = $validated['requester_contact'];
+        $schedule->requester_email = $validated['requester_email'];
+        $schedule->requester_relationship = $validated['requester_relationship'];
+        $schedule->requester_address = $validated['requester_address'];
+        $schedule->specific_data = $validated['specific_data'] ?? [];
+        $schedule->payment_status = 'unpaid';
+        $schedule->save();
+
+        // Handle file uploads
+        $filesToUpload = ['gov_id', 'psa_birth_cert', 'cenomar', 'prev_certificate'];
+        foreach ($filesToUpload as $fileKey) {
+            if ($request->hasFile($fileKey)) {
+                $path = $request->file($fileKey)->store('schedule_attachments', 'public');
+                \App\Models\ScheduleAttachment::create([
+                    'sacrament_schedule_id' => $schedule->id,
+                    'document_type' => $fileKey,
+                    'file_path' => $path,
+                ]);
+            }
+        }
+
+        return redirect()->route('portal.dashboard')
+            ->with('success', 'Your schedule request has been submitted for review.');
+    }
+
+    /**
+     * Show the payment form for approved schedules.
+     */
+    public function paymentForm(Request $request, SacramentSchedule $schedule): Response
+    {
+        // Only allow if approved and belongs to user
+        if ($schedule->requester_user_id !== $request->user()->id || $schedule->status->value !== 'confirmed') {
+            abort(403, 'This request is not approved for payment yet.');
+        }
+
+        $schedule->load('attachments');
+
+        return Inertia::render('Portal/SchedulePayment', [
+            'schedule' => $schedule,
+        ]);
+    }
+
+    /**
+     * Submit payment details for the schedule.
+     */
+    public function submitPayment(Request $request, SacramentSchedule $schedule): RedirectResponse
+    {
+        if ($schedule->requester_user_id !== $request->user()->id || $schedule->status->value !== 'confirmed') {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'payment_method' => ['required', 'string', 'in:cash,online'],
+            'receipt' => ['required_if:payment_method,online', 'nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
+        ]);
+
+        $schedule->payment_method = $validated['payment_method'];
+
+        if ($validated['payment_method'] === 'online' && $request->hasFile('receipt')) {
+            $path = $request->file('receipt')->store('schedule_receipts', 'public');
+            $schedule->payment_receipt_path = $path;
+            $schedule->payment_status = 'paid';
+        } else {
+            $schedule->payment_status = 'pending_cash';
+        }
+
+        $schedule->save();
+
+        return redirect()->back()
+            ->with('payment_recorded', true)
+            ->with('success', 'Your payment method has been successfully recorded.');
+    }
 }
