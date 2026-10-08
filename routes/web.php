@@ -10,6 +10,7 @@ use App\Http\Controllers\PublicController;
 use App\Http\Controllers\RecordsController;
 use App\Http\Controllers\SchedulesController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -48,6 +49,8 @@ Route::middleware(['auth'])->prefix('portal')->name('portal.')->group(function (
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'staff'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
     // Canonical Registers (Can. 535)
     Route::get('/records', [RecordsController::class, 'index'])->name('records.index');
     Route::get('/records/create', [RecordsController::class, 'create'])->name('records.create');

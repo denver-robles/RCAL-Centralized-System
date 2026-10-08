@@ -66,10 +66,11 @@ class ClergyController extends Controller
             'date_of_birth' => ['nullable', 'date'],
             'status' => ['nullable', 'string', 'max:50'],
             'parish_id' => ['nullable', 'integer', 'exists:parishes,id'],
-            'assignment_role' => ['nullable', 'string', 'max:100'],
+            'assignment_role' => ['nullable', 'string', 'in:parish_priest,parochial_vicar,parish_administrator,guest_priest,assistant_priest,chaplain,deacon,retired'],
         ], [
             'suffix.in' => 'Suffix must be one of: Jr., Sr., II, III, IV, V, VI.',
             'title.in' => 'Please select a valid ecclesiastical title.',
+            'assignment_role.in' => 'Please select a valid assignment role.',
         ]);
 
         $user = $request->user();

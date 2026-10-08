@@ -39,7 +39,7 @@ class SacramentalRecord extends Model
         return [
             'sacrament_type' => SacramentTypeEnum::class,
             'legitimacy' => LegitimacyStatusEnum::class,
-            'event_date' => 'date',
+            'event_date' => 'date:Y-m-d',
             'book_number' => 'integer',
             'page_number' => 'integer',
             'entry_number' => 'integer',

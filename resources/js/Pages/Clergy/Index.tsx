@@ -23,6 +23,7 @@ interface Props extends PageProps {
 
 export default function Index({ auth, clergy, parishes, filters }: Props) {
     const [addModalOpen, setAddModalOpen] = useState(false);
+    const today = new Date().toISOString().split('T')[0];
 
     const { data, setData, post, processing, errors, reset } = useForm({
         first_name: '',
@@ -34,7 +35,7 @@ export default function Index({ auth, clergy, parishes, filters }: Props) {
         date_of_birth: '',
         status: 'Active Ministry',
         parish_id: '',
-        assignment_role: 'Parish Priest',
+        assignment_role: 'parish_priest',
     });
 
     const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -303,6 +304,7 @@ export default function Index({ auth, clergy, parishes, filters }: Props) {
                                     <label className="block font-semibold text-slate-700 mb-1">Date of Ordination</label>
                                     <input
                                         type="date"
+                                        max={today}
                                         value={data.ordination_date}
                                         onChange={(e) => setData('ordination_date', e.target.value)}
                                         className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
@@ -313,6 +315,7 @@ export default function Index({ auth, clergy, parishes, filters }: Props) {
                                     <label className="block font-semibold text-slate-700 mb-1">Date of Birth</label>
                                     <input
                                         type="date"
+                                        max={today}
                                         value={data.date_of_birth}
                                         onChange={(e) => setData('date_of_birth', e.target.value)}
                                         className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
@@ -339,13 +342,21 @@ export default function Index({ auth, clergy, parishes, filters }: Props) {
 
                                 <div>
                                     <label className="block font-semibold text-slate-700 mb-1">Assignment Role</label>
-                                    <input
-                                        type="text"
+                                    <select
                                         value={data.assignment_role}
                                         onChange={(e) => setData('assignment_role', e.target.value)}
-                                        placeholder="e.g. Parish Priest, Parochial Vicar"
                                         className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
-                                    />
+                                    >
+                                        <option value="parish_priest">Parish Priest</option>
+                                        <option value="parochial_vicar">Parochial Vicar / Assistant Priest</option>
+                                        <option value="parish_administrator">Parish Administrator</option>
+                                        <option value="guest_priest">Guest Priest / Sacramental Minister</option>
+                                        <option value="assistant_priest">Assistant Priest</option>
+                                        <option value="chaplain">Chaplain</option>
+                                        <option value="deacon">Deacon</option>
+                                        <option value="retired">Retired</option>
+                                    </select>
+                                    {errors.assignment_role && <p className="text-rose-600 text-xs mt-1 font-medium">{errors.assignment_role}</p>}
                                 </div>
                             </div>
 

@@ -27,7 +27,7 @@ class AuthController extends Controller
             $user = Auth::user();
             return $user->isParishioner()
                 ? redirect()->route('portal.dashboard')
-                : redirect()->route('records.index');
+                : redirect()->route('dashboard');
         }
 
         return Inertia::render('Auth/Login');
@@ -100,7 +100,7 @@ class AuthController extends Controller
             return redirect()->intended(route('portal.dashboard'));
         }
 
-        return redirect()->intended(route('records.index'));
+        return redirect()->intended(route('dashboard'));
     }
 
     /**
@@ -137,7 +137,7 @@ class AuthController extends Controller
             $user = Auth::user();
             return $user->isParishioner()
                 ? redirect()->route('portal.dashboard')
-                : redirect()->route('records.index');
+                : redirect()->route('dashboard');
         }
 
         $parishes = Parish::query()

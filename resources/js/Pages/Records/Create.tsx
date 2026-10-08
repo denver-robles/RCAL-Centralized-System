@@ -57,6 +57,8 @@ export default function Create({ auth, parishes, clergy, prefillSchedule }: Prop
 
         from_schedule_id: prefillSchedule?.id || '',
     });
+    
+    const today = new Date().toISOString().split('T')[0];
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -303,6 +305,7 @@ export default function Create({ auth, parishes, clergy, prefillSchedule }: Prop
                                 <label className="block text-xs font-semibold text-slate-700 mb-1">Date of Birth</label>
                                 <input
                                     type="date"
+                                    max={today}
                                     value={data.date_of_birth}
                                     onChange={(e) => setData('date_of_birth', e.target.value)}
                                     className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"

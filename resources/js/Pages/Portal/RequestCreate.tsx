@@ -23,6 +23,8 @@ export default function RequestCreate({ parishes }: Props) {
         consent_given: false,
         id_document: null as File | null,
     });
+    
+    const today = new Date().toISOString().split('T')[0];
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -120,6 +122,7 @@ export default function RequestCreate({ parishes }: Props) {
                                 </label>
                                 <input
                                     type="date"
+                                    max={today}
                                     value={data.date_of_birth}
                                     onChange={(e) => setData('date_of_birth', e.target.value)}
                                     className="w-full bg-white border border-slate-200 text-slate-900 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition"
@@ -137,6 +140,7 @@ export default function RequestCreate({ parishes }: Props) {
                                 </label>
                                 <input
                                     type="date"
+                                    max={today}
                                     value={data.date_of_sacrament}
                                     onChange={(e) => setData('date_of_sacrament', e.target.value)}
                                     className="w-full bg-white border border-slate-200 text-slate-900 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition"
@@ -201,13 +205,18 @@ export default function RequestCreate({ parishes }: Props) {
                                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                                     Intended Purpose of Certificate <span className="text-rose-600">*</span>
                                 </label>
-                                <input
-                                    type="text"
+                                <select
                                     value={data.purpose}
                                     onChange={(e) => setData('purpose', e.target.value)}
-                                    placeholder="e.g. Marriage License Application, Confirmation, School Requirement..."
-                                    className="w-full bg-white border border-slate-200 text-slate-900 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition placeholder:text-slate-400"
-                                />
+                                    className="w-full bg-white border border-slate-200 text-slate-900 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition"
+                                >
+                                    <option value="Personal Copy & Documentation">Personal Copy & Documentation</option>
+                                    <option value="Marriage License Application">Marriage License Application</option>
+                                    <option value="Confirmation Requirement">Confirmation Requirement</option>
+                                    <option value="School Requirement">School Requirement</option>
+                                    <option value="Legal/Civil Matter">Legal / Civil Matter</option>
+                                    <option value="Other">Other</option>
+                                </select>
                                 {errors.purpose && (
                                     <p className="text-rose-600 text-xs mt-1 font-medium">{errors.purpose}</p>
                                 )}

@@ -64,7 +64,7 @@ class CertificatesController extends Controller
         if (!$user->isArchdioceseWide()) {
             $docQuery->where(function ($q) use ($user) {
                 $q->where('targeted_parish_id', $user->home_parish_id)
-                  ->orWhereNull('targeted_parish_id');
+                  ->orWhereHas('matchedRecord', fn ($rq) => $rq->where('originating_parish_id', $user->home_parish_id));
             });
         }
 

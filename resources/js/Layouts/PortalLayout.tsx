@@ -107,9 +107,20 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
                     </div>
 
                     {/* Secondary Navigation Ribbon */}
-                    <div className="flex items-center space-x-1 sm:space-x-3 overflow-x-auto py-2 border-t border-slate-800/80 text-xs sm:text-sm font-medium scrollbar-none">
+                    <div className="flex items-center flex-nowrap space-x-1 sm:space-x-3 overflow-x-auto py-2 border-t border-slate-800/80 text-xs sm:text-sm font-medium scrollbar-hide [-webkit-overflow-scrolling:touch] [&>a]:shrink-0">
                         {isStaff ? (
                             <>
+                                <Link
+                                    href="/dashboard"
+                                    className={`px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap ${
+                                        activeTab === 'dashboard'
+                                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold'
+                                            : 'text-slate-300 hover:text-white hover:bg-slate-850'
+                                    }`}
+                                >
+                                    <Church className="w-4 h-4" />
+                                    <span>Dashboard</span>
+                                </Link>
                                 <Link
                                     href="/records"
                                     className={`px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap ${
