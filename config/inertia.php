@@ -12,4 +12,17 @@ return [
     |
     */
     'use_script_element_for_initial_page' => true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | History Encryption
+    |--------------------------------------------------------------------------
+    |
+    | When set to true, Inertia encrypts page state in browser history,
+    | preventing unauthorized users from viewing cached pages on back/forward.
+    |
+    */
+    'history' => [
+        'encrypt' => true,
+    ],
 ];

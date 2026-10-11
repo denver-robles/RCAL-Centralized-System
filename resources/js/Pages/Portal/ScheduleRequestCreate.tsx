@@ -50,7 +50,7 @@ export default function ScheduleRequestCreate({ parishes }: Props) {
     };
 
     return (
-        <PortalLayout title="Sacramental Schedule Request" subtitle="Book a sacrament schedule">
+        <PortalLayout title="Sacramental Schedule Request" subtitle="Book a sacrament schedule" activeTab="portal_schedule">
             <Head title="Book Schedule - RCAL PIMS" />
             <div className="max-w-3xl mx-auto space-y-6">
                 <form onSubmit={handleSubmit} className="space-y-6">

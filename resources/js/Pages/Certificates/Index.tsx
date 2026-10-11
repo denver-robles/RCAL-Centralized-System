@@ -62,6 +62,44 @@ export default function Index({ certificateRequests, documentRequests, available
         });
     };
 
+    const renderWorkflowProgress = (status: string) => {
+        const stages = ['pending', 'verified', 'approved', 'ready', 'issued'];
+        const idx = stages.indexOf(status);
+        if (status === 'rejected' || status === 'cancelled') {
+            return (
+                <div className="flex items-center gap-1.5">
+                    <StatusBadge status={status} />
+                </div>
+            );
+        }
+        const currentStep = idx >= 0 ? idx + 1 : 1;
+        return (
+            <div className="space-y-1">
+                <div className="flex items-center gap-1.5">
+                    <StatusBadge status={status} />
+                    <span className="text-[10px] font-mono font-bold text-slate-500">
+                        ({currentStep}/5)
+                    </span>
+                </div>
+                <div className="flex items-center gap-1 w-20">
+                    {[1, 2, 3, 4, 5].map((step) => (
+                        <div
+                            key={step}
+                            className={`h-1 flex-1 rounded-full transition-all duration-200 ${
+                                step < currentStep
+                                    ? 'bg-emerald-500'
+                                    : step === currentStep
+                                    ? 'bg-amber-500 animate-pulse'
+                                    : 'bg-slate-200'
+                            }`}
+                            title={`Stage ${step} of 5`}
+                        />
+                    ))}
+                </div>
+            </div>
+        );
+    };
+
     return (
         <PortalLayout
             title="Certificate Orders & Document Claims"
@@ -236,7 +274,7 @@ export default function Index({ certificateRequests, documentRequests, available
                                                 {cert.record?.originating_parish?.name || 'N/A'}
                                             </td>
                                             <td className="py-3 px-4">
-                                                <StatusBadge status={cert.status} />
+                                                {renderWorkflowProgress(cert.status)}
                                             </td>
                                             <td className="py-3 px-4 text-right">
                                                 <Link
@@ -301,7 +339,7 @@ export default function Index({ certificateRequests, documentRequests, available
                                                 {doc.created_at.slice(0, 10)}
                                             </td>
                                             <td className="py-3 px-4">
-                                                <StatusBadge status={doc.status} />
+                                                {renderWorkflowProgress(doc.status)}
                                             </td>
                                             <td className="py-3 px-4 text-right">
                                                 {doc.certificate_request_id ? (

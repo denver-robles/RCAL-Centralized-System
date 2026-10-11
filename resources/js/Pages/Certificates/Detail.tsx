@@ -122,27 +122,103 @@ export default function Detail({ auth, certificate }: Props) {
                         )}
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                        {steps.map((step) => {
-                            const status = getStepStatus(step.key);
-                            const Icon = step.icon;
-                            return (
+                    {/* Continuous Progressive Lifecycle Stepper */}
+                    {certificate.status === 'rejected' ? (
+                        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-3 text-rose-800 text-xs">
+                            <XCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                            <div>
+                                <span className="font-bold text-sm block">Certificate Request Rejected</span>
+                                <p className="text-slate-600 mt-0.5">
+                                    This request could not be processed canonical or verification failure.
+                                </p>
+                                {certificate.rejection_reason && (
+                                    <div className="mt-2 p-2.5 bg-white border border-rose-200 rounded-lg text-rose-900 font-medium">
+                                        <strong>Reason:</strong> {certificate.rejection_reason}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="relative pt-2 pb-1">
+                            {/* Desktop Progress Line Behind Nodes */}
+                            <div className="hidden md:block absolute top-6 left-12 right-12 h-1 bg-slate-200 -z-0 rounded-full overflow-hidden">
                                 <div
-                                    key={step.key}
-                                    className={`p-3 rounded-xl border flex items-center gap-3 transition-all duration-200 ${
-                                        status === 'complete'
-                                            ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
-                                            : status === 'current'
-                                            ? 'bg-amber-50 border-amber-400 text-amber-900 ring-2 ring-amber-300 font-bold'
-                                            : 'bg-slate-50 border-slate-200 text-slate-400'
-                                    }`}
-                                >
-                                    <Icon className="w-4 h-4 shrink-0" />
-                                    <span className="text-xs font-semibold">{step.label}</span>
-                                </div>
-                            );
-                        })}
-                    </div>
+                                    className="h-full bg-gradient-to-r from-emerald-500 via-amber-400 to-amber-500 transition-all duration-500 ease-out"
+                                    style={{
+                                        width: `${
+                                            certificate.status === 'pending'
+                                                ? 0
+                                                : certificate.status === 'verified'
+                                                ? 25
+                                                : certificate.status === 'approved'
+                                                ? 50
+                                                : certificate.status === 'ready'
+                                                ? 75
+                                                : certificate.status === 'issued'
+                                                ? 100
+                                                : 0
+                                        }%`,
+                                    }}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 relative z-10">
+                                {[
+                                    { key: 'pending', num: 1, label: 'Submitted', sub: 'Filing Received', icon: Clock },
+                                    { key: 'verified', num: 2, label: 'Verified', sub: 'Ledger Matched', icon: ShieldCheck },
+                                    { key: 'approved', num: 3, label: 'Approved', sub: 'Curia Cleared', icon: UserCheck },
+                                    { key: 'ready', num: 4, label: 'Ready', sub: 'Seal Affixed', icon: FileText },
+                                    { key: 'issued', num: 5, label: 'Issued', sub: 'Released', icon: Award },
+                                ].map((step) => {
+                                    const status = getStepStatus(step.key);
+                                    const Icon = step.icon;
+                                    return (
+                                        <div
+                                            key={step.key}
+                                            className={`flex md:flex-col items-center gap-3 md:text-center p-3 md:p-2 rounded-xl transition-all duration-200 ${
+                                                status === 'current'
+                                                    ? 'bg-amber-50/80 md:bg-transparent border md:border-0 border-amber-300'
+                                                    : ''
+                                            }`}
+                                        >
+                                            <div
+                                                className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-bold text-xs transition-all duration-300 shadow-xs ${
+                                                    status === 'complete'
+                                                        ? 'bg-emerald-600 text-white ring-4 ring-emerald-100'
+                                                        : status === 'current'
+                                                        ? 'bg-amber-500 text-slate-950 ring-4 ring-amber-200/90 font-black scale-105'
+                                                        : 'bg-slate-100 text-slate-400 border border-slate-200'
+                                                }`}
+                                            >
+                                                {status === 'complete' ? (
+                                                    <CheckCircle2 className="w-5 h-5 text-white" />
+                                                ) : (
+                                                    <Icon className="w-5 h-5" />
+                                                )}
+                                            </div>
+
+                                            <div className="min-w-0">
+                                                <span
+                                                    className={`block text-xs font-bold leading-tight ${
+                                                        status === 'current'
+                                                            ? 'text-amber-950 font-black'
+                                                            : status === 'complete'
+                                                            ? 'text-emerald-800'
+                                                            : 'text-slate-400'
+                                                    }`}
+                                                >
+                                                    {step.num}. {step.label}
+                                                </span>
+                                                <span className="block text-[10px] text-slate-500 mt-0.5">
+                                                    {step.sub}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Workflow Action Bar */}

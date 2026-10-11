@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Head, useForm, Link, usePage } from '@inertiajs/react';
+import { Head, useForm, Link, usePage, router } from '@inertiajs/react';
 import { PageProps } from '@/types';
 import {
     Shield,
@@ -8,22 +8,35 @@ import {
     Building2,
     User,
     Lock,
+    Eye,
+    EyeOff,
     AlertCircle,
+    CheckCircle2,
+    KeyRound,
+    ExternalLink,
     X,
+    Mail,
 } from 'lucide-react';
 
 export default function Login() {
-    const { flash } = usePage<PageProps>().props;
+    const { flash } = usePage<PageProps & { flash: { reset_url?: string } }>().props;
     const [activeTab, setActiveTab] = useState<'parishioner' | 'staff'>('parishioner');
     const [showPassword, setShowPassword] = useState(false);
     const [forgotModalOpen, setForgotModalOpen] = useState(false);
     const [termsModalOpen, setTermsModalOpen] = useState(false);
-    const [termsAccepted, setTermsAccepted] = useState(true);
+    const [termsAccepted, setTermsAccepted] = useState(false);
+    const [termsError, setTermsError] = useState(false);
 
+    // Main Login Form
     const { data, setData, post, processing, errors, reset } = useForm({
         identifier: '',
         password: '',
-        remember: true,
+        remember: false,
+    });
+
+    // In-Modal Self-Service Password Reset Form
+    const forgotForm = useForm({
+        email: '',
     });
 
     useEffect(() => {
@@ -39,8 +52,22 @@ export default function Login() {
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        post('/login', {
+        if (!termsAccepted) {
+            setTermsError(true);
+            return;
+        }
+        setTermsError(false);
+        router.post('/login', data, {
+            replace: true,
             onFinish: () => reset('password'),
+        });
+    };
+
+    const handleForgotSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        forgotForm.post('/forgot-password', {
+            preserveScroll: true,
+            preserveState: true,
         });
     };
 
@@ -87,7 +114,7 @@ export default function Login() {
 
                 <div className="max-w-7xl w-full mx-auto px-4 sm:px-8 py-8 lg:py-12 relative z-10 flex flex-col lg:flex-row items-center justify-between gap-10 lg:gap-14">
                     {/* Left Canvas: Floating Crisp White Card */}
-                    <div className="w-full max-w-[420px] bg-white rounded-[28px] shadow-2xl p-7 sm:p-8 border border-slate-100 flex flex-col items-center shrink-0">
+                    <div className="w-full max-w-[430px] bg-white rounded-[28px] shadow-2xl p-7 sm:p-8 border border-slate-100 flex flex-col items-center shrink-0 transition-all duration-200">
                         {/* Circular Archdiocese Seal */}
                         <img
                             src="/images/logo.png"
@@ -101,17 +128,17 @@ export default function Login() {
                         </div>
 
                         {/* Dual-Tab Segmented Switcher */}
-                        <div className="mt-4 w-full bg-slate-100 p-1 rounded-xl flex items-center gap-1">
+                        <div className="mt-4 w-full bg-slate-100 p-1 rounded-xl flex items-center gap-1 border border-slate-200/60">
                             <button
                                 type="button"
                                 onClick={() => setActiveTab('parishioner')}
                                 className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 ${
                                     activeTab === 'parishioner'
-                                        ? 'bg-white text-slate-900 shadow-sm font-bold'
-                                        : 'text-slate-600 hover:text-slate-900'
+                                        ? 'bg-white text-slate-900 shadow-sm font-bold ring-1 ring-slate-900/5'
+                                        : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/50'
                                 }`}
                             >
-                                <User className="w-3.5 h-3.5 text-indigo-700" />
+                                <User className={`w-3.5 h-3.5 transition-colors ${activeTab === 'parishioner' ? 'text-amber-600' : 'text-slate-400'}`} />
                                 <span>Parishioner Portal</span>
                             </button>
                             <button
@@ -119,11 +146,11 @@ export default function Login() {
                                 onClick={() => setActiveTab('staff')}
                                 className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 ${
                                     activeTab === 'staff'
-                                        ? 'bg-white text-slate-900 shadow-sm font-bold'
-                                        : 'text-slate-600 hover:text-slate-900'
+                                        ? 'bg-white text-slate-900 shadow-sm font-bold ring-1 ring-slate-900/5'
+                                        : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/50'
                                 }`}
                             >
-                                <Building2 className="w-3.5 h-3.5 text-slate-600" />
+                                <Building2 className={`w-3.5 h-3.5 transition-colors ${activeTab === 'staff' ? 'text-amber-600' : 'text-slate-400'}`} />
                                 <span>Staff & Chancery</span>
                             </button>
                         </div>
@@ -146,14 +173,14 @@ export default function Login() {
                             </div>
                         )}
 
-                        {/* Heading & Subtitle */}
-                        <div className="text-center mt-5 mb-4">
-                            <h3 className="font-bold text-slate-900 text-sm sm:text-base tracking-wide uppercase">
+                        {/* Heading & Subtitle - Consistent min-height prevents jitter */}
+                        <div className="text-center mt-4 mb-4 min-h-[56px] flex flex-col justify-center">
+                            <h3 className="font-bold text-slate-900 text-sm sm:text-base tracking-wide uppercase transition-all duration-150">
                                 {activeTab === 'parishioner'
                                     ? 'Parishioner Portal Sign In'
                                     : 'Staff & Chancery Sign In'}
                             </h3>
-                            <p className="text-slate-500 text-xs mt-1 max-w-xs leading-relaxed">
+                            <p className="text-slate-500 text-xs mt-1 max-w-xs leading-relaxed transition-all duration-150">
                                 {activeTab === 'parishioner'
                                     ? 'Access your sacramental certificates, document claims, and schedule appointments.'
                                     : 'Enter your canonical credentials to manage parish registers and appointments.'}
@@ -161,7 +188,7 @@ export default function Login() {
                         </div>
 
                         {/* Login Form */}
-                        <form onSubmit={submit} className="w-full space-y-4">
+                        <form onSubmit={submit} className="w-full space-y-3.5">
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 tracking-wider uppercase mb-1.5">
                                     {activeTab === 'parishioner'
@@ -178,7 +205,7 @@ export default function Login() {
                                             ? 'e.g. maria.santos@email.ph'
                                             : 'e.g. fr.reyes or chancery.admin'
                                     }
-                                    className="w-full px-4 py-3.5 bg-white border border-slate-300 focus:border-amber-500 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all shadow-xs"
+                                    className="w-full px-4 py-3 bg-white border border-slate-300 focus:border-amber-500 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all shadow-xs"
                                 />
                             </div>
 
@@ -193,14 +220,21 @@ export default function Login() {
                                         value={data.password}
                                         onChange={(e) => setData('password', e.target.value)}
                                         placeholder="••••••••••••"
-                                        className="w-full pl-4 pr-16 py-3.5 bg-white border border-slate-300 focus:border-amber-500 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all shadow-xs"
+                                        className="w-full pl-4 pr-11 py-3 bg-white border border-slate-300 focus:border-amber-500 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all shadow-xs"
                                     />
+                                    {/* Animated Eye / EyeOff Icon */}
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-4 top-3.5 text-xs text-slate-500 hover:text-slate-800 font-semibold select-none"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all duration-200 hover:scale-110 active:scale-95 focus:outline-none"
+                                        title={showPassword ? 'Hide password' : 'Show password'}
+                                        aria-label={showPassword ? 'Hide password' : 'Show password'}
                                     >
-                                        {showPassword ? 'Hide' : 'Show'}
+                                        {showPassword ? (
+                                            <EyeOff className="w-4 h-4 text-slate-700 transition-transform duration-200" />
+                                        ) : (
+                                            <Eye className="w-4 h-4 text-slate-400 transition-transform duration-200" />
+                                        )}
                                     </button>
                                 </div>
                                 {errors.password && (
@@ -208,7 +242,7 @@ export default function Login() {
                                 )}
                             </div>
 
-                            <div className="flex items-center justify-between text-xs pt-1">
+                            <div className="flex items-center justify-between text-xs pt-0.5">
                                 <label className="flex items-center gap-2 text-slate-600 cursor-pointer select-none">
                                     <input
                                         type="checkbox"
@@ -228,13 +262,16 @@ export default function Login() {
                                 </button>
                             </div>
 
-                            <div className="flex items-start gap-2 text-xs pt-1">
+                            {/* Terms and Privacy Checkbox - Unchecked by default */}
+                            <div className="flex items-start gap-2 text-xs pt-0.5">
                                 <input
                                     id="terms_accepted"
                                     type="checkbox"
-                                    required
                                     checked={termsAccepted}
-                                    onChange={(e) => setTermsAccepted(e.target.checked)}
+                                    onChange={(e) => {
+                                        setTermsAccepted(e.target.checked);
+                                        if (e.target.checked) setTermsError(false);
+                                    }}
                                     className="rounded border-slate-300 text-amber-500 focus:ring-amber-400 w-3.5 h-3.5 mt-0.5"
                                 />
                                 <label htmlFor="terms_accepted" className="text-slate-600 text-[11px] leading-tight select-none cursor-pointer">
@@ -250,10 +287,19 @@ export default function Login() {
                                 </label>
                             </div>
 
+                            {termsError && (
+                                <p className="text-rose-600 text-[11px] font-medium flex items-center gap-1">
+                                    <AlertCircle className="w-3.5 h-3.5" />
+                                    Please accept the Terms & Conditions before signing in.
+                                </p>
+                            )}
+
                             <button
                                 type="submit"
-                                disabled={processing || !termsAccepted}
-                                className="w-full mt-2 py-3.5 bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-sm uppercase tracking-wider rounded-xl shadow-md transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 disabled:hover:scale-100"
+                                disabled={processing}
+                                className={`w-full mt-2 py-3 bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 ${
+                                    !termsAccepted ? 'opacity-75' : ''
+                                }`}
                             >
                                 {processing
                                     ? 'Authenticating...'
@@ -263,35 +309,37 @@ export default function Login() {
                             </button>
                         </form>
 
-                        {/* Bottom Action Callout */}
-                        {activeTab === 'parishioner' ? (
-                            <div className="w-full mt-5 bg-amber-50/40 border border-amber-300 rounded-2xl p-4 text-center space-y-2 hover:-translate-y-0.5 transition-all duration-200">
-                                <h4 className="font-bold text-amber-950 text-xs sm:text-sm">
-                                    Don't have a parishioner account yet?
-                                </h4>
-                                <p className="text-slate-600 text-[11px] sm:text-xs leading-relaxed">
-                                    Register to request certificates and schedule sacraments online.
-                                </p>
-                                <Link
-                                    href="/register"
-                                    className="block w-full py-2.5 bg-white border border-amber-400 hover:bg-amber-50 text-slate-900 font-bold rounded-xl text-xs sm:text-sm transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] shadow-xs"
-                                >
-                                    + Sign Up / Register an Account
-                                </Link>
-                            </div>
-                        ) : (
-                            <div className="w-full mt-5 bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center space-y-1.5 hover:-translate-y-0.5 transition-all duration-200">
-                                <h4 className="font-bold text-slate-900 text-xs sm:text-sm">
-                                    Archdiocesan Curia Staff Support
-                                </h4>
-                                <p className="text-slate-600 text-[11px] sm:text-xs leading-relaxed">
-                                    Parish staff and clergy credentials are provisioned by the Chancery.
-                                </p>
-                                <div className="text-amber-800 font-mono text-[11px] sm:text-xs font-semibold pt-0.5">
-                                    Chancery Hotline: (043) 756-2572
+                        {/* Bottom Action Callout - Stable Box to Prevent Switcher Layout Shift */}
+                        <div className="w-full mt-4 min-h-[120px] flex flex-col justify-center">
+                            {activeTab === 'parishioner' ? (
+                                <div className="w-full bg-amber-50/50 border border-amber-300/80 rounded-2xl p-3.5 text-center flex flex-col justify-center space-y-1.5 transition-all duration-200 shadow-2xs">
+                                    <h4 className="font-bold text-amber-950 text-xs sm:text-sm">
+                                        Don't have a parishioner account yet?
+                                    </h4>
+                                    <p className="text-slate-600 text-[11px] leading-tight">
+                                        Register to request certificates and schedule sacraments online.
+                                    </p>
+                                    <Link
+                                        href="/register"
+                                        className="block w-full py-2 bg-white border border-amber-400 hover:bg-amber-50 text-slate-900 font-bold rounded-xl text-xs transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] shadow-2xs"
+                                    >
+                                        + Sign Up / Register an Account
+                                    </Link>
                                 </div>
-                            </div>
-                        )}
+                            ) : (
+                                <div className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-center flex flex-col justify-center space-y-1.5 transition-all duration-200 shadow-2xs">
+                                    <h4 className="font-bold text-slate-900 text-xs sm:text-sm">
+                                        Archdiocesan Curia Staff Support
+                                    </h4>
+                                    <p className="text-slate-600 text-[11px] leading-tight">
+                                        Parish staff and clergy credentials are provisioned by the Chancery.
+                                    </p>
+                                    <div className="py-1.5 px-3 bg-white border border-slate-200 rounded-xl text-amber-800 font-mono text-xs font-semibold">
+                                        Chancery Hotline: (043) 756-2572
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Right Canvas: Liturgical Archdiocesan Hero Presentation */}
@@ -361,7 +409,7 @@ export default function Login() {
                 </div>
             </div>
 
-            {/* Forgot Password Modal */}
+            {/* Self-Service Forgot Password Modal - No Office Visit Needed */}
             {forgotModalOpen && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
@@ -372,9 +420,12 @@ export default function Login() {
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-                            <h3 className="font-serif font-bold text-base text-slate-900">
-                                Password Recovery Assistance
-                            </h3>
+                            <div className="flex items-center gap-2">
+                                <KeyRound className="w-5 h-5 text-amber-600" />
+                                <h3 className="font-serif font-bold text-base text-slate-900">
+                                    Self-Service Password Recovery
+                                </h3>
+                            </div>
                             <button
                                 type="button"
                                 onClick={() => setForgotModalOpen(false)}
@@ -385,24 +436,75 @@ export default function Login() {
                         </div>
 
                         <p className="text-xs text-slate-600 leading-relaxed">
-                            {activeTab === 'staff'
-                                ? 'Chancery and Parish Staff accounts are provisioned and reset directly by the Archdiocesan Curia System Administrator.'
-                                : 'Parishioner password resets are processed by the parish administration office.'}
+                            Recover your account password directly online. Enter your registered account email or username below.
                         </p>
 
-                        <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200 text-xs text-slate-700 space-y-1">
-                            <strong className="text-amber-900 font-bold block">Chancery Curia Support Hotline:</strong>
-                            <p className="font-mono text-slate-800">(043) 756-2572 • chancery@archdioceselipa.ph</p>
-                            <span className="text-[11px] text-slate-500 block">Monday to Friday: 8:00 AM – 5:00 PM</span>
-                        </div>
+                        {flash?.status && (
+                            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-2 text-emerald-800 text-xs">
+                                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 mt-0.5" />
+                                <span>{flash.status}</span>
+                            </div>
+                        )}
 
-                        <div className="flex justify-end pt-2">
+                        {flash?.reset_url && (
+                            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs space-y-2">
+                                <span className="font-bold text-amber-900 block">Instant Recovery Link:</span>
+                                <a
+                                    href={flash.reset_url}
+                                    className="inline-flex items-center justify-center gap-1.5 w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs transition shadow-xs"
+                                >
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                    Proceed to Reset Password
+                                </a>
+                            </div>
+                        )}
+
+                        <form onSubmit={handleForgotSubmit} className="space-y-3 pt-1">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 tracking-wider uppercase mb-1">
+                                    Account Email or Username:
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        required
+                                        value={forgotForm.data.email}
+                                        onChange={(e) => forgotForm.setData('email', e.target.value)}
+                                        placeholder="maria.santos@email.ph or username"
+                                        className="w-full pl-9 pr-3 py-2.5 bg-white border border-slate-300 focus:border-amber-500 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500 shadow-2xs"
+                                    />
+                                    <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                                </div>
+                                {forgotForm.errors.email && (
+                                    <p className="text-rose-600 text-xs mt-1">{forgotForm.errors.email}</p>
+                                )}
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={forgotForm.processing}
+                                className="w-full py-2.5 bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl shadow-xs transition-all disabled:opacity-60"
+                            >
+                                {forgotForm.processing ? 'Generating...' : 'Send Recovery Link'}
+                            </button>
+                        </form>
+
+                        <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
+                            <Link
+                                href="/forgot-password"
+                                onClick={() => setForgotModalOpen(false)}
+                                className="text-amber-700 hover:text-amber-800 font-semibold inline-flex items-center gap-1 hover:underline text-[11px]"
+                            >
+                                <ExternalLink className="w-3 h-3" />
+                                Open Full Recovery Page
+                            </Link>
+
                             <button
                                 type="button"
                                 onClick={() => setForgotModalOpen(false)}
-                                className="btn-primary text-xs hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                                className="px-3 py-1.5 text-slate-600 hover:text-slate-900 text-xs font-medium"
                             >
-                                Understood
+                                Close
                             </button>
                         </div>
                     </div>
@@ -492,6 +594,7 @@ export default function Login() {
                                     type="button"
                                     onClick={() => {
                                         setTermsAccepted(true);
+                                        setTermsError(false);
                                         setTermsModalOpen(false);
                                     }}
                                     className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-xs"

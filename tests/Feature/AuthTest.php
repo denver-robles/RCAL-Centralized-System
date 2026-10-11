@@ -59,7 +59,7 @@ class AuthTest extends TestCase
         ]);
     }
 
-    public function test_staff_can_authenticate_with_username_and_is_redirected_to_records(): void
+    public function test_staff_can_authenticate_with_username_and_is_redirected_to_dashboard(): void
     {
         $staff = User::create([
             'username' => 'cathedral_staff',
@@ -76,7 +76,7 @@ class AuthTest extends TestCase
             'password' => 'secretpass',
         ]);
 
-        $response->assertRedirect('/records');
+        $response->assertRedirect('/dashboard');
         $this->assertAuthenticatedAs($staff);
     }
 
@@ -142,6 +142,43 @@ class AuthTest extends TestCase
             'user_id' => $user->id,
             'action' => AuditActionEnum::LOGOUT->value,
         ]);
+    }
+
+    public function test_user_can_exit_to_home_via_logout_with_redirect(): void
+    {
+        $user = User::create([
+            'username' => 'portal_user',
+            'email' => 'portal@example.ph',
+            'role' => RoleEnum::PARISHIONER,
+            'password' => Hash::make('password123'),
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($user);
+
+        $response = $this->post('/logout', ['redirect' => '/']);
+        $response->assertRedirect('/');
+        $this->assertGuest();
+    }
+
+    public function test_authenticated_portal_routes_have_anti_caching_headers(): void
+    {
+        $user = User::create([
+            'username' => 'secure_parishioner',
+            'email' => 'secure@example.ph',
+            'role' => RoleEnum::PARISHIONER,
+            'password' => Hash::make('password123'),
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($user);
+
+        $response = $this->get('/portal/dashboard');
+        $response->assertStatus(200);
+        $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
+        $this->assertStringContainsString('no-cache', (string) $response->headers->get('Cache-Control'));
+        $this->assertStringContainsString('must-revalidate', (string) $response->headers->get('Cache-Control'));
+        $response->assertHeader('Pragma', 'no-cache');
     }
 
     public function test_registration_page_renders_successfully(): void

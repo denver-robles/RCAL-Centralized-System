@@ -37,6 +37,7 @@ export default function RequestCreate({ parishes }: Props) {
         <PortalLayout
             title="File Document Claim & Certificate Request"
             subtitle="Apply for certified sacramental certificates with Data Privacy (RA 10173) compliance"
+            activeTab="portal_request"
         >
             <Head title="File Document Claim - RCAL PIMS" />
 

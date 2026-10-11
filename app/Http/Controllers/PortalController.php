@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\DocumentRequestStatusEnum;
 use App\Enums\SacramentTypeEnum;
 use App\Models\CertificateRequest;
 use App\Models\DocumentRequest;
@@ -72,9 +73,30 @@ class PortalController extends Controller
             ->orderByDesc('starts_at')
             ->get();
 
+        $metrics = [
+            'total_claims' => $documentRequests->count(),
+            'processing_claims' => $documentRequests->whereIn('status', [
+                DocumentRequestStatusEnum::SUBMITTED,
+                DocumentRequestStatusEnum::UNDER_REVIEW,
+                DocumentRequestStatusEnum::PROCESSING,
+            ])->count(),
+            'ready_claims' => $documentRequests->where('status', DocumentRequestStatusEnum::READY)->count(),
+            'completed_claims' => $documentRequests->where('status', DocumentRequestStatusEnum::COMPLETED)->count(),
+            'upcoming_schedules' => $schedules->whereIn('status', ['requested', 'confirmed'])->count(),
+        ];
+
+        $sacramentCounts = [
+            'baptism' => $documentRequests->filter(fn ($d) => ($d->sacrament_type instanceof SacramentTypeEnum ? $d->sacrament_type->value : (string) $d->sacrament_type) === 'baptism')->count(),
+            'confirmation' => $documentRequests->filter(fn ($d) => ($d->sacrament_type instanceof SacramentTypeEnum ? $d->sacrament_type->value : (string) $d->sacrament_type) === 'confirmation')->count(),
+            'marriage' => $documentRequests->filter(fn ($d) => ($d->sacrament_type instanceof SacramentTypeEnum ? $d->sacrament_type->value : (string) $d->sacrament_type) === 'marriage')->count(),
+            'death' => $documentRequests->filter(fn ($d) => ($d->sacrament_type instanceof SacramentTypeEnum ? $d->sacrament_type->value : (string) $d->sacrament_type) === 'death')->count(),
+        ];
+
         return Inertia::render('Portal/Dashboard', [
             'documentRequests' => $documentRequests,
             'schedules' => $schedules,
+            'metrics' => $metrics,
+            'sacramentCounts' => $sacramentCounts,
         ]);
     }
 
