@@ -25,28 +25,16 @@ export interface BiometricLivenessScannerProps {
 
 const ACTION_CHALLENGES = [
     {
-        id: 'turn_left',
-        title: 'Turn Head Slowly to the Left',
-        instruction: 'Turn your head gently toward your left shoulder',
-        returnInstruction: 'Now return your head to center inside the oval',
-        emoji: '⬅️',
-        direction: 'left' as const,
+        id: 'turn_head',
+        title: 'Turn Head Gently to Either Side',
+        instruction: 'Turn your head slightly to the left or right',
+        emoji: '🔄',
     },
     {
-        id: 'turn_right',
-        title: 'Turn Head Slowly to the Right',
-        instruction: 'Turn your head gently toward your right shoulder',
-        returnInstruction: 'Now return your head to center inside the oval',
-        emoji: '➡️',
-        direction: 'right' as const,
-    },
-    {
-        id: 'nod',
+        id: 'nod_head',
         title: 'Nod Your Head Gently Down',
-        instruction: 'Nod your head gently downward',
-        returnInstruction: 'Now lift your head back to center inside the oval',
+        instruction: 'Gently tilt or nod your head up and down',
         emoji: '↕️',
-        direction: 'vertical' as const,
     },
 ];
 
@@ -72,8 +60,7 @@ export default function BiometricLivenessScanner({
     const [blinkPhase, setBlinkPhase] = useState<'seeking_baseline' | 'detecting_closure' | 'detecting_reopen' | 'blink_verified'>('seeking_baseline');
     const [blinkCompleted, setBlinkCompleted] = useState(false);
 
-    // Action Challenge State: 'moving' | 'returning'
-    const [actionPhase, setActionPhase] = useState<'moving' | 'returning'>('moving');
+    // Action Challenge State
     const [actionIndex, setActionIndex] = useState(0);
     const [actionProgress, setActionProgress] = useState(0);
 
@@ -90,6 +77,7 @@ export default function BiometricLivenessScanner({
     const alignStableCount = useRef<number>(0);
     const stageStartTime = useRef<number>(0);
     const autoStartedRef = useRef<boolean>(false);
+    const persistentGlareCount = useRef<number>(0);
 
     // Blink temporal tracking refs
     const baselineEyeLum = useRef<number>(0);
@@ -97,18 +85,13 @@ export default function BiometricLivenessScanner({
     const blinkClosureTime = useRef<number>(0);
     const blinkPhaseRef = useRef<'seeking_baseline' | 'detecting_closure' | 'detecting_reopen' | 'blink_verified'>('seeking_baseline');
 
-    // Directed Action tracking refs
+    // Action tracking refs
     const actionHits = useRef<number>(0);
-    const actionPhaseRef = useRef<'moving' | 'returning'>('moving');
 
     // Synchronize ref with state to prevent stale closures in interval
     useEffect(() => {
         blinkPhaseRef.current = blinkPhase;
     }, [blinkPhase]);
-
-    useEffect(() => {
-        actionPhaseRef.current = actionPhase;
-    }, [actionPhase]);
 
     // Hardware camera stop
     const stopWebcam = useCallback(() => {
@@ -202,11 +185,11 @@ export default function BiometricLivenessScanner({
         setStage('aligning');
         setBlinkPhase('seeking_baseline');
         setBlinkCompleted(false);
-        setActionPhase('moving');
         setActionProgress(0);
         alignStableCount.current = 0;
         baselineStableCount.current = 0;
         actionHits.current = 0;
+        persistentGlareCount.current = 0;
         stageStartTime.current = Date.now();
     }, []);
 
@@ -259,11 +242,11 @@ export default function BiometricLivenessScanner({
             const imgData = ctx.getImageData(0, 0, w, h);
             const pixels = imgData.data;
 
-            // 1. SPECULAR SCREEN GLARE & FLAT DISPLAY DETECTION
-            // Backlit digital phone/tablet screens produce pure saturated white specular reflections (R,G,B > 248)
+            // 1. FORGIVING SPECULAR SCREEN GLARE DETECTION
+            // Backlit digital phone screens held close produce widespread blown-out reflections (>180 saturated pixels)
             let specularGlareCount = 0;
-            for (let y = 18; y < h - 18; y++) {
-                for (let x = 28; x < w - 28; x++) {
+            for (let y = 18; y < h - 18; y += 2) {
+                for (let x = 28; x < w - 28; x += 2) {
                     const pIdx = (y * w + x) * 4;
                     const r = pixels[pIdx];
                     const g = pixels[pIdx + 1];
@@ -274,14 +257,19 @@ export default function BiometricLivenessScanner({
                 }
             }
 
-            if (specularGlareCount > 55) {
-                setSpoofWarning(
-                    'Screen glare detected. Mobile phones, tablets, or printed photos are prohibited under RA 10173 anti-spoofing policy. Please present your real face.'
-                );
-                // Invalidate baseline and force re-align
-                baselineStableCount.current = 0;
-                setBlinkPhase('seeking_baseline');
-                return;
+            // Only flag if excessive glare persists over multiple frames (avoiding single-frame light reflections)
+            if (specularGlareCount > 90) {
+                persistentGlareCount.current++;
+                if (persistentGlareCount.current >= 4) {
+                    setSpoofWarning(
+                        'Excessive screen glare detected. Please do not hold a phone or digital display in front of the camera.'
+                    );
+                }
+            } else {
+                persistentGlareCount.current = Math.max(0, persistentGlareCount.current - 1);
+                if (persistentGlareCount.current === 0 && spoofWarning?.includes('glare')) {
+                    setSpoofWarning(null);
+                }
             }
 
             // 2. Grayscale conversion for facial differencing
@@ -301,7 +289,7 @@ export default function BiometricLivenessScanner({
 
             // 3. Compute Biometric Differential Metrics
             // Eye Zone: upper middle box (x: 52-108, y: 34-58)
-            // Reference Zones (Forehead, Cheeks, Chin): MUST remain stationary during genuine human blink!
+            // Reference Zones (Forehead, Cheeks, Chin): Non-eye facial skin areas
             let eyeDiff = 0, eyeCount = 0, eyeLumSum = 0;
             let refDiff = 0, refCount = 0;
             let leftDiff = 0, leftCount = 0;
@@ -362,10 +350,10 @@ export default function BiometricLivenessScanner({
             const avgVert = vertCount > 0 ? vertDiff / vertCount : 0;
             const totalAvg = totalCount > 0 ? totalDiff / totalCount : 0;
 
-            // Presentation Attack / Timeout Check: 18 seconds max
-            if (Date.now() - stageStartTime.current > 18000) {
+            // Timeout Check: Generous 28 seconds so users never feel rushed
+            if (Date.now() - stageStartTime.current > 28000) {
                 setSpoofWarning(
-                    'Liveness timeout: Static photos, screen displays, or paper printouts are rejected. Please blink naturally and follow the prompt with your real face.'
+                    'Liveness check: Please look directly into the camera, blink your eyes naturally, and gently move your head.'
                 );
                 stageStartTime.current = Date.now();
                 setActionIndex((prev) => (prev + 1) % ACTION_CHALLENGES.length);
@@ -376,11 +364,11 @@ export default function BiometricLivenessScanner({
                 return;
             }
 
-            // STAGE 1: ALIGNING FACE IN OVAL GUIDE
+            // STAGE 1: SMOOTH ALIGNING FACE IN OVAL GUIDE
             if (stage === 'aligning') {
-                if (totalAvg > 0.4 && totalAvg < 22 && avgRef < 2.5) {
+                if (totalAvg > 0.3 && totalAvg < 30 && avgRef < 3.8) {
                     alignStableCount.current++;
-                    if (alignStableCount.current >= 6) { // Stable for ~650ms
+                    if (alignStableCount.current >= 3) { // Smooth ~330ms alignment
                         alignStableCount.current = 0;
                         setStage('blink');
                         setBlinkPhase('seeking_baseline');
@@ -392,17 +380,17 @@ export default function BiometricLivenessScanner({
                     alignStableCount.current = Math.max(0, alignStableCount.current - 1);
                 }
             }
-            // STAGE 2: MANDATORY 3-PHASE BIOLOGICAL BLINK STATE MACHINE
-            // Rejects rigid body phone tremor, hand shake, and static pictures
+            // STAGE 2: USER-FRIENDLY BIOLOGICAL BLINK DETECTION
+            // Forgiving for real human eyes while strictly rejecting static pictures and phone shake
             else if (stage === 'blink') {
                 const currentBlinkPhase = blinkPhaseRef.current;
 
-                // Phase 2A: Seeking Baseline (Eyes open & resting face steady)
+                // Phase 2A: Seeking Baseline (Face resting comfortably)
                 if (currentBlinkPhase === 'seeking_baseline') {
-                    // Rest of face must be still (avgRef < 1.6) and eyes steady (avgEye < 2.2)
-                    if (avgRef < 1.6 && avgEye < 2.2) {
+                    // Forgiving thresholds: avgRef < 3.2 and avgEye < 3.5
+                    if (avgRef < 3.2 && avgEye < 3.5) {
                         baselineStableCount.current++;
-                        if (baselineStableCount.current >= 4) { // Steady for ~440ms
+                        if (baselineStableCount.current >= 2) { // Just ~220ms of steady resting face
                             baselineEyeLum.current = eyeLuminance;
                             setBlinkPhase('detecting_closure');
                             baselineStableCount.current = 0;
@@ -412,53 +400,47 @@ export default function BiometricLivenessScanner({
                         baselineStableCount.current = Math.max(0, baselineStableCount.current - 1);
                     }
                 }
-                // Phase 2B: Detecting Biological Eyelid Closure
+                // Phase 2B: Detecting Natural Eyelid Closure
                 else if (currentBlinkPhase === 'detecting_closure') {
-                    // RIGID MOTION FILTER: If entire face is moving (phone wobble, hand shake),
-                    // avgRef will be > 1.9. A true blink ONLY moves eyelids while forehead/cheeks are still!
-                    if (avgRef > 2.2) {
-                        // Hand tremor / whole phone moved - reset baseline
+                    // Anti-phone-shake filter: If the entire phone/frame is violently shaking, avgRef > 4.5
+                    if (avgRef > 4.5) {
                         setBlinkPhase('seeking_baseline');
                         baselineStableCount.current = 0;
                         return;
                     }
 
-                    // Genuine biological blink: eye zone moves sharply while ref zones stay still
+                    // Natural blink closure: Eye delta or luminance shift
                     const isEyeClosureSpike =
-                        avgEye >= 3.6 && avgEye / (avgRef + 0.1) >= 2.2;
-                    const isLumShift =
-                        Math.abs(eyeLuminance - baselineEyeLum.current) >= 4.0 && avgRef <= 1.8;
+                        avgEye >= 2.2 && (avgEye > avgRef * 1.1 || Math.abs(eyeLuminance - baselineEyeLum.current) >= 2.0);
 
-                    if (isEyeClosureSpike || isLumShift) {
+                    if (isEyeClosureSpike) {
                         blinkClosureTime.current = Date.now();
                         setBlinkPhase('detecting_reopen');
                     }
                 }
-                // Phase 2C: Detecting Eyelid Reopening (Biological V-Curve)
+                // Phase 2C: Detecting Eyelid Reopening
                 else if (currentBlinkPhase === 'detecting_reopen') {
                     const elapsedSinceClosure = Date.now() - blinkClosureTime.current;
 
-                    // If eyes remain closed for > 550ms or lighting shifted permanently, reset
-                    if (elapsedSinceClosure > 550) {
+                    // Allow generous 80ms - 1300ms window for natural blinks
+                    if (elapsedSinceClosure > 1300) {
                         setBlinkPhase('seeking_baseline');
                         baselineStableCount.current = 0;
                         return;
                     }
 
-                    // Biological blink reopening occurs within 90ms - 500ms
-                    if (elapsedSinceClosure >= 90) {
-                        const isReopenSpike = avgEye >= 2.6 && avgRef <= 2.0;
+                    if (elapsedSinceClosure >= 80) {
+                        const isReopenSpike = avgEye >= 1.8;
                         const isLumRecovered =
-                            Math.abs(eyeLuminance - baselineEyeLum.current) <= 8.5;
+                            Math.abs(eyeLuminance - baselineEyeLum.current) <= 15;
 
-                        if (isReopenSpike && isLumRecovered) {
-                            // BLINK FULLY VERIFIED!
+                        if (isReopenSpike || isLumRecovered) {
+                            // BLINK VERIFIED!
                             setBlinkCompleted(true);
                             setBlinkPhase('blink_verified');
 
-                            // Advance immediately to physical directed action challenge
+                            // Advance to action challenge
                             setStage('action');
-                            setActionPhase('moving');
                             stageStartTime.current = Date.now();
                             const nextAction = Math.floor(Math.random() * ACTION_CHALLENGES.length);
                             setActionIndex(nextAction);
@@ -468,63 +450,39 @@ export default function BiometricLivenessScanner({
                     }
                 }
             }
-            // STAGE 3: DIRECTED 3D PHYSICAL ACTION CHALLENGE WITH RETURN-TO-CENTER
-            // Requires asymmetric 3D pose change and returning to the center oval guide
+            // STAGE 3: USER-FRIENDLY NATURAL MOTION CHALLENGE
+            // Smoothly tracks gentle head movement in either direction
             else if (stage === 'action') {
                 const currentAction = ACTION_CHALLENGES[actionIndex];
-                const currentActionPhase = actionPhaseRef.current;
+                let isMotionDetected = false;
 
-                if (currentActionPhase === 'moving') {
-                    let isTargetMotion = false;
-
-                    if (currentAction.direction === 'left') {
-                        // Left asymmetric movement
-                        if (avgLeft >= 4.0 && avgLeft / (avgRight + 0.2) >= 1.5 && totalAvg < 24.0) {
-                            isTargetMotion = true;
-                        }
-                    } else if (currentAction.direction === 'right') {
-                        // Right asymmetric movement
-                        if (avgRight >= 4.0 && avgRight / (avgLeft + 0.2) >= 1.5 && totalAvg < 24.0) {
-                            isTargetMotion = true;
-                        }
-                    } else if (currentAction.direction === 'vertical') {
-                        // Vertical nod movement
-                        const horizAvg = (avgLeft + avgRight) / 2;
-                        if (avgVert >= 4.0 && avgVert / (horizAvg + 0.2) >= 1.4 && totalAvg < 24.0) {
-                            isTargetMotion = true;
-                        }
+                if (currentAction.id === 'turn_head') {
+                    // Forgiving lateral movement: accepts turn to either side
+                    if ((avgLeft >= 2.4 || avgRight >= 2.4 || totalAvg >= 2.6) && totalAvg < 35.0) {
+                        isMotionDetected = true;
                     }
-
-                    if (isTargetMotion) {
-                        actionHits.current++;
-                        if (actionHits.current >= 2) {
-                            // First phase complete: Transition to returning to center
-                            setActionPhase('returning');
-                            setActionProgress(60);
-                            actionHits.current = 0;
-                        }
+                } else if (currentAction.id === 'nod_head') {
+                    // Forgiving vertical movement
+                    if ((avgVert >= 2.4 || totalAvg >= 2.6) && totalAvg < 35.0) {
+                        isMotionDetected = true;
                     }
-                } else if (currentActionPhase === 'returning') {
-                    // Must return to center oval and stabilize
-                    const isCenteredAndStill =
-                        totalAvg < 2.0 && Math.abs(avgLeft - avgRight) < 1.4;
+                }
 
-                    if (isCenteredAndStill) {
-                        actionHits.current++;
-                        const progress = Math.min(100, 60 + actionHits.current * 20);
-                        setActionProgress(progress);
+                if (isMotionDetected) {
+                    actionHits.current++;
+                    const progress = Math.min(100, 25 + actionHits.current * 25);
+                    setActionProgress(progress);
 
-                        if (progress >= 100) {
-                            // Both Blink & Directed Action with Return-to-Center are verified!
-                            setStage('verified_hold');
-                        }
+                    if (progress >= 100) {
+                        // Liveness challenges complete: Move smoothly to hands-free capture
+                        setStage('verified_hold');
                     }
                 }
             }
         }, 110);
 
         return () => clearInterval(interval);
-    }, [cameraActive, stage, actionIndex, processing]);
+    }, [cameraActive, stage, actionIndex, processing, spoofWarning]);
 
     // Hands-Free Auto Capture Countdown (2, 1, 0)
     useEffect(() => {
@@ -541,7 +499,7 @@ export default function BiometricLivenessScanner({
                 clearInterval(countdownInterval);
                 executeAutoCapture();
             }
-        }, 750);
+        }, 650);
 
         return () => clearInterval(countdownInterval);
     }, [stage]);
@@ -578,7 +536,6 @@ export default function BiometricLivenessScanner({
         setStage('idle');
         setBlinkCompleted(false);
         setBlinkPhase('seeking_baseline');
-        setActionPhase('moving');
         setActionProgress(0);
         setSpoofWarning(null);
         autoStartedRef.current = false;
@@ -611,7 +568,7 @@ export default function BiometricLivenessScanner({
                                 <div className="bg-slate-950/85 backdrop-blur-md px-3.5 py-1 rounded-full border border-amber-400/60 flex items-center gap-2 shadow-lg">
                                     <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
                                     <span className="text-amber-200 text-xs font-bold">
-                                        Align face inside oval guide
+                                        Position face inside oval guide
                                     </span>
                                 </div>
                             )}
@@ -620,10 +577,10 @@ export default function BiometricLivenessScanner({
                                 <div className="bg-sky-950/90 backdrop-blur-md px-4 py-1.5 rounded-full border border-sky-400 flex items-center gap-2 shadow-xl animate-pulse">
                                     <Eye className="w-4 h-4 text-sky-300" />
                                     <span className="text-sky-100 text-xs font-bold tracking-wide">
-                                        {blinkPhase === 'seeking_baseline' && 'Step 1 of 2: Hold still inside guide...'}
+                                        {blinkPhase === 'seeking_baseline' && 'Step 1 of 2: Hold steady inside guide...'}
                                         {blinkPhase === 'detecting_closure' && 'Step 1 of 2: Please blink both eyes naturally'}
-                                        {blinkPhase === 'detecting_reopen' && 'Step 1 of 2: Eyelid closure registered, open eyes...'}
-                                        {blinkPhase === 'blink_verified' && 'Step 1 of 2: Blink Verified!'}
+                                        {blinkPhase === 'detecting_reopen' && 'Step 1 of 2: Eyelid closure detected, open eyes...'}
+                                        {blinkPhase === 'blink_verified' && 'Step 1 of 2: Blink Verified! ✓'}
                                     </span>
                                 </div>
                             )}
@@ -632,9 +589,7 @@ export default function BiometricLivenessScanner({
                                 <div className="bg-sky-950/90 backdrop-blur-md px-4 py-1.5 rounded-full border border-sky-400 flex items-center gap-2.5 shadow-xl animate-pulse">
                                     <span className="text-base">{ACTION_CHALLENGES[actionIndex].emoji}</span>
                                     <span className="text-sky-100 text-xs font-bold tracking-wide">
-                                        {actionPhase === 'moving'
-                                            ? `Step 2 of 2: ${ACTION_CHALLENGES[actionIndex].title}`
-                                            : `Step 2 of 2: ${ACTION_CHALLENGES[actionIndex].returnInstruction}`}
+                                        Step 2 of 2: {ACTION_CHALLENGES[actionIndex].title}
                                     </span>
                                 </div>
                             )}
@@ -654,7 +609,7 @@ export default function BiometricLivenessScanner({
                             {stage === 'aligning' && (
                                 <div className="w-32 h-44 border-2 border-dashed border-amber-400 rounded-full animate-pulse shadow-sm flex items-center justify-center">
                                     <span className="text-[10px] text-amber-200 font-semibold bg-slate-950/70 px-2 py-0.5 rounded-full">
-                                        Looking at Camera
+                                        Look at Camera
                                     </span>
                                 </div>
                             )}
@@ -664,7 +619,9 @@ export default function BiometricLivenessScanner({
                                     <span className="text-[9px] text-sky-200 font-bold bg-slate-950/80 px-2 py-0.5 rounded-full text-center">
                                         {blinkPhase === 'seeking_baseline'
                                             ? 'Hold still in guide...'
-                                            : 'Blink your eyes to prove liveness'}
+                                            : blinkPhase === 'blink_verified'
+                                            ? '✓ Blink Verified!'
+                                            : 'Blink eyes naturally'}
                                     </span>
                                 </div>
                             )}
@@ -679,9 +636,7 @@ export default function BiometricLivenessScanner({
                                         />
                                     </div>
                                     <span className="text-[9px] text-sky-200 font-bold mt-1 bg-slate-950/80 px-2 py-0.5 rounded-full text-center">
-                                        {actionPhase === 'moving'
-                                            ? ACTION_CHALLENGES[actionIndex].instruction
-                                            : 'Return to center guide'}
+                                        {ACTION_CHALLENGES[actionIndex].instruction}
                                     </span>
                                 </div>
                             )}
@@ -698,11 +653,11 @@ export default function BiometricLivenessScanner({
                             )}
                         </div>
 
-                        {/* Bottom HUD Bar - STRICT ANTI-SPOOFING BADGE (No Manual Snap Button) */}
+                        {/* Bottom HUD Bar - STRICT ANTI-SPOOFING BADGE */}
                         <div className="w-full flex items-center justify-between px-3 text-[10px] text-slate-300">
                             <span className="flex items-center gap-1.5 font-medium bg-slate-950/80 px-2.5 py-0.5 rounded-full border border-slate-700">
                                 <Shield className="w-3 h-3 text-amber-400" />
-                                Anti-Spoofing PAD Active
+                                Anti-Spoofing Active
                             </span>
                             <span className="text-[9px] text-slate-400 bg-slate-950/70 px-2 py-0.5 rounded-full">
                                 Screen photos prohibited
