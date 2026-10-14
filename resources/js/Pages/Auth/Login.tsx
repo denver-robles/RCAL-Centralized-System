@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Head, useForm, Link, usePage, router } from '@inertiajs/react';
 import { PageProps } from '@/types';
 import {
@@ -16,7 +16,12 @@ import {
     ExternalLink,
     X,
     Mail,
+    ScanFace,
+    Camera,
+    VideoOff,
+    Loader2,
 } from 'lucide-react';
+import BiometricLivenessScanner from '@/Components/BiometricLivenessScanner';
 
 export default function Login() {
     const { flash } = usePage<PageProps & { flash: { reset_url?: string } }>().props;
@@ -38,6 +43,57 @@ export default function Login() {
     const forgotForm = useForm({
         email: '',
     });
+
+    // Face++ Biometric Recognition State
+    const [loginMode, setLoginMode] = useState<'password' | 'face'>('password');
+    const [cameraError, setCameraError] = useState<string | null>(null);
+    const [faceProcessing, setFaceProcessing] = useState(false);
+    const [faceIdentifier, setFaceIdentifier] = useState('');
+
+    const handleLivenessCapture = useCallback(
+        (base64Image: string) => {
+            if (!termsAccepted) {
+                setTermsError(true);
+                return;
+            }
+            setTermsError(false);
+
+            const idToUse = (faceIdentifier || data.identifier || '').trim();
+            if (!idToUse) {
+                setCameraError('Please enter your account email or username above to authenticate.');
+                return;
+            }
+
+            setFaceProcessing(true);
+            setCameraError(null);
+
+            const cleanImage = base64Image.includes(',') ? base64Image.split(',')[1] : base64Image;
+
+            router.post(
+                '/login/face',
+                {
+                    email: idToUse,
+                    captured_image: cleanImage,
+                },
+                {
+                    onFinish: () => {
+                        setFaceProcessing(false);
+                    },
+                    onError: (pageErrors: any) => {
+                        setFaceProcessing(false);
+                        if (pageErrors.captured_image) {
+                            setCameraError(pageErrors.captured_image);
+                        } else if (pageErrors.email) {
+                            setCameraError(pageErrors.email);
+                        } else {
+                            setCameraError('Face biometric authentication failed.');
+                        }
+                    },
+                }
+            );
+        },
+        [termsAccepted, faceIdentifier, data.identifier]
+    );
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -187,127 +243,244 @@ export default function Login() {
                             </p>
                         </div>
 
-                        {/* Login Form */}
-                        <form onSubmit={submit} className="w-full space-y-3.5">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 tracking-wider uppercase mb-1.5">
-                                    {activeTab === 'parishioner'
-                                        ? 'Registered Email or Username:'
-                                        : 'Staff / Clergy Identifier:'}
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={data.identifier}
-                                    onChange={(e) => setData('identifier', e.target.value)}
-                                    placeholder={
-                                        activeTab === 'parishioner'
-                                            ? 'e.g. maria.santos@email.ph'
-                                            : 'e.g. fr.reyes or chancery.admin'
-                                    }
-                                    className="w-full px-4 py-3 bg-white border border-slate-300 focus:border-amber-500 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all shadow-xs"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 tracking-wider uppercase mb-1.5">
-                                    Password:
-                                </label>
-                                <div className="relative">
+                        {/* Login Form: Password vs Face++ Biometric Recognition */}
+                        {loginMode === 'password' ? (
+                            <form onSubmit={submit} className="w-full space-y-3.5">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 tracking-wider uppercase mb-1.5">
+                                        {activeTab === 'parishioner'
+                                            ? 'Registered Email or Username:'
+                                            : 'Staff / Clergy Identifier:'}
+                                    </label>
                                     <input
-                                        type={showPassword ? 'text' : 'password'}
+                                        type="text"
                                         required
-                                        value={data.password}
-                                        onChange={(e) => setData('password', e.target.value)}
-                                        placeholder="••••••••••••"
-                                        className="w-full pl-4 pr-11 py-3 bg-white border border-slate-300 focus:border-amber-500 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all shadow-xs"
+                                        value={data.identifier}
+                                        onChange={(e) => setData('identifier', e.target.value)}
+                                        placeholder={
+                                            activeTab === 'parishioner'
+                                                ? 'e.g. maria.santos@email.ph'
+                                                : 'e.g. fr.reyes or chancery.admin'
+                                        }
+                                        className="w-full px-4 py-3 bg-white border border-slate-300 focus:border-amber-500 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all shadow-xs"
                                     />
-                                    {/* Animated Eye / EyeOff Icon */}
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 tracking-wider uppercase mb-1.5">
+                                        Password:
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type={showPassword ? 'text' : 'password'}
+                                            required
+                                            value={data.password}
+                                            onChange={(e) => setData('password', e.target.value)}
+                                            placeholder="••••••••••••"
+                                            className="w-full pl-4 pr-11 py-3 bg-white border border-slate-300 focus:border-amber-500 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all shadow-xs"
+                                        />
+                                        {/* Animated Eye / EyeOff Icon */}
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all duration-200 hover:scale-110 active:scale-95 focus:outline-none"
+                                            title={showPassword ? 'Hide password' : 'Show password'}
+                                            aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                        >
+                                            {showPassword ? (
+                                                <EyeOff className="w-4 h-4 text-slate-700 transition-transform duration-200" />
+                                            ) : (
+                                                <Eye className="w-4 h-4 text-slate-400 transition-transform duration-200" />
+                                            )}
+                                        </button>
+                                    </div>
+                                    {errors.password && (
+                                        <p className="text-rose-600 text-xs mt-1 font-medium">{errors.password}</p>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center justify-between text-xs pt-0.5">
+                                    <label className="flex items-center gap-2 text-slate-600 cursor-pointer select-none">
+                                        <input
+                                            type="checkbox"
+                                            checked={data.remember}
+                                            onChange={(e) => setData('remember', e.target.checked)}
+                                            className="rounded border-slate-300 text-amber-500 focus:ring-amber-400 w-3.5 h-3.5"
+                                        />
+                                        <span>Remember me</span>
+                                    </label>
+
                                     <button
                                         type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all duration-200 hover:scale-110 active:scale-95 focus:outline-none"
-                                        title={showPassword ? 'Hide password' : 'Show password'}
-                                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                        onClick={() => setForgotModalOpen(true)}
+                                        className="text-amber-600 hover:text-amber-700 font-semibold hover:underline text-xs"
                                     >
-                                        {showPassword ? (
-                                            <EyeOff className="w-4 h-4 text-slate-700 transition-transform duration-200" />
-                                        ) : (
-                                            <Eye className="w-4 h-4 text-slate-400 transition-transform duration-200" />
-                                        )}
+                                        Forgot password?
                                     </button>
                                 </div>
-                                {errors.password && (
-                                    <p className="text-rose-600 text-xs mt-1 font-medium">{errors.password}</p>
-                                )}
-                            </div>
 
-                            <div className="flex items-center justify-between text-xs pt-0.5">
-                                <label className="flex items-center gap-2 text-slate-600 cursor-pointer select-none">
+                                {/* Terms and Privacy Checkbox - Unchecked by default */}
+                                <div className="flex items-start gap-2 text-xs pt-0.5">
                                     <input
+                                        id="terms_accepted"
                                         type="checkbox"
-                                        checked={data.remember}
-                                        onChange={(e) => setData('remember', e.target.checked)}
-                                        className="rounded border-slate-300 text-amber-500 focus:ring-amber-400 w-3.5 h-3.5"
+                                        checked={termsAccepted}
+                                        onChange={(e) => {
+                                            setTermsAccepted(e.target.checked);
+                                            if (e.target.checked) setTermsError(false);
+                                        }}
+                                        className="rounded border-slate-300 text-amber-500 focus:ring-amber-400 w-3.5 h-3.5 mt-0.5"
                                     />
-                                    <span>Remember me</span>
-                                </label>
+                                    <label htmlFor="terms_accepted" className="text-slate-600 text-[11px] leading-tight select-none cursor-pointer">
+                                        I accept the{' '}
+                                        <button
+                                            type="button"
+                                            onClick={() => setTermsModalOpen(true)}
+                                            className="text-amber-600 hover:text-amber-700 font-semibold underline"
+                                        >
+                                            Terms and Conditions
+                                        </button>{' '}
+                                        and Archdiocesan Privacy Policy (RA 10173).
+                                    </label>
+                                </div>
+
+                                {termsError && (
+                                    <p className="text-rose-600 text-[11px] font-medium flex items-center gap-1">
+                                        <AlertCircle className="w-3.5 h-3.5" />
+                                        Please accept the Terms & Conditions before signing in.
+                                    </p>
+                                )}
+
+                                <button
+                                    type="submit"
+                                    disabled={processing}
+                                    className={`w-full mt-2 py-3 bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 ${
+                                        !termsAccepted ? 'opacity-75' : ''
+                                    }`}
+                                >
+                                    {processing
+                                        ? 'Authenticating...'
+                                        : activeTab === 'parishioner'
+                                        ? 'Sign In to Parishioner Portal'
+                                        : 'Sign In as Diocesan Staff'}
+                                </button>
+
+                                {/* Face++ Biometric Option Divider & Button */}
+                                <div className="relative my-2.5">
+                                    <div className="absolute inset-0 flex items-center">
+                                        <div className="w-full border-t border-slate-200" />
+                                    </div>
+                                    <div className="relative flex justify-center text-xs uppercase">
+                                        <span className="bg-white px-2.5 text-slate-400 text-[10px] font-bold tracking-wider">
+                                            Or Authenticate With
+                                        </span>
+                                    </div>
+                                </div>
 
                                 <button
                                     type="button"
-                                    onClick={() => setForgotModalOpen(true)}
-                                    className="text-amber-600 hover:text-amber-700 font-semibold hover:underline text-xs"
-                                >
-                                    Forgot password?
-                                </button>
-                            </div>
-
-                            {/* Terms and Privacy Checkbox - Unchecked by default */}
-                            <div className="flex items-start gap-2 text-xs pt-0.5">
-                                <input
-                                    id="terms_accepted"
-                                    type="checkbox"
-                                    checked={termsAccepted}
-                                    onChange={(e) => {
-                                        setTermsAccepted(e.target.checked);
-                                        if (e.target.checked) setTermsError(false);
+                                    onClick={() => {
+                                        setLoginMode('face');
+                                        if (data.identifier) setFaceIdentifier(data.identifier);
                                     }}
-                                    className="rounded border-slate-300 text-amber-500 focus:ring-amber-400 w-3.5 h-3.5 mt-0.5"
-                                />
-                                <label htmlFor="terms_accepted" className="text-slate-600 text-[11px] leading-tight select-none cursor-pointer">
-                                    I accept the{' '}
+                                    className="w-full py-2.5 px-4 bg-slate-50 hover:bg-amber-50/60 text-slate-800 hover:text-amber-950 border border-slate-200 hover:border-amber-300 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all duration-150 shadow-2xs group"
+                                >
+                                    <ScanFace className="w-4 h-4 text-amber-600 transition-transform duration-200 group-hover:scale-110" />
+                                    <span>Sign In with Face++ Recognition</span>
+                                </button>
+                            </form>
+                        ) : (
+                            /* Face++ Hands-Free Biometric Recognition Interface */
+                            <div className="w-full space-y-3.5">
+                                {/* Mode Header & Back Switcher */}
+                                <div className="flex items-center justify-between pb-1 border-b border-slate-100">
+                                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 uppercase tracking-wide">
+                                        <ScanFace className="w-4 h-4 text-amber-600" />
+                                        <span>Hands-Free Face Biometric Sign In</span>
+                                    </div>
                                     <button
                                         type="button"
-                                        onClick={() => setTermsModalOpen(true)}
-                                        className="text-amber-600 hover:text-amber-700 font-semibold underline"
+                                        onClick={() => {
+                                            setLoginMode('password');
+                                        }}
+                                        className="text-[11px] font-semibold text-amber-600 hover:text-amber-700 underline"
                                     >
-                                        Terms and Conditions
-                                    </button>{' '}
-                                    and Archdiocesan Privacy Policy (RA 10173).
-                                </label>
+                                        Use Password Instead
+                                    </button>
+                                </div>
+
+                                {/* Email / Username Input */}
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 tracking-wider uppercase mb-1.5">
+                                        {activeTab === 'parishioner'
+                                            ? 'Registered Email or Username:'
+                                            : 'Staff / Clergy Identifier:'}
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={faceIdentifier || data.identifier}
+                                        onChange={(e) => {
+                                            setFaceIdentifier(e.target.value);
+                                            setData('identifier', e.target.value);
+                                            if (cameraError) setCameraError(null);
+                                        }}
+                                        placeholder={
+                                            activeTab === 'parishioner'
+                                                ? 'e.g. maria.santos@email.ph'
+                                                : 'e.g. fr.reyes or chancery.admin'
+                                        }
+                                        className="w-full px-4 py-2.5 bg-white border border-slate-300 focus:border-amber-500 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all shadow-xs"
+                                    />
+                                </div>
+
+                                {/* Terms and Privacy Checkbox */}
+                                <div className="flex items-start gap-2 text-xs pt-0.5">
+                                    <input
+                                        id="face_terms_accepted"
+                                        type="checkbox"
+                                        checked={termsAccepted}
+                                        onChange={(e) => {
+                                            setTermsAccepted(e.target.checked);
+                                            if (e.target.checked) setTermsError(false);
+                                        }}
+                                        className="rounded border-slate-300 text-amber-500 focus:ring-amber-400 w-3.5 h-3.5 mt-0.5"
+                                    />
+                                    <label
+                                        htmlFor="face_terms_accepted"
+                                        className="text-slate-600 text-[11px] leading-tight select-none cursor-pointer"
+                                    >
+                                        I accept the{' '}
+                                        <button
+                                            type="button"
+                                            onClick={() => setTermsModalOpen(true)}
+                                            className="text-amber-600 hover:text-amber-700 font-semibold underline"
+                                        >
+                                            Terms and Conditions
+                                        </button>{' '}
+                                        and Archdiocesan Privacy Policy (RA 10173).
+                                    </label>
+                                </div>
+
+                                {termsError && (
+                                    <p className="text-rose-600 text-[11px] font-medium flex items-center gap-1">
+                                        <AlertCircle className="w-3.5 h-3.5" />
+                                        Please accept the Terms & Conditions before signing in.
+                                    </p>
+                                )}
+
+                                {/* Shared Hands-Free Biometric Liveness Scanner */}
+                                <BiometricLivenessScanner
+                                    onCapture={handleLivenessCapture}
+                                    processing={faceProcessing}
+                                    processingMessage="Comparing live biometric scan against registered face reference (Face++)..."
+                                    errorMessage={cameraError}
+                                    onRetry={() => setCameraError(null)}
+                                    title="Hands-Free Biometric Verification"
+                                    description="Blink naturally and complete the active movement challenge. Capture will trigger automatically once liveness is proven."
+                                />
                             </div>
-
-                            {termsError && (
-                                <p className="text-rose-600 text-[11px] font-medium flex items-center gap-1">
-                                    <AlertCircle className="w-3.5 h-3.5" />
-                                    Please accept the Terms & Conditions before signing in.
-                                </p>
-                            )}
-
-                            <button
-                                type="submit"
-                                disabled={processing}
-                                className={`w-full mt-2 py-3 bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 ${
-                                    !termsAccepted ? 'opacity-75' : ''
-                                }`}
-                            >
-                                {processing
-                                    ? 'Authenticating...'
-                                    : activeTab === 'parishioner'
-                                    ? 'Sign In to Parishioner Portal'
-                                    : 'Sign In as Diocesan Staff'}
-                            </button>
-                        </form>
+                        )}
 
                         {/* Bottom Action Callout - Stable Box to Prevent Switcher Layout Shift */}
                         <div className="w-full mt-4 min-h-[120px] flex flex-col justify-center">

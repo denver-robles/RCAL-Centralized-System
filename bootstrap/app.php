@@ -15,7 +15,18 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->validateCsrfTokens(except: [
+            'stripe/webhook',
+            'stripe/*',
+            'identity/create-session',
+            'portal/identity/create-session',
+            'login/face',
+            'register/verify-id',
+            'register/verify-face',
+        ]);
+
         $middleware->web(append: [
             HandleInertiaRequests::class,
             EnsureParishionerIsolation::class,

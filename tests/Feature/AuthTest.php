@@ -8,7 +8,9 @@ use App\Models\AuditLog;
 use App\Models\Parish;
 use App\Models\User;
 use App\Models\Vicariate;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class AuthTest extends TestCase
@@ -189,6 +191,23 @@ class AuthTest extends TestCase
 
     public function test_parishioner_can_register_new_account(): void
     {
+        Config::set('services.facepp.key', 'mock_valid_key');
+        Config::set('services.facepp.secret', 'mock_valid_secret');
+
+        Http::fake([
+            'https://api-us.faceplusplus.com/facepp/v3/detect' => Http::response([
+                'faces' => [['face_token' => 'mock_token']],
+            ], 200),
+            'https://api-us.faceplusplus.com/facepp/v3/compare' => Http::response([
+                'confidence' => 95.0,
+                'thresholds' => [
+                    '1e-5' => 75.0,
+                ],
+            ], 200),
+        ]);
+
+        $dummyImage = 'data:image/jpeg;base64,' . base64_encode(str_repeat('A', 600));
+
         $response = $this->post('/register', [
             'first_name' => 'Maria',
             'middle_name' => 'Clara',
@@ -198,16 +217,22 @@ class AuthTest extends TestCase
             'home_parish_id' => $this->parish->id,
             'password' => 'secretpassword123',
             'password_confirmation' => 'secretpassword123',
+            'id_type' => 'philsys_national_id',
+            'id_image' => $dummyImage,
+            'live_selfie' => $dummyImage,
             'privacy_consent' => true,
         ]);
 
-        $response->assertRedirect('/login');
-        $response->assertSessionHas('success', 'Your parishioner account has been successfully created. You may now sign in.');
+        $response->assertRedirect('/portal/dashboard');
+        $response->assertSessionHas('success');
+        $this->assertAuthenticated();
 
         $this->assertDatabaseHas('users', [
             'email' => 'maria.santos@parishioner.ph',
             'display_name' => 'Maria Clara Santos',
             'role' => RoleEnum::PARISHIONER->value,
+            'identity_status' => 'verified',
+            'extracted_id_type' => 'philsys_national_id',
             'home_parish_id' => $this->parish->id,
             'phone' => '09171234567',
             'is_active' => true,
@@ -216,6 +241,7 @@ class AuthTest extends TestCase
         $createdUser = User::where('email', 'maria.santos@parishioner.ph')->first();
         $this->assertNotNull($createdUser);
         $this->assertTrue(Hash::check('secretpassword123', $createdUser->password));
+        $this->assertNotNull($createdUser->face_reference_image);
 
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $createdUser->id,

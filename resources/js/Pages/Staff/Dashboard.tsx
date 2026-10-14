@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import { PortalLayout } from '@/Layouts/PortalLayout';
 import { PageProps } from '@/types';
 import StatusBadge from '@/Components/StatusBadge';
+import FaceEnrollmentModal from '@/Components/FaceEnrollmentModal';
 import {
     Activity,
     BookOpen,
@@ -19,6 +20,7 @@ import {
     AlertCircle,
     Layers,
     UserCheck,
+    ScanFace,
 } from 'lucide-react';
 
 interface UrgentCertificate {
@@ -105,6 +107,7 @@ export default function Dashboard({
     kpiOverview,
 }: DashboardProps) {
     const { user } = auth;
+    const [faceModalOpen, setFaceModalOpen] = useState(false);
 
     return (
         <PortalLayout
@@ -158,6 +161,15 @@ export default function Dashboard({
                             <FileCheck className="w-4 h-4 text-amber-400" />
                             <span>Certificate Orders</span>
                         </Link>
+                        <button
+                            type="button"
+                            onClick={() => setFaceModalOpen(true)}
+                            className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold rounded-xl text-xs border border-slate-700 transition-all duration-150 shadow-xs"
+                            title="Enroll or update your Face++ biometric reference photo"
+                        >
+                            <ScanFace className="w-4 h-4 text-amber-400" />
+                            <span>{user?.has_face_reference ? 'Face ID Enrolled' : 'Enroll Face ID'}</span>
+                        </button>
                     </div>
                 </div>
 
@@ -602,6 +614,12 @@ export default function Dashboard({
                     </div>
                 </div>
             </div>
+
+            {/* Biometric Face Reference Enrollment Modal */}
+            <FaceEnrollmentModal
+                isOpen={faceModalOpen}
+                onClose={() => setFaceModalOpen(false)}
+            />
         </PortalLayout>
     );
 }

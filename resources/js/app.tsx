@@ -48,6 +48,7 @@ createInertiaApp({
 
 const isProtectedPath = (pathname: string) =>
     pathname.startsWith('/portal') ||
+    pathname.startsWith('/identity') ||
     pathname.startsWith('/dashboard') ||
     pathname.startsWith('/records') ||
     pathname.startsWith('/certificates') ||

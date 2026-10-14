@@ -11,6 +11,7 @@ use App\Http\Controllers\RecordsController;
 use App\Http\Controllers\SchedulesController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\StripeIdentityController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -33,9 +34,33 @@ Route::middleware('guest')->group(function () {
     Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email');
     Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword'])->name('password.reset');
     Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
+
+    // Parishioner ID Document & Biometric Verification Wizard
+    Route::post('/register/verify-id', [AuthController::class, 'verifyIdDocument'])->name('register.verify-id');
+    Route::post('/register/verify-face', [AuthController::class, 'verifyFaceBiometrics'])->name('register.verify-face');
+
+    // Face++ Biometric Facial Recognition Login
+    Route::post('/login/face', [AuthController::class, 'faceLogin'])->name('login.face');
 });
 
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
+// Webhook endpoint (Must be public, not protected by auth middleware or CSRF)
+Route::post('/stripe/webhook', [StripeIdentityController::class, 'handleWebhook'])->name('stripe.webhook');
+
+Route::middleware('auth')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    Route::post('/user/face-reference', [AuthController::class, 'updateFaceReference'])->name('user.face-reference');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Stripe Identity Verification Routes (auth required)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth'])->group(function () {
+    Route::get('/identity/verify', [StripeIdentityController::class, 'onboarding'])->name('identity.onboarding');
+    Route::post('/identity/create-session', [StripeIdentityController::class, 'createSession'])->name('identity.create');
+    Route::get('/identity/status', [StripeIdentityController::class, 'status'])->name('identity.status');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -54,6 +79,11 @@ Route::middleware(['auth'])->prefix('portal')->name('portal.')->group(function (
     // Sacrament Schedule Payment
     Route::get('/schedule-requests/{schedule}/payment', [PortalController::class, 'paymentForm'])->name('schedule-requests.payment');
     Route::post('/schedule-requests/{schedule}/payment', [PortalController::class, 'submitPayment'])->name('schedule-requests.payment.submit');
+
+    // Aliases under portal prefix for backward-compatibility
+    Route::get('/identity/verify', [StripeIdentityController::class, 'onboarding'])->name('identity.verify');
+    Route::post('/identity/create-session', [StripeIdentityController::class, 'createSession']);
+    Route::get('/identity/status', [StripeIdentityController::class, 'status']);
 });
 
 /*

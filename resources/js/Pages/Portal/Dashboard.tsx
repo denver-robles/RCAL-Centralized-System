@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import PortalLayout from '@/Layouts/PortalLayout';
 import StatusBadge from '@/Components/StatusBadge';
+import VerifyIdButton from '@/Components/VerifyIdButton';
+import FaceEnrollmentModal from '@/Components/FaceEnrollmentModal';
 import { DocumentRequest, PageProps, SacramentSchedule } from '@/types';
 import {
     FileText,
     Calendar,
     Plus,
     ShieldCheck,
+    ShieldAlert,
     CheckCircle2,
     Clock,
     Award,
@@ -23,6 +26,7 @@ import {
     ChevronRight,
     MapPin,
     User as UserIcon,
+    ScanFace,
 } from 'lucide-react';
 
 interface Props extends PageProps {
@@ -45,6 +49,7 @@ interface Props extends PageProps {
 
 export default function Dashboard({ auth, documentRequests, schedules, metrics, sacramentCounts }: Props) {
     const [selectedDoc, setSelectedDoc] = useState<DocumentRequest | null>(null);
+    const [faceModalOpen, setFaceModalOpen] = useState(false);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -106,9 +111,48 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                 {/* Action Welcome Banner */}
                 <div className="bg-gradient-to-r from-[#0a0f1d] via-slate-900 to-[#0d162a] border border-slate-800 rounded-2xl p-6 sm:p-7 shadow-lg flex flex-col lg:flex-row lg:items-center justify-between gap-6 text-white relative overflow-hidden">
                     <div className="relative z-10 space-y-2">
-                        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-xs font-semibold">
-                            <Church className="w-3.5 h-3.5" />
-                            <span>Roman Catholic Archdiocese of Lipa</span>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-xs font-semibold">
+                                <Church className="w-3.5 h-3.5" />
+                                <span>Roman Catholic Archdiocese of Lipa</span>
+                            </div>
+                            {auth.user?.identity_status === 'verified' ? (
+                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-semibold">
+                                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                                    <span>Government ID Verified</span>
+                                </div>
+                            ) : auth.user?.identity_status === 'pending' ? (
+                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-xs font-semibold">
+                                    <Clock className="w-3.5 h-3.5 text-amber-400" />
+                                    <span>ID Verification In Review</span>
+                                </div>
+                            ) : (
+                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/20 border border-rose-400/40 text-rose-300 text-xs font-semibold">
+                                    <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+                                    <span>ID Not Verified</span>
+                                </div>
+                            )}
+
+                            {/* Biometric Face++ Status Pill */}
+                            {auth.user?.has_face_reference ? (
+                                <div
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-semibold"
+                                    title="Biometric Face ID is canonically registered and permanently sealed"
+                                >
+                                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                                    <span>Face ID Verified &amp; Sealed</span>
+                                </div>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => setFaceModalOpen(true)}
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-semibold transition cursor-pointer"
+                                    title="Enroll your Face++ reference photo for fast sign-in"
+                                >
+                                    <ScanFace className="w-3.5 h-3.5 text-amber-400" />
+                                    <span>Enroll Face ID</span>
+                                </button>
+                            )}
                         </div>
                         <h2 className="font-serif text-xl sm:text-2xl font-bold text-white tracking-tight">
                             Canonical Records &amp; Sacramental Claims
@@ -133,8 +177,86 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                             <Calendar className="w-4 h-4 text-amber-400" />
                             <span>Book Ceremony</span>
                         </Link>
+                        {!auth.user?.has_face_reference && (
+                            <button
+                                type="button"
+                                onClick={() => setFaceModalOpen(true)}
+                                className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-800/90 hover:bg-slate-700 text-white border border-slate-700 font-semibold rounded-xl text-xs sm:text-sm shadow-md transition-all duration-150 cursor-pointer"
+                                title="Enroll your Face++ reference photo for fast sign-in"
+                            >
+                                <ScanFace className="w-4 h-4 text-amber-400" />
+                                <span>Enroll Face ID</span>
+                            </button>
+                        )}
                     </div>
                 </div>
+
+                {/* Identity Verification Prompt Card (Shown when user is unverified, pending, or requires input) */}
+                {auth.user?.identity_status !== 'verified' && (
+                    <div className="bg-gradient-to-r from-amber-50 via-white to-amber-50/50 border-2 border-amber-300/80 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+                        <div className="flex items-start gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-400 text-amber-800 flex items-center justify-center shrink-0 mt-0.5">
+                                {auth.user?.identity_status === 'pending' ? (
+                                    <Clock className="w-6 h-6 animate-pulse" />
+                                ) : auth.user?.identity_status === 'requires_input' ? (
+                                    <ShieldAlert className="w-6 h-6 text-rose-600" />
+                                ) : (
+                                    <ShieldCheck className="w-6 h-6" />
+                                )}
+                            </div>
+                            <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                    <h3 className="font-serif font-bold text-base text-slate-900">
+                                        {auth.user?.identity_status === 'pending'
+                                            ? 'Stripe Verification In Progress'
+                                            : auth.user?.identity_status === 'requires_input'
+                                            ? 'Verification Requires Attention'
+                                            : 'Verify Government ID (Stripe Identity)'}
+                                    </h3>
+                                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                                        RA 10173 • Can. 535
+                                    </span>
+                                </div>
+                                <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
+                                    {auth.user?.identity_status === 'pending' ? (
+                                        <>
+                                            Your documents were submitted and are being reviewed by Stripe. You can{' '}
+                                            <Link href="/identity/status" className="text-amber-800 font-bold underline">
+                                                check status here
+                                            </Link>
+                                            .
+                                        </>
+                                    ) : auth.user?.identity_status === 'requires_input' ? (
+                                        'Stripe could not clearly verify your previous submission. Please retry with a valid photo ID (Passport, PhilID, Driver\'s License, UMID) to unlock full certificate issuance.'
+                                    ) : (
+                                        'Official ecclesiastical certificate claims require verification of your government-issued ID to protect personal records under the Philippine Data Privacy Act.'
+                                    )}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="shrink-0 flex items-center gap-3">
+                            {auth.user?.identity_status === 'pending' ? (
+                                <Link
+                                    href="/identity/status"
+                                    className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-xl text-xs transition shadow-xs"
+                                >
+                                    Check Status
+                                </Link>
+                            ) : (
+                                <VerifyIdButton
+                                    buttonText={
+                                        auth.user?.identity_status === 'requires_input'
+                                            ? 'Retry ID Verification'
+                                            : 'Verify Government ID'
+                                    }
+                                    variant="amber"
+                                    className="text-xs uppercase tracking-wider font-bold py-2.5 px-4"
+                                />
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 {/* Parishioner KPI Summary Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -768,6 +890,12 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                     </div>
                 </div>
             )}
+
+            {/* Biometric Face Reference Enrollment Modal */}
+            <FaceEnrollmentModal
+                isOpen={faceModalOpen}
+                onClose={() => setFaceModalOpen(false)}
+            />
         </PortalLayout>
     );
 }

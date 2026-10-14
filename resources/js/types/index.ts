@@ -45,6 +45,11 @@ export interface User {
     username: string;
     email: string;
     display_name: string;
+    first_name?: string | null;
+    middle_name?: string | null;
+    last_name?: string | null;
+    name_suffix?: string | null;
+    date_of_birth?: string | null;
     role: Role;
     role_label: string;
     is_staff: boolean;
@@ -53,6 +58,11 @@ export interface User {
     can_issue_certificates: boolean;
     home_parish_id: number | null;
     home_parish_name?: string | null;
+    identity_status?: 'unverified' | 'pending' | 'verified' | 'requires_input';
+    id_verified_at?: string | null;
+    extracted_id_type?: string | null;
+    id_number_masked?: string | null;
+    has_face_reference?: boolean;
 }
 
 export interface Vicariate {

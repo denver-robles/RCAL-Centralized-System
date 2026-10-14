@@ -294,9 +294,25 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
                                 <span className="block text-xs font-bold text-slate-100 truncate">
                                     {user?.display_name || user?.username}
                                 </span>
-                                <span className="block text-[10px] text-amber-400 truncate">
-                                    {user?.role_label}
-                                </span>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="block text-[10px] text-amber-400 truncate">
+                                        {user?.role_label}
+                                    </span>
+                                    {user?.is_parishioner && (
+                                        user?.identity_status === 'verified' ? (
+                                            <span className="text-[9px] text-emerald-400 bg-emerald-950/70 border border-emerald-500/30 px-1.5 py-0.5 rounded font-medium inline-flex items-center gap-0.5">
+                                                ✓ ID Verified
+                                            </span>
+                                        ) : (
+                                            <Link
+                                                href="/identity/verify"
+                                                className="text-[9px] text-amber-300 hover:text-amber-200 bg-amber-950/80 border border-amber-500/40 px-1.5 py-0.5 rounded font-medium hover:underline inline-flex items-center gap-0.5"
+                                            >
+                                                Verify ID
+                                            </Link>
+                                        )
+                                    )}
+                                </div>
                             </div>
                         </div>
 

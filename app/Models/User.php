@@ -19,6 +19,11 @@ class User extends Authenticatable
         'username',
         'email',
         'display_name',
+        'first_name',
+        'middle_name',
+        'last_name',
+        'name_suffix',
+        'date_of_birth',
         'role',
         'password',
         'home_parish_id',
@@ -29,11 +34,19 @@ class User extends Authenticatable
         'phone_verified_at',
         'is_active',
         'last_login_at',
+        'stripe_verification_session_id',
+        'identity_status',
+        'id_verified_at',
+        'extracted_id_type',
+        'id_number_masked',
+        'extracted_id_details',
+        'face_reference_image',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'face_reference_image',
     ];
 
     protected function casts(): array
@@ -45,6 +58,9 @@ class User extends Authenticatable
             'password' => 'hashed',
             'role' => RoleEnum::class,
             'is_active' => 'boolean',
+            'id_verified_at' => 'datetime',
+            'date_of_birth' => 'date',
+            'extracted_id_details' => 'array',
         ];
     }
 
@@ -96,5 +112,10 @@ class User extends Authenticatable
     public function getDisplayNameOrUsernameAttribute(): string
     {
         return $this->display_name ?: $this->username;
+    }
+
+    public function hasFaceReference(): bool
+    {
+        return !empty($this->face_reference_image);
     }
 }

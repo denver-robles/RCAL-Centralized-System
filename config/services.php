@@ -35,4 +35,17 @@ return [
         ],
     ],
 
+    'stripe' => [
+        'key' => env('STRIPE_KEY'),
+        'secret' => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+    ],
+
+    'facepp' => [
+        'key' => env('FACEPP_API_KEY'),
+        'secret' => env('FACEPP_API_SECRET'),
+        'verify_ssl' => env('FACEPP_VERIFY_SSL', false),
+    ],
+
 ];
+
