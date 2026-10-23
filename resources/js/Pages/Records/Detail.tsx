@@ -70,6 +70,17 @@ export default function Detail({
     });
 
     // Certificate Order Form
+    const personName =
+        record.person?.full_name ||
+        [record.person?.first_name, record.person?.middle_name, record.person?.last_name, record.person?.suffix]
+            .filter(Boolean)
+            .join(' ') ||
+        'N/A';
+
+    const citation =
+        record.citation ||
+        `Book ${record.book_number}, Page ${record.page_number}, Entry ${record.entry_number}`;
+
     const {
         data: orderData,
         setData: setOrderData,
@@ -80,7 +91,7 @@ export default function Detail({
     } = useForm({
         record_id: record.id,
         parishioner_id: '',
-        requester_name: record.person?.full_name || '',
+        requester_name: record.person?.full_name || [record.person?.first_name, record.person?.last_name].filter(Boolean).join(' ') || '',
         requester_contact: '',
         purpose: 'Official Church Documentation',
     });
@@ -108,8 +119,8 @@ export default function Detail({
     const selectedType = safeAnnotationTypes.find((t) => t.value === annotationData.annotation_type);
 
     return (
-        <PortalLayout activeTab="records" title={`Canonical Folio: ${record.citation}`}>
-            <Head title={`${record.person?.full_name || 'Record'} (${record.citation}) — RCAL PIMS`} />
+        <PortalLayout activeTab="records" title={`Canonical Folio: ${citation}`}>
+            <Head title={`${personName} (${citation}) — RCAL PIMS`} />
 
             {/* Invariant Banner */}
             <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -146,7 +157,7 @@ export default function Detail({
                                     Subject Person
                                 </span>
                                 <h2 className="text-2xl font-serif font-bold text-slate-900 mt-1">
-                                    {record.person?.full_name || 'N/A'}
+                                    {personName}
                                 </h2>
                             </div>
                             <span className="capitalize px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300">

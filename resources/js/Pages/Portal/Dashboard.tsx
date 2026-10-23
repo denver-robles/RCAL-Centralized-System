@@ -373,10 +373,11 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                                 </p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-3">
                             <span className="text-sm text-slate-700 font-medium bg-white px-3 py-1 rounded-lg border border-slate-200 shadow-2xs">
                                 {documentRequests.length} Total Claims
                             </span>
+
                             <Link
                                 href="/portal/requests/create"
                                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-sm shadow-2xs transition-colors"
@@ -389,159 +390,159 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
 
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
-                            <thead className="bg-slate-50/90 text-slate-700 uppercase tracking-wide text-xs font-semibold border-b border-slate-200">
-                                <tr>
-                                    <th className="py-3.5 px-5">Tracking Code</th>
-                                    <th className="py-3.5 px-5">Sacrament</th>
-                                    <th className="py-3.5 px-5">Name on Inscription</th>
-                                    <th className="py-3.5 px-5">Parish Jurisdiction</th>
-                                    <th className="py-3.5 px-5">Date Filed</th>
-                                    <th className="py-3.5 px-5 min-w-[220px]">Workflow Progress</th>
-                                    <th className="py-3.5 px-5 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 text-slate-700">
-                                {documentRequests.length === 0 ? (
+                                <thead className="bg-slate-50/90 text-slate-700 uppercase tracking-wide text-xs font-semibold border-b border-slate-200">
                                     <tr>
-                                        <td colSpan={7} className="text-center py-12 text-slate-600 space-y-2">
-                                            <FileText className="w-10 h-10 text-slate-300 mx-auto" />
-                                            <p className="font-medium text-slate-700 text-sm">
-                                                You have not filed any document claims yet.
-                                            </p>
-                                            <Link
-                                                href="/portal/requests/create"
-                                                className="inline-flex items-center gap-1.5 text-amber-700 font-semibold hover:underline text-sm"
-                                            >
-                                                <Plus className="w-3.5 h-3.5" />
-                                                File your first church record claim now
-                                            </Link>
-                                        </td>
+                                        <th className="py-3.5 px-5">Tracking Code</th>
+                                        <th className="py-3.5 px-5">Sacrament</th>
+                                        <th className="py-3.5 px-5">Name on Inscription</th>
+                                        <th className="py-3.5 px-5">Parish Jurisdiction</th>
+                                        <th className="py-3.5 px-5">Date Filed</th>
+                                        <th className="py-3.5 px-5 min-w-[220px]">Workflow Progress</th>
+                                        <th className="py-3.5 px-5 text-right">Actions</th>
                                     </tr>
-                                ) : (
-                                    documentRequests.map((doc) => {
-                                        const details = getStepDetails(doc.status);
-                                        const isRejected = doc.status === 'rejected';
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 text-slate-700">
+                                    {documentRequests.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={7} className="text-center py-12 text-slate-600 space-y-2">
+                                                <FileText className="w-10 h-10 text-slate-300 mx-auto" />
+                                                <p className="font-medium text-slate-700 text-sm">
+                                                    You have not filed any document claims yet.
+                                                </p>
+                                                <Link
+                                                    href="/portal/requests/create"
+                                                    className="inline-flex items-center gap-1.5 text-amber-700 font-semibold hover:underline text-sm"
+                                                >
+                                                    <Plus className="w-3.5 h-3.5" />
+                                                    File your first church record claim now
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        documentRequests.map((doc) => {
+                                            const details = getStepDetails(doc.status);
+                                            const isRejected = doc.status === 'rejected';
 
-                                        return (
-                                            <tr key={doc.id} className="hover:bg-slate-50/70 transition-colors">
-                                                <td className="py-3.5 px-5">
-                                                    <div className="font-mono font-bold text-slate-900 tracking-tight">
-                                                        {doc.tracking_code}
-                                                    </div>
-                                                    <div className="flex flex-wrap gap-1 mt-1">
-                                                        {doc.internal_note?.toLowerCase().includes('staff') ||
-                                                        doc.internal_note?.toLowerCase().includes('parish') ? (
-                                                            <span className="inline-block px-2 py-0.5 rounded text-xs bg-blue-50 text-blue-700 border border-blue-200 font-medium">
-                                                                Desk Filing
-                                                            </span>
-                                                        ) : (
-                                                            <span className="inline-block px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200 font-medium">
-                                                                Online Claim
-                                                            </span>
-                                                        )}
-                                                        {doc.certificate_request_id && (
-                                                            <span className="inline-block px-2 py-0.5 rounded text-xs bg-amber-50 text-amber-800 border border-amber-300 font-mono font-bold">
-                                                                Order #{doc.certificate_request_id}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </td>
-
-                                                <td className="py-3.5 px-5 capitalize font-semibold text-slate-900">
-                                                    <span className="inline-flex items-center gap-1.5">
-                                                        <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                                                        {doc.sacrament_type}
-                                                    </span>
-                                                </td>
-
-                                                <td className="py-3.5 px-5 font-bold text-slate-900">
-                                                    {doc.name_on_record}
-                                                </td>
-
-                                                <td className="py-3.5 px-5 text-slate-700">
-                                                    {doc.targeted_parish?.name || 'Archdiocesan Curia Chancery'}
-                                                </td>
-
-                                                <td className="py-3.5 px-5 text-slate-600 font-mono text-xs">
-                                                    {doc.created_at.slice(0, 10)}
-                                                </td>
-
-                                                {/* Progressional Workflow Column */}
-                                                <td className="py-3.5 px-5">
-                                                    <div className="space-y-1.5">
-                                                        <div className="flex items-center justify-between gap-2">
-                                                            <span
-                                                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                                                                    isRejected
-                                                                        ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                                                                        : doc.status === 'ready'
-                                                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-300 animate-pulse'
-                                                                        : doc.status === 'completed'
-                                                                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                                                                        : 'bg-amber-50 text-amber-800 border border-amber-200'
-                                                                }`}
-                                                            >
-                                                                {isRejected ? (
-                                                                    <AlertCircle className="w-3 h-3 text-rose-600" />
-                                                                ) : doc.status === 'completed' || doc.status === 'ready' ? (
-                                                                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                                                                ) : (
-                                                                    <Clock className="w-3 h-3 text-amber-600" />
-                                                                )}
-                                                                {details.label}
-                                                            </span>
-
-                                                            {!isRejected && (
-                                                                <span className="font-mono text-xs text-slate-600 font-semibold">
-                                                                    Step {details.step}/5 ({details.percent}%)
+                                            return (
+                                                <tr key={doc.id} className="hover:bg-slate-50/70 transition-colors">
+                                                    <td className="py-3.5 px-5">
+                                                        <div className="font-mono font-bold text-slate-900 tracking-tight">
+                                                            {doc.tracking_code}
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-1 mt-1">
+                                                            {doc.internal_note?.toLowerCase().includes('staff') ||
+                                                            doc.internal_note?.toLowerCase().includes('parish') ? (
+                                                                <span className="inline-block px-2 py-0.5 rounded text-xs bg-blue-50 text-blue-700 border border-blue-200 font-medium">
+                                                                    Desk Filing
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-block px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200 font-medium">
+                                                                    Online Claim
+                                                                </span>
+                                                            )}
+                                                            {doc.certificate_request_id && (
+                                                                <span className="inline-block px-2 py-0.5 rounded text-xs bg-amber-50 text-amber-800 border border-amber-300 font-mono font-bold">
+                                                                    Order #{doc.certificate_request_id}
                                                                 </span>
                                                             )}
                                                         </div>
+                                                    </td>
 
-                                                        {/* Stepper Progress Bar */}
-                                                        {!isRejected ? (
-                                                            <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                                                                <div
-                                                                    className={`h-full rounded-full transition-all duration-300 ${
-                                                                        doc.status === 'completed'
-                                                                            ? 'bg-emerald-600'
+                                                    <td className="py-3.5 px-5 capitalize font-semibold text-slate-900">
+                                                        <span className="inline-flex items-center gap-1.5">
+                                                            <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                                                            {doc.sacrament_type}
+                                                        </span>
+                                                    </td>
+
+                                                    <td className="py-3.5 px-5 font-bold text-slate-900">
+                                                        {doc.name_on_record}
+                                                    </td>
+
+                                                    <td className="py-3.5 px-5 text-slate-700">
+                                                        {doc.targeted_parish?.name || 'Archdiocesan Curia Chancery'}
+                                                    </td>
+
+                                                    <td className="py-3.5 px-5 text-slate-600 font-mono text-xs">
+                                                        {doc.created_at.slice(0, 10)}
+                                                    </td>
+
+                                                    {/* Progressional Workflow Column */}
+                                                    <td className="py-3.5 px-5">
+                                                        <div className="space-y-1.5">
+                                                            <div className="flex items-center justify-between gap-2">
+                                                                <span
+                                                                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                                                        isRejected
+                                                                            ? 'bg-rose-50 text-rose-700 border border-rose-200'
                                                                             : doc.status === 'ready'
-                                                                            ? 'bg-emerald-500'
-                                                                            : 'bg-amber-500'
+                                                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-300 animate-pulse'
+                                                                            : doc.status === 'completed'
+                                                                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                                                            : 'bg-amber-50 text-amber-800 border border-amber-200'
                                                                     }`}
-                                                                    style={{ width: `${details.percent}%` }}
-                                                                />
+                                                                >
+                                                                    {isRejected ? (
+                                                                        <AlertCircle className="w-3 h-3 text-rose-600" />
+                                                                    ) : doc.status === 'completed' || doc.status === 'ready' ? (
+                                                                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                                                    ) : (
+                                                                        <Clock className="w-3 h-3 text-amber-600" />
+                                                                    )}
+                                                                    {details.label}
+                                                                </span>
+
+                                                                {!isRejected && (
+                                                                    <span className="font-mono text-xs text-slate-600 font-semibold">
+                                                                        Step {details.step}/5 ({details.percent}%)
+                                                                    </span>
+                                                                )}
                                                             </div>
-                                                        ) : (
-                                                            <span className="text-xs text-rose-600 block">
-                                                                Verification halted
-                                                            </span>
-                                                        )}
 
-                                                        <p className="text-xs text-slate-600 truncate">
-                                                            {details.desc}
-                                                        </p>
-                                                    </div>
-                                                </td>
+                                                            {/* Stepper Progress Bar */}
+                                                            {!isRejected ? (
+                                                                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                                                    <div
+                                                                        className={`h-full rounded-full transition-all duration-300 ${
+                                                                            doc.status === 'completed'
+                                                                                ? 'bg-emerald-600'
+                                                                                : doc.status === 'ready'
+                                                                                ? 'bg-emerald-500'
+                                                                                : 'bg-amber-500'
+                                                                        }`}
+                                                                        style={{ width: `${details.percent}%` }}
+                                                                    />
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-xs text-rose-600 block">
+                                                                    Verification halted
+                                                                </span>
+                                                            )}
 
-                                                <td className="py-3.5 px-5 text-right">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setSelectedDoc(doc)}
-                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs shadow-2xs transition-colors cursor-pointer"
-                                                    >
-                                                        <span>Track</span>
-                                                        <ArrowRight className="w-3 h-3 text-amber-400" />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
-                                )}
-                            </tbody>
-                        </table>
+                                                            <p className="text-xs text-slate-600 truncate">
+                                                                {details.desc}
+                                                            </p>
+                                                        </div>
+                                                    </td>
+
+                                                    <td className="py-3.5 px-5 text-right">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setSelectedDoc(doc)}
+                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs shadow-2xs transition-colors cursor-pointer"
+                                                        >
+                                                            <span>Track</span>
+                                                            <ArrowRight className="w-3 h-3 text-amber-400" />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
 
                 {/* Section 2: Scheduled Liturgical Ceremonies */}
                 <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-2xs">
@@ -559,10 +560,11 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                                 </p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-3">
                             <span className="text-sm text-slate-700 font-medium bg-white px-3 py-1 rounded-lg border border-slate-200 shadow-2xs">
                                 {schedules.length} Scheduled
                             </span>
+
                             <Link
                                 href="/portal/schedule-requests/create"
                                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg text-sm shadow-2xs transition-colors"
@@ -575,133 +577,133 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
 
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
-                            <thead className="bg-slate-50/90 text-slate-700 uppercase tracking-wide text-xs font-semibold border-b border-slate-200">
-                                <tr>
-                                    <th className="py-3.5 px-5">Appointment</th>
-                                    <th className="py-3.5 px-5">Sacrament</th>
-                                    <th className="py-3.5 px-5">Parish &amp; Venue</th>
-                                    <th className="py-3.5 px-5">Date &amp; Time</th>
-                                    <th className="py-3.5 px-5">Presiding Minister</th>
-                                    <th className="py-3.5 px-5">Status</th>
-                                    <th className="py-3.5 px-5 text-right">Payment</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 text-slate-700">
-                                {schedules.length === 0 ? (
+                                <thead className="bg-slate-50/90 text-slate-700 uppercase tracking-wide text-xs font-semibold border-b border-slate-200">
                                     <tr>
-                                        <td colSpan={7} className="text-center py-12 text-slate-600 space-y-2">
-                                            <Calendar className="w-10 h-10 text-slate-300 mx-auto" />
-                                            <p className="font-medium text-slate-700 text-sm">
-                                                No liturgical appointments recorded for your account.
-                                            </p>
-                                            <Link
-                                                href="/portal/schedule-requests/create"
-                                                className="inline-flex items-center gap-1.5 text-sky-700 font-semibold hover:underline text-sm"
-                                            >
-                                                <Plus className="w-3.5 h-3.5" />
-                                                Book a sacrament ceremony appointment now
-                                            </Link>
-                                        </td>
+                                        <th className="py-3.5 px-5">Appointment</th>
+                                        <th className="py-3.5 px-5">Sacrament</th>
+                                        <th className="py-3.5 px-5">Parish &amp; Venue</th>
+                                        <th className="py-3.5 px-5">Date &amp; Time</th>
+                                        <th className="py-3.5 px-5">Presiding Minister</th>
+                                        <th className="py-3.5 px-5">Status</th>
+                                        <th className="py-3.5 px-5 text-right">Payment</th>
                                     </tr>
-                                ) : (
-                                    schedules.map((schedule) => {
-                                        const starts = new Date(schedule.starts_at);
-                                        return (
-                                            <tr key={schedule.id} className="hover:bg-slate-50/70 transition-colors">
-                                                <td className="py-3.5 px-5 font-bold text-slate-900">
-                                                    {schedule.title}
-                                                </td>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 text-slate-700">
+                                    {schedules.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={7} className="text-center py-12 text-slate-600 space-y-2">
+                                                <Calendar className="w-10 h-10 text-slate-300 mx-auto" />
+                                                <p className="font-medium text-slate-700 text-sm">
+                                                    No liturgical appointments recorded for your account.
+                                                </p>
+                                                <Link
+                                                    href="/portal/schedule-requests/create"
+                                                    className="inline-flex items-center gap-1.5 text-sky-700 font-semibold hover:underline text-sm"
+                                                >
+                                                    <Plus className="w-3.5 h-3.5" />
+                                                    Book a sacrament ceremony appointment now
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        schedules.map((schedule) => {
+                                            const starts = new Date(schedule.starts_at);
+                                            return (
+                                                <tr key={schedule.id} className="hover:bg-slate-50/70 transition-colors">
+                                                    <td className="py-3.5 px-5 font-bold text-slate-900">
+                                                        {schedule.title}
+                                                    </td>
 
-                                                <td className="py-3.5 px-5 capitalize font-semibold text-slate-900">
-                                                    <span className="inline-flex items-center gap-1.5">
-                                                        <span className="w-2 h-2 rounded-full bg-sky-500"></span>
-                                                        {schedule.sacrament_type}
-                                                    </span>
-                                                </td>
-
-                                                <td className="py-3.5 px-5 text-slate-700">
-                                                    <div className="font-medium text-slate-900">
-                                                        {schedule.parish?.name}
-                                                    </div>
-                                                    {schedule.venue && (
-                                                        <span className="text-xs text-slate-600 flex items-center gap-1 mt-0.5">
-                                                            <MapPin className="w-3 h-3 text-slate-400" />
-                                                            {schedule.venue.name}
+                                                    <td className="py-3.5 px-5 capitalize font-semibold text-slate-900">
+                                                        <span className="inline-flex items-center gap-1.5">
+                                                            <span className="w-2 h-2 rounded-full bg-sky-500"></span>
+                                                            {schedule.sacrament_type}
                                                         </span>
-                                                    )}
-                                                </td>
+                                                    </td>
 
-                                                <td className="py-3.5 px-5 text-slate-700 font-medium">
-                                                    <div className="font-semibold text-slate-900">
-                                                        {starts.toLocaleDateString('en-US', {
-                                                            month: 'short',
-                                                            day: 'numeric',
-                                                            year: 'numeric',
-                                                        })}
-                                                    </div>
-                                                    <span className="text-xs text-slate-600">
-                                                        {starts.toLocaleTimeString('en-US', {
-                                                            hour: '2-digit',
-                                                            minute: '2-digit',
-                                                        })}
-                                                    </span>
-                                                </td>
-
-                                                <td className="py-3.5 px-5 text-slate-700">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <UserIcon className="w-3.5 h-3.5 text-slate-400" />
-                                                        <span>
-                                                            {schedule.presiding_clergy?.titled_name || 'Assigned Officiant'}
-                                                        </span>
-                                                    </div>
-                                                </td>
-
-                                                <td className="py-3.5 px-5">
-                                                    <div className="flex flex-col gap-1">
-                                                        <StatusBadge status={schedule.status} />
-                                                        {schedule.status === 'cancelled' &&
-                                                            schedule.cancellation_reason && (
-                                                                <span className="text-xs text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 mt-1">
-                                                                    <strong>Reason:</strong>{' '}
-                                                                    {schedule.cancellation_reason}
-                                                                </span>
-                                                            )}
-                                                    </div>
-                                                </td>
-
-                                                <td className="py-3.5 px-5 text-right">
-                                                    {schedule.status === 'confirmed' &&
-                                                        schedule.payment_status !== 'paid' &&
-                                                        schedule.payment_status !== 'pending_cash' && (
-                                                            <Link
-                                                                href={`/portal/schedule-requests/${schedule.id}/payment`}
-                                                                className="inline-flex items-center gap-1 px-3.5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wide shadow-2xs transition-colors"
-                                                            >
-                                                                <CreditCard className="w-3.5 h-3.5" />
-                                                                Pay Now
-                                                            </Link>
+                                                    <td className="py-3.5 px-5 text-slate-700">
+                                                        <div className="font-medium text-slate-900">
+                                                            {schedule.parish?.name}
+                                                        </div>
+                                                        {schedule.venue && (
+                                                            <span className="text-xs text-slate-600 flex items-center gap-1 mt-0.5">
+                                                                <MapPin className="w-3 h-3 text-slate-400" />
+                                                                {schedule.venue.name}
+                                                            </span>
                                                         )}
-                                                    {schedule.payment_status === 'paid' && (
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold text-xs uppercase">
-                                                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                                                            Paid
+                                                    </td>
+
+                                                    <td className="py-3.5 px-5 text-slate-700 font-medium">
+                                                        <div className="font-semibold text-slate-900">
+                                                            {starts.toLocaleDateString('en-US', {
+                                                                month: 'short',
+                                                                day: 'numeric',
+                                                                year: 'numeric',
+                                                            })}
+                                                        </div>
+                                                        <span className="text-xs text-slate-600">
+                                                            {starts.toLocaleTimeString('en-US', {
+                                                                hour: '2-digit',
+                                                                minute: '2-digit',
+                                                            })}
                                                         </span>
-                                                    )}
-                                                    {schedule.payment_status === 'pending_cash' && (
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-amber-50 text-amber-700 border border-amber-200 font-semibold text-xs uppercase">
-                                                            <Clock className="w-3 h-3 text-amber-600" />
-                                                            Cash at Office
-                                                        </span>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
-                                )}
-                            </tbody>
-                        </table>
+                                                    </td>
+
+                                                    <td className="py-3.5 px-5 text-slate-700">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <UserIcon className="w-3.5 h-3.5 text-slate-400" />
+                                                            <span>
+                                                                {schedule.presiding_clergy?.titled_name || 'Assigned Officiant'}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+
+                                                    <td className="py-3.5 px-5">
+                                                        <div className="flex flex-col gap-1">
+                                                            <StatusBadge status={schedule.status} />
+                                                            {schedule.status === 'cancelled' &&
+                                                                schedule.cancellation_reason && (
+                                                                    <span className="text-xs text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 mt-1">
+                                                                        <strong>Reason:</strong>{' '}
+                                                                        {schedule.cancellation_reason}
+                                                                    </span>
+                                                                )}
+                                                        </div>
+                                                    </td>
+
+                                                    <td className="py-3.5 px-5 text-right">
+                                                        {schedule.status === 'confirmed' &&
+                                                            schedule.payment_status !== 'paid' &&
+                                                            schedule.payment_status !== 'pending_cash' && (
+                                                                <Link
+                                                                    href={`/portal/schedule-requests/${schedule.id}/payment`}
+                                                                    className="inline-flex items-center gap-1 px-3.5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wide shadow-2xs transition-colors"
+                                                                >
+                                                                    <CreditCard className="w-3.5 h-3.5" />
+                                                                    Pay Now
+                                                                </Link>
+                                                            )}
+                                                        {schedule.payment_status === 'paid' && (
+                                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold text-xs uppercase">
+                                                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                                                Paid
+                                                            </span>
+                                                        )}
+                                                        {schedule.payment_status === 'pending_cash' && (
+                                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-amber-50 text-amber-700 border border-amber-200 font-semibold text-xs uppercase">
+                                                                <Clock className="w-3 h-3 text-amber-600" />
+                                                                Cash at Office
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
 
                 {/* Canonical Secretariat & Collection Notice */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

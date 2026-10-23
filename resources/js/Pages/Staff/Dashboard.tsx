@@ -258,7 +258,7 @@ export default function Dashboard({
                     <div className="lg:col-span-2 space-y-7">
                         {/* Urgent Certificate Processing Queue */}
                         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-                            <div className="px-6 py-4.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
+                            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
                                 <div className="flex items-center gap-2.5">
                                     <div className="p-2 bg-amber-100 text-amber-800 rounded-lg">
                                         <AlertCircle className="w-5 h-5" />
@@ -284,49 +284,64 @@ export default function Dashboard({
 
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left text-sm">
-                                    <thead className="bg-slate-50/90 text-slate-600 uppercase tracking-wide text-xs font-semibold border-b border-slate-200">
+                                    <thead className="bg-slate-50/90 text-2xs uppercase tracking-wider font-bold text-slate-500 border-b border-slate-200">
                                         <tr>
-                                            <th className="py-3.5 px-5">Order / Series</th>
-                                            <th className="py-3.5 px-5">Subject Person</th>
-                                            <th className="py-3.5 px-5">Sacrament</th>
-                                            <th className="py-3.5 px-5">Status</th>
-                                            <th className="py-3.5 px-5 text-right">Action</th>
+                                            <th className="px-5 py-3">Order / Subject</th>
+                                            <th className="px-4 py-3">Sacrament</th>
+                                            <th className="px-4 py-3">Requester</th>
+                                            <th className="px-4 py-3">Status</th>
+                                            <th className="px-5 py-3 text-right">Action</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100">
+                                    <tbody className="divide-y divide-slate-100 text-slate-800">
                                         {urgentCertificates.length === 0 ? (
                                             <tr>
-                                                <td colSpan={5} className="text-center py-8 text-slate-600">
-                                                    <CheckCircle2 className="w-6 h-6 mx-auto mb-1 text-emerald-500" />
-                                                    <span>No pending certificate orders requiring immediate action!</span>
+                                                <td colSpan={5} className="text-center py-8 text-slate-500">
+                                                    <CheckCircle2 className="w-7 h-7 mx-auto mb-1.5 text-emerald-500" />
+                                                    <p className="font-semibold text-slate-800 text-sm">All caught up!</p>
+                                                    <p className="text-2xs text-slate-400">No certificate orders requiring immediate action.</p>
                                                 </td>
                                             </tr>
                                         ) : (
-                                            urgentCertificates.map((cert) => (
-                                                <tr key={cert.id} className="hover:bg-slate-50/70 transition-colors">
-                                                    <td className="py-3.5 px-5 font-mono font-medium text-amber-700">
-                                                        {cert.certificate_number || `#ORD-${cert.id}`}
-                                                    </td>
-                                                    <td className="py-3.5 px-5 font-semibold text-slate-900">
-                                                        {cert.record?.person?.full_name || 'Subject Record'}
-                                                    </td>
-                                                    <td className="py-3.5 px-5 capitalize text-slate-700">
-                                                        {cert.record?.sacrament_type || 'Sacrament'}
-                                                    </td>
-                                                    <td className="py-3.5 px-5">
-                                                        <StatusBadge status={cert.status} />
-                                                    </td>
-                                                    <td className="py-3.5 px-5 text-right">
-                                                        <Link
-                                                            href={`/certificates/${cert.id}`}
-                                                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-xs border border-amber-300 transition shadow-2xs"
-                                                        >
-                                                            <span>Process</span>
-                                                            <ArrowRight className="w-3.5 h-3.5" />
-                                                        </Link>
-                                                    </td>
-                                                </tr>
-                                            ))
+                                            urgentCertificates.map((cert) => {
+                                                const personName =
+                                                    cert.record?.person?.full_name ||
+                                                    [cert.record?.person?.first_name, cert.record?.person?.last_name].filter(Boolean).join(' ') ||
+                                                    'Subject Record';
+
+                                                return (
+                                                    <tr key={cert.id} className="hover:bg-amber-50/20 transition-colors">
+                                                        <td className="px-5 py-3">
+                                                            <div className="font-bold text-slate-900 text-sm">
+                                                                {personName}
+                                                            </div>
+                                                            <span className="font-mono text-2xs text-amber-800 font-semibold">
+                                                                {cert.certificate_number || `#ORD-${cert.id}`}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-4 py-3 whitespace-nowrap">
+                                                            <span className="inline-block capitalize px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-800 border border-slate-200">
+                                                                {cert.record?.sacrament_type || 'Certificate'}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-xs text-slate-700 whitespace-nowrap">
+                                                            {cert.requester_name}
+                                                        </td>
+                                                        <td className="px-4 py-3 whitespace-nowrap">
+                                                            <StatusBadge status={cert.status} />
+                                                        </td>
+                                                        <td className="px-5 py-3 text-right whitespace-nowrap">
+                                                            <Link
+                                                                href={`/certificates/${cert.id}`}
+                                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-xs transition shadow-2xs"
+                                                            >
+                                                                <span>Process</span>
+                                                                <ArrowRight className="w-3.5 h-3.5" />
+                                                            </Link>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })
                                         )}
                                     </tbody>
                                 </table>
@@ -335,7 +350,7 @@ export default function Dashboard({
 
                         {/* Recent Canonical Folio Inscriptions */}
                         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-                            <div className="px-6 py-4.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
+                            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
                                 <div className="flex items-center gap-2.5">
                                     <div className="p-2 bg-blue-100 text-blue-800 rounded-lg">
                                         <BookOpen className="w-5 h-5" />
@@ -361,47 +376,64 @@ export default function Dashboard({
 
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left text-sm">
-                                    <thead className="bg-slate-50/90 text-slate-600 uppercase tracking-wide text-xs font-semibold border-b border-slate-200">
+                                    <thead className="bg-slate-50/90 text-2xs uppercase tracking-wider font-bold text-slate-500 border-b border-slate-200">
                                         <tr>
-                                            <th className="py-3.5 px-5">Citation Folio</th>
-                                            <th className="py-3.5 px-5">Inscribed Name</th>
-                                            <th className="py-3.5 px-5">Sacrament</th>
-                                            <th className="py-3.5 px-5">Parish Origin</th>
-                                            <th className="py-3.5 px-5 text-right">View</th>
+                                            <th className="px-5 py-3">Subject Person</th>
+                                            <th className="px-4 py-3">Register &amp; Citation</th>
+                                            <th className="px-4 py-3">Originating Parish</th>
+                                            <th className="px-5 py-3 text-right">Action</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100">
+                                    <tbody className="divide-y divide-slate-100 text-slate-800">
                                         {recentRecords.length === 0 ? (
                                             <tr>
-                                                <td colSpan={5} className="text-center py-8 text-slate-600">
-                                                    No canonical records registered yet.
+                                                <td colSpan={4} className="text-center py-8 text-slate-500">
+                                                    <BookOpen className="w-7 h-7 mx-auto mb-1.5 text-slate-300" />
+                                                    <p className="font-semibold text-slate-800 text-sm">No canonical folios recorded yet.</p>
                                                 </td>
                                             </tr>
                                         ) : (
-                                            recentRecords.map((rec) => (
-                                                <tr key={rec.id} className="hover:bg-slate-50/70 transition-colors">
-                                                    <td className="py-3.5 px-5 font-mono font-medium text-slate-800">
-                                                        {rec.citation}
-                                                    </td>
-                                                    <td className="py-3.5 px-5 font-semibold text-slate-900">
-                                                        {rec.person?.full_name || 'Inscribed Person'}
-                                                    </td>
-                                                    <td className="py-3.5 px-5 capitalize text-slate-700">
-                                                        {rec.sacrament_type}
-                                                    </td>
-                                                    <td className="py-3.5 px-5 text-slate-600">
-                                                        {rec.originating_parish?.name || 'Parish'}
-                                                    </td>
-                                                    <td className="py-3.5 px-5 text-right">
-                                                        <Link
-                                                            href={`/records/${rec.id}`}
-                                                            className="inline-flex items-center px-3 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold border border-slate-200 transition"
-                                                        >
-                                                            Folio
-                                                        </Link>
-                                                    </td>
-                                                </tr>
-                                            ))
+                                            recentRecords.map((rec) => {
+                                                const personName =
+                                                    rec.person?.full_name ||
+                                                    [rec.person?.first_name, rec.person?.last_name].filter(Boolean).join(' ') ||
+                                                    'Inscribed Person';
+                                                const citation =
+                                                    rec.citation ||
+                                                    `Book ${rec.book_number}, Page ${rec.page_number}, Entry ${rec.entry_number}`;
+
+                                                return (
+                                                    <tr key={rec.id} className="hover:bg-slate-50/80 transition-colors">
+                                                        <td className="px-5 py-3">
+                                                            <div className="font-bold text-slate-900 text-sm">
+                                                                {personName}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-3 whitespace-nowrap">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="capitalize px-2 py-0.5 rounded text-2xs font-bold bg-slate-100 text-slate-800 border border-slate-200">
+                                                                    {rec.sacrament_type}
+                                                                </span>
+                                                                <span className="font-mono text-2xs text-amber-800 font-semibold">
+                                                                    {citation}
+                                                                </span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-xs text-slate-700 max-w-[180px] truncate" title={rec.originating_parish?.name}>
+                                                            {rec.originating_parish?.name || 'Parish'}
+                                                        </td>
+                                                        <td className="px-5 py-3 text-right whitespace-nowrap">
+                                                            <Link
+                                                                href={`/records/${rec.id}`}
+                                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-amber-400 hover:text-slate-950 text-slate-700 font-semibold text-xs border border-slate-200 transition shadow-2xs"
+                                                            >
+                                                                <span>Folio</span>
+                                                                <ArrowRight className="w-3.5 h-3.5" />
+                                                            </Link>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })
                                         )}
                                     </tbody>
                                 </table>

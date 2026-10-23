@@ -29,6 +29,11 @@ class Person extends Model
         'mother_id',
     ];
 
+    protected $appends = [
+        'full_name',
+        'sort_name',
+    ];
+
     protected function casts(): array
     {
         return [

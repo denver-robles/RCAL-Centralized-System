@@ -3,7 +3,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import PortalLayout from '@/Layouts/PortalLayout';
 import StatusBadge from '@/Components/StatusBadge';
 import { CertificateRequest, DocumentRequest, PageProps, SacramentalRecord } from '@/types';
-import { Award, FileText, CheckCircle2, Clock, AlertCircle, Search, Filter, X, Link as LinkIcon } from 'lucide-react';
+import { Award, FileText, CheckCircle2, Clock, AlertCircle, Search, Filter, X, Link as LinkIcon, ArrowRight, Church, Calendar, User } from 'lucide-react';
 
 interface PaginatedData<T> {
     data: T[];
@@ -191,8 +191,8 @@ export default function Index({ certificateRequests, documentRequests, available
                         </button>
                     </div>
 
-                    {/* Search & Filter */}
-                    <div className="flex items-center gap-3">
+                    {/* Search, Filter & View Toggle */}
+                    <div className="flex flex-wrap items-center gap-3">
                         <div className="relative">
                             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                             <input
@@ -229,7 +229,7 @@ export default function Index({ certificateRequests, documentRequests, available
             {/* List Table: Staff Certificate Orders */}
             {(currentTab === 'all' || currentTab === 'internal') && (
                 <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs mb-6">
-                    <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
+                    <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
                         <div className="flex items-center gap-2 text-slate-800 text-xs font-bold uppercase tracking-wide">
                             <Award className="w-4 h-4 text-amber-600" />
                             Official Certificate Orders (Staff Queue)
@@ -239,15 +239,15 @@ export default function Index({ certificateRequests, documentRequests, available
 
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
-                            <thead className="bg-slate-50 text-slate-600 uppercase tracking-wide border-b border-slate-200 font-semibold text-xs">
+                            <thead className="bg-slate-50/90 text-2xs uppercase tracking-wider font-bold text-slate-500 border-b border-slate-200">
                                 <tr>
-                                    <th className="py-3.5 px-5">Cert / Order #</th>
-                                    <th className="py-3.5 px-5">Subject Person</th>
-                                    <th className="py-3.5 px-5">Sacrament</th>
-                                    <th className="py-3.5 px-5">Requester</th>
-                                    <th className="py-3.5 px-5">Parish Jurisdiction</th>
-                                    <th className="py-3.5 px-5">Status</th>
-                                    <th className="py-3.5 px-5 text-right">Actions</th>
+                                    <th className="py-3 px-5">Cert / Order #</th>
+                                    <th className="py-3 px-4">Subject Person</th>
+                                    <th className="py-3 px-4">Sacrament</th>
+                                    <th className="py-3 px-4">Requester</th>
+                                    <th className="py-3 px-4">Parish Jurisdiction</th>
+                                    <th className="py-3 px-4">Status</th>
+                                    <th className="py-3 px-5 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -259,27 +259,31 @@ export default function Index({ certificateRequests, documentRequests, available
                                     </tr>
                                 ) : (
                                     certificateRequests.data.map((cert) => (
-                                        <tr key={cert.id} className="hover:bg-slate-50/80 transition-colors">
-                                            <td className="py-3.5 px-5 font-mono font-medium text-amber-700">
+                                        <tr key={cert.id} className="hover:bg-amber-50/20 transition-colors">
+                                            <td className="py-3 px-5 font-mono font-bold text-amber-800 text-xs">
                                                 {cert.certificate_number || `#ORD-${cert.id}`}
                                             </td>
-                                            <td className="py-3.5 px-5 font-semibold text-slate-900">
+                                            <td className="py-3 px-4 font-bold text-slate-900 text-sm">
                                                 {cert.record?.person?.full_name || 'N/A'}
                                             </td>
-                                            <td className="py-3.5 px-5 capitalize text-slate-700">
-                                                {cert.record?.sacrament_type || 'N/A'}
+                                            <td className="py-3 px-4 capitalize text-slate-700 text-xs">
+                                                <span className="inline-block px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 border border-slate-200">
+                                                    {cert.record?.sacrament_type || 'N/A'}
+                                                </span>
                                             </td>
-                                            <td className="py-3.5 px-5 text-slate-700">{cert.requester_name}</td>
-                                            <td className="py-3.5 px-5 text-slate-600">
+                                            <td className="py-3 px-4 text-xs text-slate-700">
+                                                {cert.requester_name}
+                                            </td>
+                                            <td className="py-3 px-4 text-xs text-slate-700 max-w-[200px] truncate" title={cert.record?.originating_parish?.name}>
                                                 {cert.record?.originating_parish?.name || 'N/A'}
                                             </td>
-                                            <td className="py-3.5 px-5">
-                                                {renderWorkflowProgress(cert.status)}
+                                            <td className="py-3 px-4 whitespace-nowrap">
+                                                <StatusBadge status={cert.status} />
                                             </td>
-                                            <td className="py-3.5 px-5 text-right">
+                                            <td className="py-3 px-5 text-right whitespace-nowrap">
                                                 <Link
                                                     href={`/certificates/${cert.id}`}
-                                                    className="inline-flex items-center px-3 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition-colors border border-slate-200 shadow-2xs"
+                                                    className="inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-amber-400 hover:text-slate-950 text-slate-800 text-xs font-bold transition-colors border border-slate-200 shadow-2xs"
                                                 >
                                                     Inspect
                                                 </Link>
@@ -296,7 +300,7 @@ export default function Index({ certificateRequests, documentRequests, available
             {/* List Table: Public Parishioner Document Claims */}
             {(currentTab === 'all' || currentTab === 'parishioner') && (
                 <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs mb-6">
-                    <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
+                    <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
                         <div className="flex items-center gap-2 text-slate-800 text-xs font-bold uppercase tracking-wide">
                             <FileText className="w-4 h-4 text-blue-600" />
                             Parishioner Document Claims (Public Portal)
@@ -306,15 +310,15 @@ export default function Index({ certificateRequests, documentRequests, available
 
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
-                            <thead className="bg-slate-50 text-slate-600 uppercase tracking-wide border-b border-slate-200 font-semibold text-xs">
+                            <thead className="bg-slate-50/90 text-2xs uppercase tracking-wider font-bold text-slate-500 border-b border-slate-200">
                                 <tr>
-                                    <th className="py-3.5 px-5">Tracking Code</th>
-                                    <th className="py-3.5 px-5">Name on Record</th>
-                                    <th className="py-3.5 px-5">Sacrament</th>
-                                    <th className="py-3.5 px-5">Target Parish</th>
-                                    <th className="py-3.5 px-5">Date Filed</th>
-                                    <th className="py-3.5 px-5">Status</th>
-                                    <th className="py-3.5 px-5 text-right">Actions</th>
+                                    <th className="py-3 px-5">Tracking Code</th>
+                                    <th className="py-3 px-4">Name on Record</th>
+                                    <th className="py-3 px-4">Sacrament</th>
+                                    <th className="py-3 px-4">Target Parish</th>
+                                    <th className="py-3 px-4">Date Filed</th>
+                                    <th className="py-3 px-4">Status</th>
+                                    <th className="py-3 px-5 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -326,26 +330,30 @@ export default function Index({ certificateRequests, documentRequests, available
                                     </tr>
                                 ) : (
                                     documentRequests.data.map((doc) => (
-                                        <tr key={doc.id} className="hover:bg-slate-50/80 transition-colors">
-                                            <td className="py-3.5 px-5 font-mono font-medium text-amber-700">
+                                        <tr key={doc.id} className="hover:bg-amber-50/20 transition-colors">
+                                            <td className="py-3 px-5 font-mono font-bold text-amber-800 text-xs">
                                                 {doc.tracking_code}
                                             </td>
-                                            <td className="py-3.5 px-5 font-semibold text-slate-900">{doc.name_on_record}</td>
-                                            <td className="py-3.5 px-5 capitalize text-slate-700">{doc.sacrament_type}</td>
-                                            <td className="py-3.5 px-5 text-slate-600">
+                                            <td className="py-3 px-4 font-bold text-slate-900 text-sm">{doc.name_on_record}</td>
+                                            <td className="py-3 px-4 capitalize text-slate-700 text-xs">
+                                                <span className="inline-block px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 border border-slate-200">
+                                                    {doc.sacrament_type}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4 text-xs text-slate-700 max-w-[200px] truncate" title={doc.targeted_parish?.name}>
                                                 {doc.targeted_parish?.name || 'Curia Chancery'}
                                             </td>
-                                            <td className="py-3.5 px-5 text-slate-600">
+                                            <td className="py-3 px-4 text-xs text-slate-600 whitespace-nowrap">
                                                 {doc.created_at.slice(0, 10)}
                                             </td>
-                                            <td className="py-3.5 px-5">
+                                            <td className="py-3 px-4 whitespace-nowrap">
                                                 {renderWorkflowProgress(doc.status)}
                                             </td>
-                                            <td className="py-3.5 px-5 text-right">
+                                            <td className="py-3 px-5 text-right whitespace-nowrap">
                                                 {doc.certificate_request_id ? (
                                                     <Link
                                                         href={`/certificates/${doc.certificate_request_id}`}
-                                                        className="inline-flex items-center px-3 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition-colors border border-slate-200 shadow-2xs"
+                                                        className="inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors border border-slate-200 shadow-2xs"
                                                     >
                                                         View Order
                                                     </Link>
@@ -357,10 +365,10 @@ export default function Index({ certificateRequests, documentRequests, available
                                                             setSelectedRecordId('');
                                                             setRecordSearch(doc.name_on_record || '');
                                                         }}
-                                                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-900 font-semibold text-xs transition border border-amber-300 shadow-2xs"
+                                                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-xs transition shadow-2xs cursor-pointer"
                                                     >
-                                                        <LinkIcon className="w-3.5 h-3.5 text-amber-600" />
-                                                        Match & Order
+                                                        <LinkIcon className="w-3.5 h-3.5 text-slate-950" />
+                                                        Match &amp; Order
                                                     </button>
                                                 )}
                                             </td>

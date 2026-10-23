@@ -28,6 +28,11 @@ class Clergy extends Model
         'is_active',
     ];
 
+    protected $appends = [
+        'full_name',
+        'titled_name',
+    ];
+
     protected function casts(): array
     {
         return [

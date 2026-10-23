@@ -147,19 +147,19 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
                 <div className="text-sm text-slate-600 font-medium">Total Appointments: {schedules.total}</div>
             </div>
 
-            {/* Schedules Table (Crisp White) */}
+            {/* High-Capacity Schedules Table */}
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
-                        <thead className="bg-slate-50 text-slate-600 uppercase tracking-wide border-b border-slate-200 font-semibold text-xs">
+                        <thead className="bg-slate-50/90 text-2xs uppercase tracking-wider font-bold text-slate-500 border-b border-slate-200">
                             <tr>
-                                <th className="py-3.5 px-5">Date & Time</th>
-                                <th className="py-3.5 px-5">Sacrament / Ceremony</th>
-                                <th className="py-3.5 px-5">Venue</th>
-                                <th className="py-3.5 px-5">Officiating Clergy</th>
-                                <th className="py-3.5 px-5">Requester / Family</th>
-                                <th className="py-3.5 px-5">Status</th>
-                                <th className="py-3.5 px-5 text-right">Actions</th>
+                                <th className="py-3 px-5">Date &amp; Time</th>
+                                <th className="py-3 px-4">Sacrament / Ceremony</th>
+                                <th className="py-3 px-4">Venue</th>
+                                <th className="py-3 px-4">Officiating Minister</th>
+                                <th className="py-3 px-4">Requester / Family</th>
+                                <th className="py-3 px-4">Status</th>
+                                <th className="py-3 px-5 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -177,96 +177,92 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
                                         schedule.status === 'completed' && !schedule.record_id;
 
                                     return (
-                                        <tr key={schedule.id} className="hover:bg-slate-50/80 transition-colors">
-                                            <td className="py-3.5 px-5">
-                                                <div className="font-semibold text-slate-900 text-sm">
+                                        <tr key={schedule.id} className="hover:bg-amber-50/20 transition-colors">
+                                            <td className="py-3 px-5 whitespace-nowrap">
+                                                <div className="font-bold text-slate-900 text-sm">
                                                     {starts.toLocaleDateString('en-US', {
                                                         month: 'short',
                                                         day: 'numeric',
                                                         year: 'numeric',
                                                     })}
                                                 </div>
-                                                <div className="text-slate-600 text-xs flex items-center gap-1 mt-0.5">
-                                                    <Clock className="w-3.5 h-3.5 text-amber-600" />
-                                                    {starts.toLocaleTimeString('en-US', {
-                                                        hour: '2-digit',
-                                                        minute: '2-digit',
-                                                    })}{' '}
-                                                    –{' '}
-                                                    {ends.toLocaleTimeString('en-US', {
-                                                        hour: '2-digit',
-                                                        minute: '2-digit',
-                                                    })}
+                                                <div className="text-slate-500 text-xs flex items-center gap-1 mt-0.5">
+                                                    <Clock className="w-3.5 h-3.5 text-slate-400" />
+                                                    <span>
+                                                        {starts.toLocaleTimeString('en-US', {
+                                                            hour: '2-digit',
+                                                            minute: '2-digit',
+                                                        })}{' '}
+                                                        –{' '}
+                                                        {ends.toLocaleTimeString('en-US', {
+                                                            hour: '2-digit',
+                                                            minute: '2-digit',
+                                                        })}
+                                                    </span>
                                                 </div>
                                             </td>
 
-                                            <td className="py-3.5 px-5">
-                                                <div className="font-semibold text-slate-900 capitalize flex items-center gap-2 text-sm">
+                                            <td className="py-3 px-4">
+                                                <div className="font-bold text-slate-900 text-sm">
                                                     {schedule.title}
                                                 </div>
-                                                <div className="flex flex-col gap-1 mt-1 text-xs">
-                                                    <span className="inline-block bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-0.5 rounded capitalize font-medium w-fit">
-                                                        {schedule.sacrament_type}
-                                                    </span>
-                                                    {schedule.specific_data && (
-                                                        <div className="text-slate-500 max-w-[200px] truncate" title={JSON.stringify(schedule.specific_data, null, 2)}>
-                                                            {Object.entries(schedule.specific_data).map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v}`).join(' | ')}
-                                                        </div>
-                                                    )}
+                                                <span className="inline-block mt-1 bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded text-2xs capitalize font-semibold">
+                                                    {schedule.sacrament_type}
+                                                </span>
+                                            </td>
+
+                                            <td className="py-3 px-4 text-xs text-slate-700 max-w-[180px] truncate">
+                                                <div className="flex items-center gap-1.5">
+                                                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                                    <span className="truncate">{schedule.venue?.name || 'Parish Main Altar'}</span>
                                                 </div>
                                             </td>
 
-                                            <td className="py-3.5 px-5 text-slate-700">
-                                                <div className="flex items-center gap-1.5 text-xs">
-                                                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                                                    {schedule.venue?.name || 'Parish Main Altar'}
-                                                </div>
-                                            </td>
-
-                                            <td className="py-3.5 px-5 text-slate-700">
+                                            <td className="py-3 px-4 text-xs text-slate-700">
                                                 {schedule.presiding_clergy ? (
-                                                    <div className="flex items-center gap-1.5 text-xs">
-                                                        <User className="w-3.5 h-3.5 text-amber-600" />
-                                                        {schedule.presiding_clergy.titled_name}
+                                                    <div className="flex items-center gap-1.5 font-medium text-slate-900">
+                                                        <User className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                                                        <span className="truncate">{schedule.presiding_clergy.titled_name}</span>
                                                     </div>
                                                 ) : schedule.specific_data?.guest_priest_name ? (
-                                                    <div className="flex items-center gap-1.5 text-xs">
-                                                        <User className="w-3.5 h-3.5 text-blue-600" />
-                                                        {schedule.specific_data.guest_priest_name} (Guest)
+                                                    <div className="flex items-center gap-1.5 text-blue-700 font-medium">
+                                                        <User className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                                                        <span className="truncate">{schedule.specific_data.guest_priest_name} (Guest)</span>
                                                     </div>
                                                 ) : (
-                                                    <span className="text-slate-400 italic text-xs">Unassigned</span>
+                                                    <span className="text-slate-400 italic">Unassigned</span>
                                                 )}
                                             </td>
 
-                                            <td className="py-3.5 px-5 text-slate-700">
+                                            <td className="py-3 px-4 text-xs text-slate-700">
                                                 <div className="font-semibold text-slate-900 text-sm">
                                                     {schedule.requester_name || 'N/A'}
                                                 </div>
                                                 {schedule.requester_contact && (
-                                                    <div className="text-xs text-slate-600">
+                                                    <div className="text-2xs text-slate-500 font-mono">
                                                         {schedule.requester_contact}
                                                     </div>
                                                 )}
                                             </td>
 
-                                            <td className="py-3.5 px-5">
+                                            <td className="py-3 px-4 whitespace-nowrap">
                                                 <StatusBadge status={schedule.status} />
                                             </td>
 
-                                            <td className="py-3.5 px-5 text-right">
-                                                <div className="flex items-center justify-end gap-2">
+                                            <td className="py-3 px-5 text-right whitespace-nowrap">
+                                                <div className="flex items-center justify-end gap-1.5">
                                                     <button
+                                                        type="button"
                                                         onClick={() => setViewingSchedule(schedule)}
-                                                        className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded text-xs font-semibold transition-colors shadow-2xs"
+                                                        className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-semibold transition-colors shadow-2xs"
                                                     >
-                                                        View
+                                                        Details
                                                     </button>
 
                                                     {isCompletedWithoutRecord && (
                                                         <Link
                                                             href={`/records/create?from_schedule_id=${schedule.id}`}
-                                                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded text-xs transition-colors shadow-2xs"
+                                                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs transition-colors shadow-2xs"
                                                         >
                                                             <span>Transcribe</span>
                                                             <ArrowRight className="w-3.5 h-3.5" />
@@ -275,8 +271,9 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
 
                                                     {schedule.status === 'requested' && (
                                                         <button
+                                                            type="button"
                                                             onClick={() => openApproveModal(schedule)}
-                                                            className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded text-xs font-semibold transition-colors shadow-2xs"
+                                                            className="px-2.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold transition-colors shadow-2xs"
                                                         >
                                                             Approve
                                                         </button>
@@ -284,8 +281,9 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
 
                                                     {schedule.status === 'scheduled' && (
                                                         <button
+                                                            type="button"
                                                             onClick={() => openApproveModal(schedule)}
-                                                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold transition-colors shadow-2xs"
+                                                            className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors shadow-2xs"
                                                         >
                                                             Confirm
                                                         </button>
@@ -293,17 +291,19 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
 
                                                     {(schedule.status === 'scheduled' || schedule.status === 'confirmed') && (
                                                         <button
+                                                            type="button"
                                                             onClick={() => handleStatusUpdate(schedule.id, 'completed')}
-                                                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold transition-colors shadow-2xs"
+                                                            className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-colors shadow-2xs"
                                                         >
-                                                            Mark Completed
+                                                            Complete
                                                         </button>
                                                     )}
 
                                                     {schedule.status !== 'cancelled' && schedule.status !== 'completed' && (
                                                         <button
+                                                            type="button"
                                                             onClick={() => setCancellingId(schedule.id)}
-                                                            className="px-3 py-1.5 text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 rounded text-xs transition-colors font-medium"
+                                                            className="px-2.5 py-1.5 text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 rounded-lg text-xs transition-colors font-medium"
                                                         >
                                                             {schedule.status === 'requested' ? 'Reject' : 'Cancel'}
                                                         </button>
@@ -318,6 +318,32 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
                     </table>
                 </div>
             </div>
+
+            {/* Pagination Controls */}
+            {schedules.links && schedules.links.length > 3 && (
+                <div className="flex items-center justify-between mt-6 bg-white border border-slate-200 rounded-xl px-5 py-3 shadow-2xs">
+                    <div className="text-xs text-slate-600 font-medium">
+                        Showing page <span className="font-bold text-slate-900">{schedules.current_page}</span> of{' '}
+                        <span className="font-bold text-slate-900">{schedules.last_page}</span> ({schedules.total} total appointments)
+                    </div>
+                    <div className="flex items-center gap-1">
+                        {schedules.links.map((link, idx) => (
+                            <Link
+                                key={idx}
+                                href={link.url || '#'}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                    link.active
+                                        ? 'bg-amber-500 text-slate-950 font-bold shadow-2xs'
+                                        : link.url
+                                        ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                                        : 'text-slate-300 cursor-not-allowed'
+                                }`}
+                                dangerouslySetInnerHTML={{ __html: link.label }}
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Cancel appointment modal */}
             {cancellingId && (

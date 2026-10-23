@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import PortalLayout from '@/Layouts/PortalLayout';
 import { AuditLog, PageProps, User } from '@/types';
-import { ShieldCheck, Search, Database, X, Trash2, AlertTriangle, Clock } from 'lucide-react';
+import { ShieldCheck, Search, Database, X, Trash2, AlertTriangle, Clock, User as UserIcon, Globe, FileText } from 'lucide-react';
 
 interface PaginatedData<T> {
     data: T[];
@@ -136,7 +136,7 @@ export default function Index({ auditLogs, accessLogs, filters, auth }: Props) {
                         </button>
                     </div>
 
-                    {/* Search & Actions Filter & Prune Action */}
+                    {/* Search & Actions Filter & View Switcher & Prune Action */}
                     <div className="flex flex-wrap items-center gap-3">
                         <div className="relative">
                             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
@@ -186,71 +186,71 @@ export default function Index({ auditLogs, accessLogs, filters, auth }: Props) {
 
             {/* Audit Logs Table */}
             {activeTab === 'audit' && auditLogs && (
-                <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+                <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-2xs">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
-                            <thead className="bg-slate-50/80 text-slate-700 uppercase tracking-wide text-xs font-semibold border-b border-slate-200">
-                                <tr>
-                                    <th className="py-3.5 px-5">Timestamp</th>
-                                    <th className="py-3.5 px-5">Action</th>
-                                    <th className="py-3.5 px-5">Actor</th>
-                                    <th className="py-3.5 px-5">Target Resource</th>
-                                    <th className="py-3.5 px-5">Description</th>
-                                    <th className="py-3.5 px-5">IP Address</th>
-                                    <th className="py-3.5 px-5 text-right">Payload</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 text-slate-700">
-                                {auditLogs.data.length === 0 ? (
+                                <thead className="bg-slate-50/80 text-slate-700 uppercase tracking-wide text-xs font-semibold border-b border-slate-200">
                                     <tr>
-                                        <td colSpan={7} className="text-center py-10 text-slate-600 text-sm">
-                                            No audit log entries match your filter.
-                                        </td>
+                                        <th className="py-3.5 px-5">Timestamp</th>
+                                        <th className="py-3.5 px-5">Action</th>
+                                        <th className="py-3.5 px-5">Actor</th>
+                                        <th className="py-3.5 px-5">Target Resource</th>
+                                        <th className="py-3.5 px-5">Description</th>
+                                        <th className="py-3.5 px-5">IP Address</th>
+                                        <th className="py-3.5 px-5 text-right">Payload</th>
                                     </tr>
-                                ) : (
-                                    auditLogs.data.map((log) => (
-                                        <tr key={log.id} className="hover:bg-slate-50 transition-colors">
-                                            <td className="py-3.5 px-5 text-slate-600 font-mono text-xs">
-                                                {log.created_at.slice(0, 19).replace('T', ' ')}
-                                            </td>
-                                            <td className="py-3.5 px-5">
-                                                <span
-                                                    className={`inline-block border px-2.5 py-1 rounded text-xs font-bold ${getActionBadgeClass(
-                                                        log.action
-                                                    )}`}
-                                                >
-                                                    {log.action}
-                                                </span>
-                                            </td>
-                                            <td className="py-3.5 px-5 text-slate-900 font-semibold">
-                                                {log.actor_username || 'System / Guest'}
-                                            </td>
-                                            <td className="py-3.5 px-5 text-slate-700 font-mono text-xs">
-                                                {log.subject_type ? `${log.subject_type} #${log.subject_id}` : '—'}
-                                            </td>
-                                            <td className="py-3.5 px-5 text-slate-800 max-w-xs truncate">
-                                                {log.note || '—'}
-                                            </td>
-                                            <td className="py-3.5 px-5 text-slate-600 font-mono text-xs">
-                                                {log.ip_address || '—'}
-                                            </td>
-                                            <td className="py-3.5 px-5 text-right">
-                                                {(log.old_values || log.new_values) && (
-                                                    <button
-                                                        onClick={() => setSelectedAuditLog(log)}
-                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-semibold transition-all duration-150"
-                                                    >
-                                                        <Database className="w-3.5 h-3.5 text-amber-600" />
-                                                        Diff
-                                                    </button>
-                                                )}
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 text-slate-700">
+                                    {auditLogs.data.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={7} className="text-center py-10 text-slate-600 text-sm">
+                                                No audit log entries match your filter.
                                             </td>
                                         </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                    ) : (
+                                        auditLogs.data.map((log) => (
+                                            <tr key={log.id} className="hover:bg-slate-50 transition-colors">
+                                                <td className="py-3.5 px-5 text-slate-600 font-mono text-xs">
+                                                    {log.created_at.slice(0, 19).replace('T', ' ')}
+                                                </td>
+                                                <td className="py-3.5 px-5">
+                                                    <span
+                                                        className={`inline-block border px-2.5 py-1 rounded text-xs font-bold ${getActionBadgeClass(
+                                                            log.action
+                                                        )}`}
+                                                    >
+                                                        {log.action}
+                                                    </span>
+                                                </td>
+                                                <td className="py-3.5 px-5 text-slate-900 font-semibold">
+                                                    {log.actor_username || 'System / Guest'}
+                                                </td>
+                                                <td className="py-3.5 px-5 text-slate-700 font-mono text-xs">
+                                                    {log.subject_type ? `${log.subject_type} #${log.subject_id}` : '—'}
+                                                </td>
+                                                <td className="py-3.5 px-5 text-slate-800 max-w-xs truncate">
+                                                    {log.note || '—'}
+                                                </td>
+                                                <td className="py-3.5 px-5 text-slate-600 font-mono text-xs">
+                                                    {log.ip_address || '—'}
+                                                </td>
+                                                <td className="py-3.5 px-5 text-right">
+                                                    {(log.old_values || log.new_values) && (
+                                                        <button
+                                                            onClick={() => setSelectedAuditLog(log)}
+                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-semibold transition-all duration-150"
+                                                        >
+                                                            <Database className="w-3.5 h-3.5 text-amber-600" />
+                                                            Diff
+                                                        </button>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
 
                     {/* Pagination Links */}
                     {auditLogs.links && auditLogs.links.length > 3 && (
@@ -283,53 +283,53 @@ export default function Index({ auditLogs, accessLogs, filters, auth }: Props) {
 
             {/* Access Logs Table (RA 10173) */}
             {activeTab === 'access' && accessLogs && (
-                <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+                <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-2xs">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
-                            <thead className="bg-slate-50/80 text-slate-700 uppercase tracking-wide text-xs font-semibold border-b border-slate-200">
-                                <tr>
-                                    <th className="py-3.5 px-5">Access Timestamp</th>
-                                    <th className="py-3.5 px-5">Authorized User</th>
-                                    <th className="py-3.5 px-5">Resource Accessed</th>
-                                    <th className="py-3.5 px-5">Legal Citation Identifier</th>
-                                    <th className="py-3.5 px-5">Client IP Address</th>
-                                    <th className="py-3.5 px-5">Browser User Agent</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 text-slate-700">
-                                {accessLogs.data.length === 0 ? (
+                                <thead className="bg-slate-50/80 text-slate-700 uppercase tracking-wide text-xs font-semibold border-b border-slate-200">
                                     <tr>
-                                        <td colSpan={6} className="text-center py-10 text-slate-600 text-sm">
-                                            No confidential access entries found.
-                                        </td>
+                                        <th className="py-3.5 px-5">Access Timestamp</th>
+                                        <th className="py-3.5 px-5">Authorized User</th>
+                                        <th className="py-3.5 px-5">Resource Accessed</th>
+                                        <th className="py-3.5 px-5">Legal Citation Identifier</th>
+                                        <th className="py-3.5 px-5">Client IP Address</th>
+                                        <th className="py-3.5 px-5">Browser User Agent</th>
                                     </tr>
-                                ) : (
-                                    accessLogs.data.map((log) => (
-                                        <tr key={log.id} className="hover:bg-slate-50 transition-colors">
-                                            <td className="py-3.5 px-5 text-slate-600 font-mono text-xs">
-                                                {log.accessed_at.slice(0, 19).replace('T', ' ')}
-                                            </td>
-                                            <td className="py-3.5 px-5 text-slate-900 font-semibold">
-                                                {log.user?.display_name || log.user?.username || `User #${log.user_id}`}
-                                            </td>
-                                            <td className="py-3.5 px-5 text-slate-700 capitalize">
-                                                {log.resource_type.replace('_', ' ')} #{log.resource_id}
-                                            </td>
-                                            <td className="py-3.5 px-5 font-mono font-medium text-amber-800">
-                                                {log.resource_identifier || '—'}
-                                            </td>
-                                            <td className="py-3.5 px-5 text-slate-600 font-mono text-xs">
-                                                {log.ip_address || '—'}
-                                            </td>
-                                            <td className="py-3.5 px-5 text-slate-600 text-xs max-w-xs truncate">
-                                                {log.user_agent || '—'}
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 text-slate-700">
+                                    {accessLogs.data.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={6} className="text-center py-10 text-slate-600 text-sm">
+                                                No confidential access entries found.
                                             </td>
                                         </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                    ) : (
+                                        accessLogs.data.map((log) => (
+                                            <tr key={log.id} className="hover:bg-slate-50 transition-colors">
+                                                <td className="py-3.5 px-5 text-slate-600 font-mono text-xs">
+                                                    {log.accessed_at.slice(0, 19).replace('T', ' ')}
+                                                </td>
+                                                <td className="py-3.5 px-5 text-slate-900 font-semibold">
+                                                    {log.user?.display_name || log.user?.username || `User #${log.user_id}`}
+                                                </td>
+                                                <td className="py-3.5 px-5 text-slate-700 capitalize">
+                                                    {log.resource_type.replace('_', ' ')} #{log.resource_id}
+                                                </td>
+                                                <td className="py-3.5 px-5 font-mono font-medium text-amber-800">
+                                                    {log.resource_identifier || '—'}
+                                                </td>
+                                                <td className="py-3.5 px-5 text-slate-600 font-mono text-xs">
+                                                    {log.ip_address || '—'}
+                                                </td>
+                                                <td className="py-3.5 px-5 text-slate-600 text-xs max-w-xs truncate">
+                                                    {log.user_agent || '—'}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
 
                     {/* Pagination Links */}
                     {accessLogs.links && accessLogs.links.length > 3 && (
