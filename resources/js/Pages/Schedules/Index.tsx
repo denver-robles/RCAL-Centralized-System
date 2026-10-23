@@ -555,7 +555,56 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
                             <div className="col-span-2 space-y-2 mt-2">
                                 <h4 className="font-bold text-slate-800 border-b pb-1">Payment Info</h4>
                                 <p><strong>Method:</strong> {viewingSchedule.payment_method || 'N/A'}</p>
-                                <p><strong>Status:</strong> <span className="uppercase font-bold">{viewingSchedule.payment_status}</span></p>
+                                <p>
+                                    <strong>Status:</strong>{' '}
+                                    <span className="uppercase font-bold">
+                                        {viewingSchedule.payment_status?.replace('_', ' ')}
+                                    </span>
+                                </p>
+
+                                {viewingSchedule.payment_receipt_path && (
+                                    <div className="pt-1">
+                                        <a
+                                            href={`/schedules/${viewingSchedule.id}/receipt`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="text-xs text-amber-600 underline font-semibold hover:text-amber-700"
+                                        >
+                                            View Uploaded Payment Receipt (Secure)
+                                        </a>
+                                    </div>
+                                )}
+
+                                {viewingSchedule.payment_status === 'pending_verification' && (
+                                    <div className="flex items-center gap-2 pt-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                router.post(`/schedules/${viewingSchedule.id}/verify-payment`, {
+                                                    payment_status: 'paid',
+                                                }, {
+                                                    onSuccess: () => setViewingSchedule(null),
+                                                });
+                                            }}
+                                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition shadow-xs"
+                                        >
+                                            Confirm Receipt as Paid
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                router.post(`/schedules/${viewingSchedule.id}/verify-payment`, {
+                                                    payment_status: 'unpaid',
+                                                }, {
+                                                    onSuccess: () => setViewingSchedule(null),
+                                                });
+                                            }}
+                                            className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold transition shadow-xs"
+                                        >
+                                            Reject Receipt
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
 

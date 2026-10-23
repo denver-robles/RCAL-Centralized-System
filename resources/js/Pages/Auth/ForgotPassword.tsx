@@ -8,12 +8,10 @@ import {
     ArrowLeft,
     CheckCircle2,
     AlertCircle,
-    KeyRound,
-    ExternalLink,
 } from 'lucide-react';
 
 export default function ForgotPassword() {
-    const { flash } = usePage<PageProps & { flash: { reset_url?: string } }>().props;
+    const { flash } = usePage<PageProps>().props;
 
     const { data, setData, post, processing, errors } = useForm({
         email: '',
@@ -90,25 +88,6 @@ export default function ForgotPassword() {
                             <div className="leading-relaxed">
                                 <span className="font-semibold block">{flash.status}</span>
                             </div>
-                        </div>
-                    )}
-
-                    {flash?.reset_url && (
-                        <div className="w-full mb-5 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-slate-800 text-sm space-y-2">
-                            <div className="flex items-center gap-1.5 font-bold text-amber-900 text-sm">
-                                <KeyRound className="w-4 h-4 text-amber-600" />
-                                <span>Direct Recovery Link Generated:</span>
-                            </div>
-                            <p className="text-xs text-slate-600">
-                                For immediate recovery without waiting for email relay:
-                            </p>
-                            <a
-                                href={flash.reset_url}
-                                className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-sm transition shadow-xs"
-                            >
-                                <ExternalLink className="w-4 h-4" />
-                                Proceed to Reset Password Now
-                            </a>
                         </div>
                     )}
 

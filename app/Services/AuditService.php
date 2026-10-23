@@ -14,23 +14,11 @@ use Illuminate\Support\Facades\Log;
 class AuditService
 {
     /**
-     * Resolves the real originating client IP address through reverse proxies.
+     * Resolves the real originating client IP address through trusted proxies.
      */
     public static function clientIp(): ?string
     {
-        $request = request();
-        if (!$request) {
-            return null;
-        }
-
-        foreach (['X-Forwarded-For', 'X-Real-IP'] as $header) {
-            $value = $request->header($header);
-            if ($value) {
-                return trim(explode(',', $value)[0]);
-            }
-        }
-
-        return $request->ip();
+        return request()?->ip();
     }
 
     /**

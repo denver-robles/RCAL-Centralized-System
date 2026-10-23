@@ -326,6 +326,10 @@ class SystemRevisionsTest extends TestCase
             'is_active' => true,
         ]);
 
+        // Regular parish staff is forbidden from viewing or deleting accounts
+        $this->actingAs($this->parishStaff)->get('/users')->assertStatus(403);
+        $this->actingAs($this->parishStaff)->delete("/users/{$targetUser->id}")->assertStatus(403);
+
         // Chancery admin deletes user -> succeeds and soft-deletes
         $deleteResponse = $this->actingAs($this->chanceryAdmin)->delete("/users/{$targetUser->id}");
         $deleteResponse->assertRedirect('/users');
@@ -343,24 +347,24 @@ class SystemRevisionsTest extends TestCase
         ]);
     }
 
-    public function test_audit_retention_prune_deletes_records_older_than_30_days(): void
+    public function test_audit_retention_prune_deletes_records_older_than_365_days(): void
     {
-        // Insert audit log older than 30 days
+        // Insert audit log older than 365 days
         $oldLog = AuditLog::create([
             'user_id' => $this->chanceryAdmin->id,
             'actor_username' => $this->chanceryAdmin->username,
             'action' => AuditActionEnum::LOGIN,
-            'note' => 'Old historical login from last month',
-            'created_at' => now()->subDays(35),
+            'note' => 'Old historical login from last year',
+            'created_at' => now()->subDays(400),
         ]);
 
-        // Insert fresh audit log
+        // Insert fresh audit log from last month (must be retained under 1-year policy)
         $freshLog = AuditLog::create([
             'user_id' => $this->chanceryAdmin->id,
             'actor_username' => $this->chanceryAdmin->username,
             'action' => AuditActionEnum::LOGIN,
-            'note' => 'Recent login from 2 days ago',
-            'created_at' => now()->subDays(2),
+            'note' => 'Recent login from 30 days ago',
+            'created_at' => now()->subDays(30),
         ]);
 
         // Run artisan prune retention
@@ -380,13 +384,13 @@ class SystemRevisionsTest extends TestCase
 
     public function test_chancery_admin_can_trigger_audit_prune_via_endpoint(): void
     {
-        // Old record to be pruned
+        // Old record to be pruned (> 365 days)
         $oldLog = AuditLog::create([
             'user_id' => $this->chanceryAdmin->id,
             'actor_username' => $this->chanceryAdmin->username,
             'action' => AuditActionEnum::STATUS_CHANGE,
-            'note' => 'Historical status change > 30 days',
-            'created_at' => now()->subDays(40),
+            'note' => 'Historical status change > 365 days',
+            'created_at' => now()->subDays(400),
         ]);
 
         // Regular staff cannot prune (403)

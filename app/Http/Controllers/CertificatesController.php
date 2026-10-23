@@ -140,7 +140,7 @@ class CertificatesController extends Controller
         // If filed on behalf of a registered parishioner, create a synchronized DocumentRequest
         // so it immediately appears in the parishioner's portal dashboard under My Claims & Orders!
         if (!empty($validated['parishioner_id'])) {
-            $trackingCode = 'RCAL-REQ-' . strtoupper(Str::random(8));
+            $trackingCode = 'RCAL-REQ-' . strtoupper(Str::random(16));
             DocumentRequest::create([
                 'tracking_code' => $trackingCode,
                 'parishioner_id' => $requesterUserId,

@@ -817,15 +817,15 @@ export default function Register({ parishes = [] }: RegisterProps) {
                                             onChange={(e) => setData('privacy_consent', e.target.checked)}
                                             className="mt-0.5 rounded border-slate-300 text-amber-500 focus:ring-amber-400 w-4 h-4 shrink-0"
                                         />
-                                        <span className="leading-relaxed text-[11px]">
-                                            I solemnly affirm that the submitted credentials belong to me and I consent to the collection and canonical processing of my personal and biometric data pursuant to{' '}
-                                            <strong className="text-slate-900">Republic Act No. 10173 (Data Privacy Act of 2012)</strong> and the Archdiocesan Sacramental Registry guidelines.{' '}
+                                        <span className="leading-relaxed text-xs">
+                                            I solemnly affirm that the submitted credentials belong to me. I provide explicit, informed consent to the collection, verification, and encrypted storage of my government ID and biometric facial templates pursuant to{' '}
+                                            <strong className="text-slate-900">Republic Act No. 10173 (Data Privacy Act of 2012)</strong>, subject to the Archdiocesan Biometric Retention & Data Privacy Policy.{' '}
                                             <button
                                                 type="button"
                                                 onClick={() => setPrivacyModalOpen(true)}
                                                 className="text-amber-600 underline hover:text-amber-700 font-semibold"
                                             >
-                                                Read policy
+                                                Read policy & retention rules
                                             </button>
                                         </span>
                                     </label>
@@ -985,16 +985,19 @@ export default function Register({ parishes = [] }: RegisterProps) {
 
                         <div className="text-xs text-slate-600 space-y-2.5 max-h-72 overflow-y-auto pr-2 leading-relaxed">
                             <p>
-                                The <strong>Roman Catholic Archdiocese of Lipa (RCAL)</strong> respects your privacy and is committed to protecting your personal information pursuant to the <strong>Data Privacy Act of 2012 (Republic Act No. 10173)</strong> and the <strong>Code of Canon Law (Can. 535)</strong>.
+                                The <strong>Roman Catholic Archdiocese of Lipa (RCAL)</strong> respects your privacy and is committed to protecting your personal information pursuant to the <strong>Data Privacy Act of 2012 (Republic Act No. 10173)</strong>, its Implementing Rules and Regulations, and the <strong>Code of Canon Law (Can. 535)</strong>.
                             </p>
                             <p>
-                                <strong>Information Collected:</strong> Name, contact telephone, email address, home parish, government ID details, and facial biometric templates necessary to verify canonical identity and issue certified ecclesiastical certificates.
+                                <strong>Sensitive Personal Information & Biometrics:</strong> Government-issued ID cards and facial biometric templates are classified as Sensitive Personal Information under RA 10173. These are collected strictly to verify canonical identity against sacramental registries and protect against identity theft, false certificates, and presentation attacks.
                             </p>
                             <p>
-                                <strong>Purpose:</strong> Your data is utilized strictly for identity authentication, record search verification, appointment scheduling, and Archdiocesan Curia notifications.
+                                <strong>Encryption & Storage Security:</strong> All biometric facial data and government ID records are stored with AES-256 cryptographic encryption at rest on private disks, inaccessible via public web paths, and transmitted exclusively over verified TLS connections.
                             </p>
                             <p>
-                                <strong>Confidentiality:</strong> Records are guarded under strict ecclesiastical secrecy. Canonical entries are immutable and never disclosed to unauthorized third parties without legitimate ecclesiastical interest or judicial order.
+                                <strong>Retention & Deletion Policy:</strong> Biometric facial templates are retained exclusively during the active life of your verified diocesan parishioner account to provide passwordless face login and certificate issuance verification. Upon verified written request to the Archdiocesan Data Protection Officer (DPO) or account closure, non-canonical biometric templates are permanently purged from the system.
+                            </p>
+                            <p>
+                                <strong>Confidentiality:</strong> Records are guarded under strict ecclesiastical secrecy. Canonical sacramental entries remain permanent and immutable under universal Canon Law and are never commercialized, distributed, or disclosed without legitimate canonical interest or lawful court order.
                             </p>
                         </div>
 

@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Middleware\EnsureParishionerIsolation;
+use App\Http\Middleware\EnsurePasswordIsChanged;
 use App\Http\Middleware\EnsureStaffRole;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\PreventBackHistory;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -17,18 +19,16 @@ return Application::configure(basePath: dirname(__DIR__))
     )
 
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->trustProxies(at: '*');
+
         $middleware->validateCsrfTokens(except: [
             'stripe/webhook',
-            'stripe/*',
-            'identity/create-session',
-            'portal/identity/create-session',
-            'login/face',
-            'register/verify-id',
-            'register/verify-face',
         ]);
 
         $middleware->web(append: [
+            SecurityHeaders::class,
             HandleInertiaRequests::class,
+            EnsurePasswordIsChanged::class,
             EnsureParishionerIsolation::class,
             PreventBackHistory::class,
         ]);

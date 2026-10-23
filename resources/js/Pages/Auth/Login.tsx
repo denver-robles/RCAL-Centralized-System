@@ -24,7 +24,7 @@ import {
 import BiometricLivenessScanner from '@/Components/BiometricLivenessScanner';
 
 export default function Login() {
-    const { flash } = usePage<PageProps & { flash: { reset_url?: string } }>().props;
+    const { flash } = usePage<PageProps>().props;
     const [activeTab, setActiveTab] = useState<'parishioner' | 'staff'>('parishioner');
     const [showPassword, setShowPassword] = useState(false);
     const [forgotModalOpen, setForgotModalOpen] = useState(false);
@@ -614,19 +614,6 @@ export default function Login() {
                             <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-2 text-emerald-800 text-sm">
                                 <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 mt-0.5" />
                                 <span>{flash.status}</span>
-                            </div>
-                        )}
-
-                        {flash?.reset_url && (
-                            <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-sm space-y-2">
-                                <span className="font-bold text-amber-900 block">Instant Recovery Link:</span>
-                                <a
-                                    href={flash.reset_url}
-                                    className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm transition shadow-xs"
-                                >
-                                    <ExternalLink className="w-4 h-4" />
-                                    Proceed to Reset Password
-                                </a>
                             </div>
                         )}
 

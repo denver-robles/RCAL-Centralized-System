@@ -4,9 +4,12 @@ namespace Tests\Feature;
 
 use App\Enums\RoleEnum;
 use App\Models\User;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
 use Tests\TestCase;
 
 class PasswordResetTest extends TestCase
@@ -21,6 +24,8 @@ class PasswordResetTest extends TestCase
 
     public function test_user_can_request_password_reset_token(): void
     {
+        Notification::fake();
+
         $user = User::create([
             'username' => 'testuser',
             'email' => 'testuser@example.com',
@@ -35,11 +40,26 @@ class PasswordResetTest extends TestCase
         ]);
 
         $response->assertSessionHas('status');
-        $response->assertSessionHas('reset_url');
+        $response->assertSessionMissing('reset_url');
+
+        Notification::assertSentTo($user, ResetPassword::class);
 
         $this->assertDatabaseHas('password_reset_tokens', [
             'email' => 'testuser@example.com',
         ]);
+    }
+
+    public function test_non_existent_account_returns_identical_generic_message_preventing_enumeration(): void
+    {
+        Notification::fake();
+
+        $response = $this->post('/forgot-password', [
+            'email' => 'unknown_person@example.com',
+        ]);
+
+        $response->assertSessionHas('status');
+        $response->assertSessionMissing('reset_url');
+        Notification::assertNothingSent();
     }
 
     public function test_reset_password_page_renders_with_token(): void
@@ -59,12 +79,7 @@ class PasswordResetTest extends TestCase
             'is_active' => true,
         ]);
 
-        $token = 'valid-token-string-12345';
-        DB::table('password_reset_tokens')->insert([
-            'email' => 'resetuser@example.com',
-            'token' => Hash::make($token),
-            'created_at' => now(),
-        ]);
+        $token = Password::broker()->createToken($user);
 
         $response = $this->post('/reset-password', [
             'token' => $token,
@@ -97,11 +112,7 @@ class PasswordResetTest extends TestCase
             'is_active' => true,
         ]);
 
-        DB::table('password_reset_tokens')->insert([
-            'email' => 'invalid@example.com',
-            'token' => Hash::make('real-token'),
-            'created_at' => now(),
-        ]);
+        Password::broker()->createToken($user);
 
         $response = $this->post('/reset-password', [
             'token' => 'wrong-token',

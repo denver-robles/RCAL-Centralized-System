@@ -197,13 +197,23 @@ export default function Print({ certificate }: Props) {
                         </div>
                     </div>
 
-                    <div className="text-right space-y-0.5">
-                        <div className="flex items-center justify-end gap-1 text-emerald-800 font-semibold">
-                            <ShieldCheck className="w-3.5 h-3.5" />
-                            Archdiocesan Cryptographic Token
-                        </div>
-                        <div className="font-mono text-[9px] text-slate-500 max-w-xs truncate">
-                            {certificate.verification_token}
+                    <div className="flex items-center gap-3">
+                        <img
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&margin=4&data=${encodeURIComponent(typeof window !== 'undefined' ? `${window.location.origin}/verify/${certificate.verification_token}` : `/verify/${certificate.verification_token}`)}`}
+                            alt="Verification QR Code"
+                            className="w-14 h-14 border border-slate-300 rounded p-0.5 bg-white shrink-0"
+                        />
+                        <div className="text-right space-y-0.5">
+                            <div className="flex items-center justify-end gap-1 text-emerald-800 font-semibold">
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                                Archdiocesan Cryptographic Token
+                            </div>
+                            <div className="font-mono text-[9px] text-slate-500 max-w-xs truncate">
+                                {certificate.verification_token}
+                            </div>
+                            <div className="text-[9px] text-slate-400">
+                                Scan QR code to verify canonical validity
+                            </div>
                         </div>
                     </div>
                 </div>

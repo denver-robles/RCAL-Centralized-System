@@ -62,75 +62,89 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // 3. Original System Accounts
-        // Admin (Chancery Administrator) - password: adminpw
+        // 3. System Accounts
+        // Admin (Chancery Administrator)
+        $envAdminPw = env('ADMIN_PASSWORD');
+        $hasCustomAdminPw = !empty($envAdminPw);
+        $adminPassword = $hasCustomAdminPw ? $envAdminPw : 'adminpw';
+
         User::firstOrCreate(
             ['username' => 'admin'],
             [
-                'email' => 'chancery@rcal.local',
+                'email' => env('ADMIN_EMAIL', 'chancery@rcal.local'),
                 'display_name' => 'Chancery Administrator',
                 'role' => RoleEnum::ADMIN,
-                'password' => Hash::make('adminpw'),
+                'password' => Hash::make($adminPassword),
+                'must_change_password' => !$hasCustomAdminPw, // Force password change on first login if default
                 'home_parish_id' => null,
                 'phone' => '7562572',
                 'is_active' => true,
             ]
         );
 
-        // Parish 1 Staff - password: parishpw
-        User::firstOrCreate(
-            ['username' => 'parish1'],
-            [
-                'email' => 'parish1@example.ph',
-                'display_name' => 'St. Sebastian Cathedral Secretary',
-                'role' => RoleEnum::PARISH_STAFF,
-                'password' => Hash::make('parishpw'),
-                'home_parish_id' => $cathedral->id,
-                'phone' => '7562572',
-                'is_active' => true,
-            ]
-        );
+        // 4. Demo Parish Accounts (Local & Testing Environments Only)
+        if (app()->environment('local', 'testing')) {
+            $demoStaffPassword = env('DEMO_PARISH_PASSWORD', 'parishpw');
 
-        // Parish 2 Staff - password: parishpw
-        User::firstOrCreate(
-            ['username' => 'parish2'],
-            [
-                'email' => 'parish2@example.ph',
-                'display_name' => 'Our Lady of the Assumption Parish Secretary',
-                'role' => RoleEnum::PARISH_STAFF,
-                'password' => Hash::make('parishpw'),
-                'home_parish_id' => $assumption->id,
-                'phone' => '7562111',
-                'is_active' => true,
-            ]
-        );
+            // Parish 1 Staff
+            User::firstOrCreate(
+                ['username' => 'parish1'],
+                [
+                    'email' => 'parish1@example.ph',
+                    'display_name' => 'St. Sebastian Cathedral Secretary',
+                    'role' => RoleEnum::PARISH_STAFF,
+                    'password' => Hash::make($demoStaffPassword),
+                    'must_change_password' => false,
+                    'home_parish_id' => $cathedral->id,
+                    'phone' => '7562572',
+                    'is_active' => true,
+                ]
+            );
 
-        // Parish 3 Staff - password: parishpw
-        User::firstOrCreate(
-            ['username' => 'parish3'],
-            [
-                'email' => 'parish3@example.ph',
-                'display_name' => 'San Carlos Borromeo Parish Secretary',
-                'role' => RoleEnum::PARISH_STAFF,
-                'password' => Hash::make('parishpw'),
-                'home_parish_id' => $sanCarlos->id,
-                'phone' => '7781234',
-                'is_active' => true,
-            ]
-        );
+            // Parish 2 Staff
+            User::firstOrCreate(
+                ['username' => 'parish2'],
+                [
+                    'email' => 'parish2@example.ph',
+                    'display_name' => 'Our Lady of the Assumption Parish Secretary',
+                    'role' => RoleEnum::PARISH_STAFF,
+                    'password' => Hash::make($demoStaffPassword),
+                    'must_change_password' => false,
+                    'home_parish_id' => $assumption->id,
+                    'phone' => '7562111',
+                    'is_active' => true,
+                ]
+            );
 
-        // Parishioner - password: parishpw
-        User::firstOrCreate(
-            ['username' => 'juan@example.ph'],
-            [
-                'email' => 'juan@example.ph',
-                'display_name' => 'Juan Dela Cruz',
-                'role' => RoleEnum::PARISHIONER,
-                'password' => Hash::make('parishpw'),
-                'home_parish_id' => $cathedral->id,
-                'phone' => '7562572',
-                'is_active' => true,
-            ]
-        );
+            // Parish 3 Staff
+            User::firstOrCreate(
+                ['username' => 'parish3'],
+                [
+                    'email' => 'parish3@example.ph',
+                    'display_name' => 'San Carlos Borromeo Parish Secretary',
+                    'role' => RoleEnum::PARISH_STAFF,
+                    'password' => Hash::make($demoStaffPassword),
+                    'must_change_password' => false,
+                    'home_parish_id' => $sanCarlos->id,
+                    'phone' => '7781234',
+                    'is_active' => true,
+                ]
+            );
+
+            // Parishioner Self-Service Demo
+            User::firstOrCreate(
+                ['username' => 'juan@example.ph'],
+                [
+                    'email' => 'juan@example.ph',
+                    'display_name' => 'Juan Dela Cruz',
+                    'role' => RoleEnum::PARISHIONER,
+                    'password' => Hash::make($demoStaffPassword),
+                    'must_change_password' => false,
+                    'home_parish_id' => $cathedral->id,
+                    'phone' => '7562572',
+                    'is_active' => true,
+                ]
+            );
+        }
     }
 }

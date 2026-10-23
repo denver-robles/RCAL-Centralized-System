@@ -330,4 +330,34 @@ class SchedulesController extends Controller
 
         return redirect()->back()->with('success', 'Sacrament settings updated successfully.');
     }
+
+    /**
+     * Verify online payment receipt or mark payment status.
+     */
+    public function verifyPayment(Request $request, SacramentSchedule $schedule): RedirectResponse
+    {
+        $user = $request->user();
+        if (!$user->isArchdioceseWide() && (int) $user->home_parish_id !== (int) $schedule->parish_id) {
+            abort(403, 'Unauthorized to verify payments for other parishes.');
+        }
+
+        $validated = $request->validate([
+            'payment_status' => ['required', 'string', 'in:paid,rejected,unpaid,pending_verification'],
+        ]);
+
+        $oldStatus = $schedule->payment_status;
+        $schedule->payment_status = $validated['payment_status'];
+        $schedule->save();
+
+        AuditService::record(
+            AuditActionEnum::UPDATE,
+            $schedule,
+            ['payment_status' => $oldStatus],
+            ['payment_status' => $schedule->payment_status],
+            "Payment status for schedule #{$schedule->id} verified as {$schedule->payment_status} by {$user->username}",
+            $user
+        );
+
+        return redirect()->back()->with('success', "Payment verification recorded: marked as {$schedule->payment_status}.");
+    }
 }

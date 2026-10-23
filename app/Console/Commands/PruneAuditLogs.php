@@ -12,21 +12,21 @@ class PruneAuditLogs extends Command
      *
      * @var string
      */
-    protected $signature = 'audit:prune-retention {--days=30 : Number of days retention cutoff}';
+    protected $signature = 'audit:prune-retention {--days=365 : Number of days retention cutoff}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Prune audit log entries older than 30 days to optimize database storage and prevent bloat';
+    protected $description = 'Prune audit log entries older than 365 days (1-year canonical accountability trail)';
 
     /**
      * Execute the console command.
      */
     public function handle(): int
     {
-        $days = (int) $this->option('days') ?: 30;
+        $days = (int) $this->option('days') ?: 365;
         $cutoff = now()->subDays($days);
 
         $count = AuditLog::where('created_at', '<', $cutoff)->delete();

@@ -61,7 +61,7 @@ class AuditController extends Controller
     }
 
     /**
-     * Manually execute the 30-day retention policy to prune older audit logs.
+     * Manually execute the 1-year (365-day) retention policy to prune older audit logs.
      */
     public function prune(Request $request): \Illuminate\Http\RedirectResponse
     {
@@ -71,7 +71,8 @@ class AuditController extends Controller
             abort(403, 'Unauthorized.');
         }
 
-        $cutoff = now()->subDays(30);
+        $days = (int) $request->input('days', 365);
+        $cutoff = now()->subDays($days);
         $count = AuditLog::where('created_at', '<', $cutoff)->delete();
 
         \App\Services\AuditService::log(
@@ -79,10 +80,10 @@ class AuditController extends Controller
             \App\Enums\AuditActionEnum::DELETE,
             'audit_logs',
             null,
-            "Chancery Administrator {$user->username} executed 30-day retention purge, removing {$count} audit entries."
+            "Chancery Administrator {$user->username} executed {$days}-day accountability retention purge, removing {$count} audit entries."
         );
 
         return redirect()->route('audit.index')
-            ->with('success', "Retention policy executed: {$count} audit log entries older than 30 days were permanently pruned.");
+            ->with('success', "Accountability retention policy executed: {$count} audit log entries older than {$days} days were pruned.");
     }
 }

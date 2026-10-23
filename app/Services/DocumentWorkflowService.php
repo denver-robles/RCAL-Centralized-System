@@ -138,7 +138,7 @@ class DocumentWorkflowService
      */
     public function fileDocumentRequest(array $data, User $parishioner): DocumentRequest
     {
-        $trackingCode = 'RCAL-REQ-' . strtoupper(Str::random(8));
+        $trackingCode = 'RCAL-REQ-' . strtoupper(Str::random(16));
 
         return DB::transaction(function () use ($data, $parishioner, $trackingCode) {
             $doc = DocumentRequest::create([

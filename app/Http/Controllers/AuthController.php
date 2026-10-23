@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -196,7 +197,7 @@ class AuthController extends Controller
         // Call Face++ Compare Endpoint
         try {
             $client = Http::asForm()->timeout(15);
-            if (!config('services.facepp.verify_ssl', false)) {
+            if (!config('services.facepp.verify_ssl', true)) {
                 $client = $client->withoutVerifying();
             }
 
@@ -553,36 +554,20 @@ class AuthController extends Controller
             ->orWhere('username', $identifier)
             ->first();
 
-        if (!$user) {
-            return back()->with('status', 'If that account exists in our diocesan records, a recovery link has been created.');
+        if ($user) {
+            $token = Password::broker()->createToken($user);
+            $user->sendPasswordResetNotification($token);
+
+            AuditService::log(
+                $request,
+                AuditActionEnum::UPDATE,
+                'user',
+                $user->id,
+                "Password recovery email dispatched for {$user->username} ({$user->email})"
+            );
         }
 
-        $token = Str::random(60);
-
-        DB::table('password_reset_tokens')->updateOrInsert(
-            ['email' => $user->email],
-            [
-                'token' => Hash::make($token),
-                'created_at' => now(),
-            ]
-        );
-
-        $resetUrl = route('password.reset', [
-            'token' => $token,
-            'email' => $user->email,
-        ]);
-
-        AuditService::log(
-            $request,
-            AuditActionEnum::UPDATE,
-            'user',
-            $user->id,
-            "Password recovery token generated for {$user->username} ({$user->email})"
-        );
-
-        return back()
-            ->with('status', 'A password recovery link has been generated. You may now reset your password directly.')
-            ->with('reset_url', $resetUrl);
+        return back()->with('status', 'If that account exists in our diocesan records, a password recovery link has been sent to the registered email address.');
     }
 
     /**
@@ -614,38 +599,21 @@ class AuthController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
-        $record = DB::table('password_reset_tokens')
-            ->where('email', $validated['email'])
-            ->first();
+        /** @var User|null $user */
+        $user = User::where('email', $validated['email'])->first();
 
-        if (!$record || !Hash::check($validated['token'], $record->token)) {
+        if (!$user || !Password::broker()->tokenExists($user, $validated['token'])) {
             throw ValidationException::withMessages([
                 'email' => ['This password reset link is invalid or has expired.'],
             ]);
         }
 
-        // Check if token is older than 60 minutes
-        if (Carbon::parse($record->created_at)->addMinutes(60)->isPast()) {
-            DB::table('password_reset_tokens')->where('email', $validated['email'])->delete();
-            throw ValidationException::withMessages([
-                'email' => ['This password reset token has expired. Please request a new link.'],
-            ]);
-        }
-
-        /** @var User|null $user */
-        $user = User::where('email', $validated['email'])->first();
-
-        if (!$user) {
-            throw ValidationException::withMessages([
-                'email' => ['We could not find an account associated with this email address.'],
-            ]);
-        }
-
         $user->forceFill([
             'password' => Hash::make($validated['password']),
+            'must_change_password' => false,
         ])->save();
 
-        DB::table('password_reset_tokens')->where('email', $validated['email'])->delete();
+        Password::broker()->deleteToken($user);
 
         AuditService::log(
             $request,
@@ -658,6 +626,65 @@ class AuthController extends Controller
         return redirect()->route('login')->with(
             'success',
             'Your password has been successfully reset. You may now sign in with your new credentials.'
+        );
+    }
+
+    /**
+     * Show mandatory first-login password change view.
+     */
+    public function showChangePassword(Request $request): Response|RedirectResponse
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
+        if (!$user->must_change_password) {
+            return $user->isParishioner()
+                ? redirect()->route('portal.dashboard')
+                : redirect()->route('dashboard');
+        }
+
+        return Inertia::render('Auth/ChangePassword');
+    }
+
+    /**
+     * Handle first-login password change.
+     */
+    public function updateInitialPassword(Request $request): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
+        $validated = $request->validate([
+            'password' => ['required', 'string', 'min:8', 'confirmed', 'different:old_password'],
+        ]);
+
+        $user->forceFill([
+            'password' => Hash::make($validated['password']),
+            'must_change_password' => false,
+        ])->save();
+
+        AuditService::log(
+            $request,
+            AuditActionEnum::UPDATE,
+            'user',
+            $user->id,
+            "Initial forced password change successfully completed for user {$user->username}"
+        );
+
+        $target = $user->isParishioner()
+            ? route('portal.dashboard')
+            : route('dashboard');
+
+        return redirect()->to($target)->with(
+            'success',
+            'Your password has been successfully updated. Welcome to the RCAL Centralized System.'
         );
     }
 }

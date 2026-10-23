@@ -38,7 +38,7 @@ class IdentityVerificationService
 
         $apiKey = config('services.facepp.key');
         $apiSecret = config('services.facepp.secret');
-        $verifySsl = config('services.facepp.verify_ssl', false);
+        $verifySsl = config('services.facepp.verify_ssl', true);
 
         $faceDetected = false;
         $faceCount = 0;
@@ -292,7 +292,6 @@ class IdentityVerificationService
         try {
             $apiKey = env('OCR_SPACE_API_KEY', 'helloworld');
             $response = Http::asForm()
-                ->withoutVerifying()
                 ->timeout(8)
                 ->post('https://api.ocr.space/parse/image', [
                     'apikey' => $apiKey,
@@ -333,7 +332,7 @@ class IdentityVerificationService
 
         $apiKey = config('services.facepp.key');
         $apiSecret = config('services.facepp.secret');
-        $verifySsl = config('services.facepp.verify_ssl', false);
+        $verifySsl = config('services.facepp.verify_ssl', true);
 
         if (empty($apiKey) || empty($apiSecret) || str_contains($apiKey, 'your_api_key')) {
             return ['passed' => true];
@@ -477,7 +476,7 @@ class IdentityVerificationService
 
         $apiKey = config('services.facepp.key');
         $apiSecret = config('services.facepp.secret');
-        $verifySsl = config('services.facepp.verify_ssl', false);
+        $verifySsl = config('services.facepp.verify_ssl', true);
 
         if (empty($apiKey) || empty($apiSecret) || str_contains($apiKey, 'your_api_key')) {
             // Testing fallback if unconfigured

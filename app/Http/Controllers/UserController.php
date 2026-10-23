@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -17,12 +18,9 @@ class UserController extends Controller
      */
     public function index(Request $request): Response
     {
-        $user = $request->user();
+        Gate::authorize('viewAny', User::class);
 
-        // Account management is reserved for chancery and parish administrators
-        if (!$user->isStaff()) {
-            abort(403, 'Unauthorized access to account directory.');
-        }
+        $user = $request->user();
 
         $search = trim((string) $request->query('search', ''));
         $role = $request->query('role', 'all');
@@ -69,9 +67,7 @@ class UserController extends Controller
             return redirect()->back()->with('error', 'You cannot delete your own active administrator account.');
         }
 
-        if (!$actor->isArchdioceseWide() && (int) $user->home_parish_id !== (int) $actor->home_parish_id) {
-            abort(403, 'Unauthorized to delete accounts belonging to other parish jurisdictions.');
-        }
+        Gate::authorize('delete', $user);
 
         $deletedUsername = $user->username;
         $deletedRole = $user->role?->value ?? 'unknown';

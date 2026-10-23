@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Casts\SafeEncryptedString;
 use App\Enums\RoleEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -26,6 +27,7 @@ class User extends Authenticatable
         'date_of_birth',
         'role',
         'password',
+        'must_change_password',
         'home_parish_id',
         'clergy_id',
         'phone',
@@ -56,11 +58,13 @@ class User extends Authenticatable
             'phone_verified_at' => 'datetime',
             'last_login_at' => 'datetime',
             'password' => 'hashed',
+            'must_change_password' => 'boolean',
             'role' => RoleEnum::class,
             'is_active' => 'boolean',
             'id_verified_at' => 'datetime',
             'date_of_birth' => 'date',
             'extracted_id_details' => 'array',
+            'face_reference_image' => SafeEncryptedString::class,
         ];
     }
 
@@ -102,6 +106,16 @@ class User extends Authenticatable
     public function isArchdioceseWide(): bool
     {
         return $this->role?->isArchdioceseWide() ?? false;
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === RoleEnum::ADMIN;
+    }
+
+    public function canManageUsers(): bool
+    {
+        return $this->role?->canManageUsers() ?? false;
     }
 
     public function canIssueCertificates(): bool
