@@ -66,7 +66,7 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
     // Navigation links helper
     const renderNavLinks = (onItemClick?: () => void) => {
         const linkClass = (isActive: boolean) =>
-            `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-150 ${
+            `flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
                 isActive
                     ? 'bg-amber-500/20 text-amber-300 font-bold border-l-4 border-amber-400 pl-3 shadow-2xs'
                     : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
@@ -76,7 +76,7 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
             return (
                 <div className="space-y-6">
                     <div>
-                        <div className="px-3.5 mb-2 text-[10px] uppercase font-bold tracking-wider text-slate-400">
+                        <div className="px-3.5 mb-2 text-xs uppercase font-bold tracking-wide text-slate-300">
                             Canonical Administration
                         </div>
                         <nav className="space-y-1">
@@ -128,7 +128,7 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
                     </div>
 
                     <div>
-                        <div className="px-3.5 mb-2 text-[10px] uppercase font-bold tracking-wider text-slate-400">
+                        <div className="px-3.5 mb-2 text-xs uppercase font-bold tracking-wide text-slate-300">
                             Diocesan Directories
                         </div>
                         <nav className="space-y-1">
@@ -181,7 +181,7 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
         return (
             <div className="space-y-6">
                 <div>
-                    <div className="px-3.5 mb-2 text-[10px] uppercase font-bold tracking-wider text-slate-400">
+                    <div className="px-3.5 mb-2 text-xs uppercase font-bold tracking-wide text-slate-300">
                         Parishioner Services
                     </div>
                     <nav className="space-y-1">
@@ -239,11 +239,11 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
                                 <span className="font-serif font-black text-sm tracking-wide text-white group-hover:text-amber-400 transition-colors uppercase block leading-tight">
                                     RCAL PIMS
                                 </span>
-                                <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 group-hover:bg-rose-950 group-hover:text-rose-300 border border-slate-700 group-hover:border-rose-600/50 transition-colors">
+                                <span className="text-xs uppercase font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 group-hover:bg-rose-950 group-hover:text-rose-300 border border-slate-700 group-hover:border-rose-600/50 transition-colors">
                                     Exit
                                 </span>
                             </div>
-                            <span className="text-[10px] text-amber-400/90 font-medium block truncate">
+                            <span className="text-xs text-amber-400/90 font-medium block truncate">
                                 Archdiocese of Lipa
                             </span>
                         </button>
@@ -255,7 +255,7 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
                     {isStaff ? (
                         <div className="flex items-center gap-2 text-xs text-amber-300">
                             <Shield className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                            <span className="truncate font-medium text-[11px]">
+                            <span className="truncate font-medium text-xs">
                                 {user?.is_archdiocese_wide
                                     ? 'Curia Chancery Scope'
                                     : user?.home_parish_name || 'Assigned Parish'}
@@ -264,7 +264,7 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
                     ) : (
                         <div className="flex items-center gap-2 text-xs text-sky-300">
                             <UserIcon className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                            <span className="truncate font-medium text-[11px]">
+                            <span className="truncate font-medium text-xs">
                                 Parishioner Self-Service
                             </span>
                         </div>
@@ -279,8 +279,8 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
                 {/* Sidebar Footer: Curia Date & User Card */}
                 <div className="p-4 border-t border-slate-800 bg-[#070b16] shrink-0 space-y-3">
                     {curia?.current_date && (
-                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 text-[11px]">
-                            <Clock className="w-3 h-3 text-amber-400 shrink-0" />
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 text-xs">
+                            <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                             <span className="truncate">{curia.current_date}</span>
                         </div>
                     )}
@@ -295,18 +295,18 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
                                     {user?.display_name || user?.username}
                                 </span>
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className="block text-[10px] text-amber-400 truncate">
+                                    <span className="block text-xs text-amber-400 truncate">
                                         {user?.role_label}
                                     </span>
                                     {user?.is_parishioner && (
                                         user?.identity_status === 'verified' ? (
-                                            <span className="text-[9px] text-emerald-400 bg-emerald-950/70 border border-emerald-500/30 px-1.5 py-0.5 rounded font-medium inline-flex items-center gap-0.5">
+                                            <span className="text-xs text-emerald-400 bg-emerald-950/70 border border-emerald-500/30 px-1.5 py-0.5 rounded font-medium inline-flex items-center gap-0.5">
                                                 ✓ ID Verified
                                             </span>
                                         ) : (
                                             <Link
                                                 href="/identity/verify"
-                                                className="text-[9px] text-amber-300 hover:text-amber-200 bg-amber-950/80 border border-amber-500/40 px-1.5 py-0.5 rounded font-medium hover:underline inline-flex items-center gap-0.5"
+                                                className="text-xs text-amber-300 hover:text-amber-200 bg-amber-950/80 border border-amber-500/40 px-1.5 py-0.5 rounded font-medium hover:underline inline-flex items-center gap-0.5"
                                             >
                                                 Verify ID
                                             </Link>
@@ -358,7 +358,7 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
                                 <span className="font-serif font-black text-sm text-white group-hover:text-amber-400 tracking-wide uppercase block leading-tight">
                                     RCAL PIMS
                                 </span>
-                                <span className="text-[9px] uppercase font-bold px-1 rounded bg-slate-800 text-slate-300 group-hover:bg-rose-950 group-hover:text-rose-300 border border-slate-700 transition-colors">
+                                <span className="text-xs uppercase font-bold px-1 rounded bg-slate-800 text-slate-300 group-hover:bg-rose-950 group-hover:text-rose-300 border border-slate-700 transition-colors">
                                     Exit
                                 </span>
                             </div>
@@ -367,7 +367,7 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold text-amber-400 bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                    <span className="text-xs font-bold text-amber-400 bg-amber-950/60 border border-amber-500/30 px-2.5 py-0.5 rounded-full">
                         {user?.role_label}
                     </span>
                     <form onSubmit={handleLogout}>
@@ -409,11 +409,11 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
                                         <span className="font-serif font-bold text-sm text-white group-hover:text-amber-400 block leading-tight">
                                             RCAL PIMS
                                         </span>
-                                        <span className="text-[9px] uppercase font-bold px-1 rounded bg-slate-800 text-slate-300 group-hover:bg-rose-950 group-hover:text-rose-300 border border-slate-700 transition-colors">
+                                        <span className="text-xs uppercase font-bold px-1 rounded bg-slate-800 text-slate-300 group-hover:bg-rose-950 group-hover:text-rose-300 border border-slate-700 transition-colors">
                                             Exit
                                         </span>
                                     </div>
-                                    <span className="text-[10px] text-amber-400 block">Archdiocese of Lipa</span>
+                                    <span className="text-xs text-amber-400 block">Archdiocese of Lipa</span>
                                 </div>
                             </button>
                             <button
@@ -433,7 +433,7 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
                             <div className="flex items-center justify-between">
                                 <div className="text-xs">
                                     <span className="block font-bold text-slate-100">{user?.display_name || user?.username}</span>
-                                    <span className="block text-[10px] text-amber-400">{user?.role_label}</span>
+                                    <span className="block text-xs text-amber-400">{user?.role_label}</span>
                                 </div>
                                 <form onSubmit={handleLogout}>
                                     <button
@@ -457,13 +457,13 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
                         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                             <div>
                                 <div className="flex items-center gap-2 mb-2">
-                                    <span className="text-[11px] font-bold tracking-wider uppercase text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-300 shadow-2xs">
+                                    <span className="text-xs font-bold tracking-wide uppercase text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-300 shadow-2xs">
                                         {isStaff
                                             ? (user?.is_archdiocese_wide ? 'Archdiocesan Curia' : user?.home_parish_name || 'Parish Administration')
                                             : 'Parishioner Self-Service'}
                                     </span>
                                     {curia?.current_date && (
-                                        <span className="text-[11px] text-slate-500 hidden sm:inline-flex items-center gap-1">
+                                        <span className="text-xs text-slate-600 hidden sm:inline-flex items-center gap-1">
                                             <Clock className="w-3.5 h-3.5 text-slate-400" />
                                             {curia.current_date}
                                         </span>

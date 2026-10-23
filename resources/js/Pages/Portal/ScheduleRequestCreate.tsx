@@ -56,26 +56,26 @@ export default function ScheduleRequestCreate({ parishes }: Props) {
                 <form onSubmit={handleSubmit} className="space-y-6">
                     
                     {/* Phase 1 */}
-                    <div className="bg-white border rounded-2xl p-6 shadow-sm space-y-5">
-                        <h2 className="font-serif text-lg font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-5">
+                        <h2 className="font-serif text-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                             <User className="w-5 h-5 text-amber-600" /> 1. Requestor Details
                         </h2>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-semibold mb-1">Full Name</label>
-                                <input type="text" value={data.requester_name} onChange={e => setData('requester_name', e.target.value)} required className="w-full border rounded-lg px-3 py-2 text-xs" />
+                                <label className="block text-sm font-semibold text-slate-800 mb-1.5">Full Name</label>
+                                <input type="text" value={data.requester_name} onChange={e => setData('requester_name', e.target.value)} required className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm" />
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold mb-1">Contact Number</label>
-                                <input type="text" value={data.requester_contact} onChange={e => setData('requester_contact', e.target.value)} required className="w-full border rounded-lg px-3 py-2 text-xs" />
+                                <label className="block text-sm font-semibold text-slate-800 mb-1.5">Contact Number</label>
+                                <input type="text" value={data.requester_contact} onChange={e => setData('requester_contact', e.target.value)} required className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm" />
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold mb-1">Email Address</label>
-                                <input type="email" value={data.requester_email} onChange={e => setData('requester_email', e.target.value)} required className="w-full border rounded-lg px-3 py-2 text-xs" />
+                                <label className="block text-sm font-semibold text-slate-800 mb-1.5">Email Address</label>
+                                <input type="email" value={data.requester_email} onChange={e => setData('requester_email', e.target.value)} required className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm" />
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold mb-1">Relationship to Candidate / Subject</label>
-                                <select value={data.requester_relationship} onChange={e => setData('requester_relationship', e.target.value)} className="w-full border rounded-lg px-3 py-2 text-xs">
+                                <label className="block text-sm font-semibold text-slate-800 mb-1.5">Relationship to Candidate / Subject</label>
+                                <select value={data.requester_relationship} onChange={e => setData('requester_relationship', e.target.value)} className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm">
                                     <option value="Self">Self / Owner</option>
                                     <option value="Parent">Parent</option>
                                     <option value="Sibling">Sibling</option>
@@ -83,29 +83,29 @@ export default function ScheduleRequestCreate({ parishes }: Props) {
                                     <option value="Representative">Representative</option>
                                 </select>
                             </div>
-                            <div className="col-span-2">
-                                <label className="block text-xs font-semibold mb-1">Current Residential Address</label>
-                                <input type="text" value={data.requester_address} onChange={e => setData('requester_address', e.target.value)} required className="w-full border rounded-lg px-3 py-2 text-xs" />
+                            <div className="sm:col-span-2">
+                                <label className="block text-sm font-semibold text-slate-800 mb-1.5">Current Residential Address</label>
+                                <input type="text" value={data.requester_address} onChange={e => setData('requester_address', e.target.value)} required className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm" />
                             </div>
                         </div>
                     </div>
 
                     {/* Phase 2 */}
-                    <div className="bg-white border rounded-2xl p-6 shadow-sm space-y-5">
-                        <h2 className="font-serif text-lg font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-5">
+                        <h2 className="font-serif text-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                             <Calendar className="w-5 h-5 text-amber-600" /> 2. Scheduling Details
                         </h2>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-semibold mb-1">Parish</label>
-                                <select value={data.parish_id} onChange={e => setData('parish_id', e.target.value)} required className="w-full border rounded-lg px-3 py-2 text-xs">
+                                <label className="block text-sm font-semibold text-slate-800 mb-1.5">Parish</label>
+                                <select value={data.parish_id} onChange={e => setData('parish_id', e.target.value)} required className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm">
                                     <option value="">-- Select Parish --</option>
                                     {parishes.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold mb-1">Sacrament / Service Type</label>
-                                <select value={data.sacrament_type} onChange={e => setData('sacrament_type', e.target.value)} className="w-full border rounded-lg px-3 py-2 text-xs">
+                                <label className="block text-sm font-semibold text-slate-800 mb-1.5">Sacrament / Service Type</label>
+                                <select value={data.sacrament_type} onChange={e => setData('sacrament_type', e.target.value)} className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm">
                                     <option value="baptism">Baptism</option>
                                     <option value="matrimony">Matrimony</option>
                                     <option value="anointing">Anointing of the Sick</option>
@@ -113,47 +113,47 @@ export default function ScheduleRequestCreate({ parishes }: Props) {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold mb-1">Preferred Date & Time</label>
-                                <input type="datetime-local" value={data.starts_at} onChange={e => setData('starts_at', e.target.value)} required className="w-full border rounded-lg px-3 py-2 text-xs" />
+                                <label className="block text-sm font-semibold text-slate-800 mb-1.5">Preferred Date & Time</label>
+                                <input type="datetime-local" value={data.starts_at} onChange={e => setData('starts_at', e.target.value)} required className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm" />
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold mb-1">Alternative Date & Time</label>
-                                <input type="datetime-local" value={data.alternative_starts_at} onChange={e => setData('alternative_starts_at', e.target.value)} className="w-full border rounded-lg px-3 py-2 text-xs" />
+                                <label className="block text-sm font-semibold text-slate-800 mb-1.5">Alternative Date & Time</label>
+                                <input type="datetime-local" value={data.alternative_starts_at} onChange={e => setData('alternative_starts_at', e.target.value)} className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm" />
                             </div>
-                            <div className="col-span-2">
-                                <label className="block text-xs font-semibold mb-1">Special Notes/Requests</label>
-                                <textarea onChange={e => handleSpecificDataChange('special_notes', e.target.value)} className="w-full border rounded-lg px-3 py-2 text-xs" placeholder="Any additional context (e.g. 'This is for a newly constructed 2-story house')"></textarea>
+                            <div className="sm:col-span-2">
+                                <label className="block text-sm font-semibold text-slate-800 mb-1.5">Special Notes/Requests</label>
+                                <textarea onChange={e => handleSpecificDataChange('special_notes', e.target.value)} className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm" placeholder="Any additional context (e.g. 'This is for a newly constructed 2-story house')"></textarea>
                             </div>
                         </div>
                     </div>
 
                     {/* Phase 3 & 4 can be conditionally rendered based on sacrament_type */}
-                    <div className="bg-white border rounded-2xl p-6 shadow-sm space-y-5">
-                        <h2 className="font-serif text-lg font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-5">
+                        <h2 className="font-serif text-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                             <FileText className="w-5 h-5 text-amber-600" /> 3. Sacrament-Specific & 4. Attachments
                         </h2>
                         
                         {data.sacrament_type === 'baptism' && (
-                            <div className="grid grid-cols-2 gap-4">
-                                <div><label className="text-xs font-semibold mb-1 block">Child's Name</label><input type="text" onChange={e => handleSpecificDataChange('child_name', e.target.value)} required className="w-full border rounded px-3 py-2 text-xs"/></div>
-                                <div><label className="text-xs font-semibold mb-1 block">Date of Birth</label><input type="date" onChange={e => handleSpecificDataChange('dob', e.target.value)} required className="w-full border rounded px-3 py-2 text-xs"/></div>
-                                <div><label className="text-xs font-semibold mb-1 block">Parents' Marriage Status</label><input type="text" onChange={e => handleSpecificDataChange('parents_status', e.target.value)} className="w-full border rounded px-3 py-2 text-xs"/></div>
-                                <div className="col-span-2">
-                                    <label className="text-xs font-semibold">Upload PSA Birth Certificate</label>
-                                    <input type="file" onChange={e => setData('psa_birth_cert', e.target.files?.[0] || null)} className="w-full text-xs mt-1" />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div><label className="text-sm font-semibold text-slate-800 mb-1.5 block">Child's Name</label><input type="text" onChange={e => handleSpecificDataChange('child_name', e.target.value)} required className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm"/></div>
+                                <div><label className="text-sm font-semibold text-slate-800 mb-1.5 block">Date of Birth</label><input type="date" onChange={e => handleSpecificDataChange('dob', e.target.value)} required className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm"/></div>
+                                <div><label className="text-sm font-semibold text-slate-800 mb-1.5 block">Parents' Marriage Status</label><input type="text" onChange={e => handleSpecificDataChange('parents_status', e.target.value)} className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm"/></div>
+                                <div className="sm:col-span-2">
+                                    <label className="text-sm font-semibold text-slate-800 mb-1.5 block">Upload PSA Birth Certificate</label>
+                                    <input type="file" onChange={e => setData('psa_birth_cert', e.target.files?.[0] || null)} className="w-full text-sm mt-1 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-200 file:text-slate-700 hover:file:bg-slate-300" />
                                 </div>
                             </div>
                         )}
 
                         {data.sacrament_type === 'blessing' && (
                             <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="col-span-2">
-                                        <label className="text-xs font-semibold mb-1 block">Type of Blessing</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="sm:col-span-2">
+                                        <label className="text-sm font-semibold text-slate-800 mb-1.5 block">Type of Blessing</label>
                                         <select 
                                             value={data.specific_data.blessing_category || 'House Blessing'} 
                                             onChange={e => handleSpecificDataChange('blessing_category', e.target.value)} 
-                                            className="w-full border rounded px-3 py-2 text-xs"
+                                            className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm"
                                         >
                                             <option value="House Blessing">House Blessing</option>
                                             <option value="Car/Vehicle Blessing">Car/Vehicle Blessing</option>
@@ -162,19 +162,19 @@ export default function ScheduleRequestCreate({ parishes }: Props) {
                                     </div>
 
                                     {data.specific_data.blessing_category === 'Car/Vehicle Blessing' && (
-                                        <div className="col-span-2"><label className="text-xs font-semibold mb-1 block">Vehicle Make & Model</label><input type="text" onChange={e => handleSpecificDataChange('vehicle_make_model', e.target.value)} className="w-full border rounded px-3 py-2 text-xs"/></div>
+                                        <div className="sm:col-span-2"><label className="text-sm font-semibold text-slate-800 mb-1.5 block">Vehicle Make & Model</label><input type="text" onChange={e => handleSpecificDataChange('vehicle_make_model', e.target.value)} className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm"/></div>
                                     )}
 
                                     {data.specific_data.blessing_category === 'Office/Business Blessing' && (
-                                        <div className="col-span-2"><label className="text-xs font-semibold mb-1 block">Name of the Business/Establishment</label><input type="text" onChange={e => handleSpecificDataChange('business_name', e.target.value)} className="w-full border rounded px-3 py-2 text-xs"/></div>
+                                        <div className="sm:col-span-2"><label className="text-sm font-semibold text-slate-800 mb-1.5 block">Name of the Business/Establishment</label><input type="text" onChange={e => handleSpecificDataChange('business_name', e.target.value)} className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm"/></div>
                                     )}
 
-                                    <div className="col-span-2">
-                                        <label className="text-xs font-semibold mb-1 block">Venue Type</label>
+                                    <div className="sm:col-span-2">
+                                        <label className="text-sm font-semibold text-slate-800 mb-1.5 block">Venue Type</label>
                                         <select 
                                             value={data.specific_data.venue_type || 'Off-site/At the specified address'} 
                                             onChange={e => handleSpecificDataChange('venue_type', e.target.value)} 
-                                            className="w-full border rounded px-3 py-2 text-xs"
+                                            className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm"
                                         >
                                             <option value="At the Parish/Church Grounds">At the Parish/Church Grounds</option>
                                             <option value="Off-site/At the specified address">Off-site/At the specified address</option>
@@ -183,20 +183,20 @@ export default function ScheduleRequestCreate({ parishes }: Props) {
 
                                     {data.specific_data.venue_type !== 'At the Parish/Church Grounds' && (
                                         <>
-                                            <div className="col-span-2"><label className="text-xs font-semibold mb-1 block">Complete Address</label><input type="text" onChange={e => handleSpecificDataChange('complete_address', e.target.value)} placeholder="Exact lot, block, street, subdivision, and barangay" className="w-full border rounded px-3 py-2 text-xs"/></div>
-                                            <div className="col-span-2"><label className="text-xs font-semibold mb-1 block">Landmarks</label><input type="text" onChange={e => handleSpecificDataChange('landmarks', e.target.value)} placeholder="Helpful directions for the priest" className="w-full border rounded px-3 py-2 text-xs"/></div>
+                                            <div className="sm:col-span-2"><label className="text-sm font-semibold text-slate-800 mb-1.5 block">Complete Address</label><input type="text" onChange={e => handleSpecificDataChange('complete_address', e.target.value)} placeholder="Exact lot, block, street, subdivision, and barangay" className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm"/></div>
+                                            <div className="sm:col-span-2"><label className="text-sm font-semibold text-slate-800 mb-1.5 block">Landmarks</label><input type="text" onChange={e => handleSpecificDataChange('landmarks', e.target.value)} placeholder="Helpful directions for the priest" className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm"/></div>
                                         </>
                                     )}
 
-                                    <div><label className="text-xs font-semibold mb-1 block">On-Site Contact Person</label><input type="text" onChange={e => handleSpecificDataChange('onsite_contact_name', e.target.value)} className="w-full border rounded px-3 py-2 text-xs"/></div>
-                                    <div><label className="text-xs font-semibold mb-1 block">On-Site Contact Number</label><input type="text" onChange={e => handleSpecificDataChange('onsite_contact_number', e.target.value)} className="w-full border rounded px-3 py-2 text-xs"/></div>
+                                    <div><label className="text-sm font-semibold text-slate-800 mb-1.5 block">On-Site Contact Person</label><input type="text" onChange={e => handleSpecificDataChange('onsite_contact_name', e.target.value)} className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm"/></div>
+                                    <div><label className="text-sm font-semibold text-slate-800 mb-1.5 block">On-Site Contact Number</label><input type="text" onChange={e => handleSpecificDataChange('onsite_contact_number', e.target.value)} className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm"/></div>
                                     
-                                    <div className="col-span-2">
-                                        <label className="text-xs font-semibold mb-1 block">Transportation Arrangement</label>
+                                    <div className="sm:col-span-2">
+                                        <label className="text-sm font-semibold text-slate-800 mb-1.5 block">Transportation Arrangement</label>
                                         <select 
                                             value={data.specific_data.transport_arrangement || 'Requestor will pick up/drop off the priest'} 
                                             onChange={e => handleSpecificDataChange('transport_arrangement', e.target.value)} 
-                                            className="w-full border rounded px-3 py-2 text-xs"
+                                            className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm"
                                         >
                                             <option value="Requestor will pick up/drop off the priest">Requestor will pick up/drop off the priest</option>
                                             <option value="Priest will use parish vehicle">Priest will use parish vehicle</option>

@@ -76,8 +76,8 @@ export default function VerifyIdButton({
             </button>
 
             {errorMessage && (
-                <div className="flex items-start gap-2 text-rose-600 text-xs bg-rose-50 border border-rose-200 rounded-lg p-2.5 max-w-md animate-in fade-in">
-                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <div className="flex items-start gap-2 text-rose-700 text-sm bg-rose-50 border border-rose-200 rounded-xl p-3 max-w-md animate-in fade-in">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
                     <span>{errorMessage}</span>
                 </div>
             )}

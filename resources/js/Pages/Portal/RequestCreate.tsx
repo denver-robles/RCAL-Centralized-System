@@ -52,13 +52,13 @@ export default function RequestCreate({ parishes }: Props) {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                <label className="block text-sm font-semibold text-slate-800 mb-1.5">
                                     Target Parish / Registry
                                 </label>
                                 <select
                                     value={data.targeted_parish_id}
                                     onChange={(e) => setData('targeted_parish_id', e.target.value)}
-                                    className="w-full bg-white border border-slate-200 text-slate-900 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition"
+                                    className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition"
                                 >
                                     <option value="">-- Archdiocesan Curia Chancery (All Parishes) --</option>
                                     {parishes.map((p) => (
@@ -67,19 +67,19 @@ export default function RequestCreate({ parishes }: Props) {
                                         </option>
                                     ))}
                                 </select>
-                                <span className="text-[11px] text-slate-500 mt-1 block">
+                                <span className="text-xs text-slate-600 mt-1.5 block">
                                     If unsure which parish holds the entry, leave blank for Chancery search.
                                 </span>
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                <label className="block text-sm font-semibold text-slate-800 mb-1.5">
                                     Sacrament Type <span className="text-rose-600">*</span>
                                 </label>
                                 <select
                                     value={data.sacrament_type}
                                     onChange={(e) => setData('sacrament_type', e.target.value as SacramentType)}
-                                    className="w-full bg-white border border-slate-200 text-slate-900 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition"
+                                    className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition"
                                 >
                                     <option value="baptism">Certificate of Baptism</option>
                                     <option value="confirmation">Certificate of Confirmation</option>
@@ -87,7 +87,7 @@ export default function RequestCreate({ parishes }: Props) {
                                     <option value="death">Certificate of Death / Funeral</option>
                                 </select>
                                 {errors.sacrament_type && (
-                                    <p className="text-rose-600 text-xs mt-1 font-medium">{errors.sacrament_type}</p>
+                                    <p className="text-rose-600 text-xs mt-1.5 font-medium">{errors.sacrament_type}</p>
                                 )}
                             </div>
                         </div>
@@ -102,7 +102,7 @@ export default function RequestCreate({ parishes }: Props) {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                <label className="block text-sm font-semibold text-slate-800 mb-1.5">
                                     Full Name on Ledger Entry <span className="text-rose-600">*</span>
                                 </label>
                                 <input
@@ -110,15 +110,15 @@ export default function RequestCreate({ parishes }: Props) {
                                     value={data.name_on_record}
                                     onChange={(e) => setData('name_on_record', e.target.value)}
                                     placeholder="e.g. Maria Theresa Cruz Santos"
-                                    className="w-full bg-white border border-slate-200 text-slate-900 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition placeholder:text-slate-400"
+                                    className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition placeholder:text-slate-400"
                                 />
                                 {errors.name_on_record && (
-                                    <p className="text-rose-600 text-xs mt-1 font-medium">{errors.name_on_record}</p>
+                                    <p className="text-rose-600 text-xs mt-1.5 font-medium">{errors.name_on_record}</p>
                                 )}
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                <label className="block text-sm font-semibold text-slate-800 mb-1.5">
                                     Date of Birth <span className="text-rose-600">*</span>
                                 </label>
                                 <input
@@ -126,17 +126,17 @@ export default function RequestCreate({ parishes }: Props) {
                                     max={today}
                                     value={data.date_of_birth}
                                     onChange={(e) => setData('date_of_birth', e.target.value)}
-                                    className="w-full bg-white border border-slate-200 text-slate-900 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition"
+                                    className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition"
                                 />
                                 {errors.date_of_birth && (
-                                    <p className="text-rose-600 text-xs mt-1 font-medium">{errors.date_of_birth}</p>
+                                    <p className="text-rose-600 text-xs mt-1.5 font-medium">{errors.date_of_birth}</p>
                                 )}
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                <label className="block text-sm font-semibold text-slate-800 mb-1.5">
                                     Date of Sacrament (if known)
                                 </label>
                                 <input
@@ -144,12 +144,12 @@ export default function RequestCreate({ parishes }: Props) {
                                     max={today}
                                     value={data.date_of_sacrament}
                                     onChange={(e) => setData('date_of_sacrament', e.target.value)}
-                                    className="w-full bg-white border border-slate-200 text-slate-900 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition"
+                                    className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                <label className="block text-sm font-semibold text-slate-800 mb-1.5">
                                     Place / Church of Sacrament
                                 </label>
                                 <input
@@ -157,13 +157,13 @@ export default function RequestCreate({ parishes }: Props) {
                                     value={data.place_of_sacrament}
                                     onChange={(e) => setData('place_of_sacrament', e.target.value)}
                                     placeholder="e.g. San Sebastian Cathedral, Lipa City"
-                                    className="w-full bg-white border border-slate-200 text-slate-900 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition placeholder:text-slate-400"
+                                    className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition placeholder:text-slate-400"
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-xs font-semibold text-slate-700 mb-1">
+                            <label className="block text-sm font-semibold text-slate-800 mb-1.5">
                                 Parents' Full Names (or Spouse if Marriage)
                             </label>
                             <input
@@ -171,7 +171,7 @@ export default function RequestCreate({ parishes }: Props) {
                                 value={data.parents_or_spouse}
                                 onChange={(e) => setData('parents_or_spouse', e.target.value)}
                                 placeholder="Father's Name & Mother's Maiden Name (or Spouse's Name)"
-                                className="w-full bg-white border border-slate-200 text-slate-900 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition placeholder:text-slate-400"
+                                className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition placeholder:text-slate-400"
                             />
                         </div>
                     </div>
@@ -185,13 +185,13 @@ export default function RequestCreate({ parishes }: Props) {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                <label className="block text-sm font-semibold text-slate-800 mb-1.5">
                                     Relationship to Document Owner <span className="text-rose-600">*</span>
                                 </label>
                                 <select
                                     value={data.relationship_to_owner}
                                     onChange={(e) => setData('relationship_to_owner', e.target.value)}
-                                    className="w-full bg-white border border-slate-200 text-slate-900 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition"
+                                    className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition"
                                 >
                                     <option value="Self">Self (Record Owner)</option>
                                     <option value="Parent">Parent</option>
@@ -203,13 +203,13 @@ export default function RequestCreate({ parishes }: Props) {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                <label className="block text-sm font-semibold text-slate-800 mb-1.5">
                                     Intended Purpose of Certificate <span className="text-rose-600">*</span>
                                 </label>
                                 <select
                                     value={data.purpose}
                                     onChange={(e) => setData('purpose', e.target.value)}
-                                    className="w-full bg-white border border-slate-200 text-slate-900 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition"
+                                    className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition"
                                 >
                                     <option value="Personal Copy & Documentation">Personal Copy & Documentation</option>
                                     <option value="Marriage License Application">Marriage License Application</option>
@@ -219,22 +219,22 @@ export default function RequestCreate({ parishes }: Props) {
                                     <option value="Other">Other</option>
                                 </select>
                                 {errors.purpose && (
-                                    <p className="text-rose-600 text-xs mt-1 font-medium">{errors.purpose}</p>
+                                    <p className="text-rose-600 text-xs mt-1.5 font-medium">{errors.purpose}</p>
                                 )}
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-xs font-semibold text-slate-700 mb-1">
+                            <label className="block text-sm font-semibold text-slate-800 mb-1.5">
                                 Upload Valid Government-Issued ID (Optional / Recommended)
                             </label>
                             <input
                                 type="file"
                                 accept=".jpg,.jpeg,.png,.pdf"
                                 onChange={(e) => setData('id_document', e.target.files ? e.target.files[0] : null)}
-                                className="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 text-xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-200 file:text-slate-700 hover:file:bg-slate-300"
+                                className="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-200 file:text-slate-700 hover:file:bg-slate-300"
                             />
-                            <span className="text-[11px] text-slate-500 mt-1 block">
+                            <span className="text-xs text-slate-600 mt-1.5 block">
                                 Accepted formats: JPG, PNG, PDF (Max 5MB). Accelerates identity verification by the Parish Secretary.
                             </span>
                         </div>
@@ -244,16 +244,16 @@ export default function RequestCreate({ parishes }: Props) {
                     <div className="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-6 shadow-sm space-y-4">
                         <div className="flex items-center gap-2 text-amber-700">
                             <ShieldCheck className="w-5 h-5 text-amber-600" />
-                            <h3 className="font-serif text-base font-bold text-slate-900">
+                            <h3 className="font-serif text-lg font-bold text-slate-900">
                                 Mandatory Data Privacy Consent (Republic Act No. 10173)
                             </h3>
                         </div>
 
-                        <p className="text-xs text-slate-700 leading-relaxed">
+                        <p className="text-sm text-slate-700 leading-relaxed">
                             Under the Philippine Data Privacy Act of 2012 (RA 10173), canonical registers contain personal and sensitive personal information. In accordance with Archdiocesan Curia guidelines, records are disclosed solely to the data subject or authorized representatives upon proof of identity.
                         </p>
 
-                        <label className="flex items-start gap-3 text-xs text-slate-800 cursor-pointer pt-2">
+                        <label className="flex items-start gap-3 text-sm text-slate-800 cursor-pointer pt-2">
                             <input
                                 type="checkbox"
                                 checked={data.consent_given}

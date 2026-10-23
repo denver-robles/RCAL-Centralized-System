@@ -36,7 +36,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                                     </div>
                                 </div>
                                 <div>
-                                    <span className="block text-xs font-semibold tracking-widest text-amber-400 uppercase font-serif">
+                                    <span className="block text-sm font-semibold tracking-wide text-amber-400 uppercase font-serif">
                                         Archdiocese of Lipa
                                     </span>
                                     <span className="block text-base sm:text-lg font-bold text-slate-100 tracking-tight leading-tight">
@@ -46,8 +46,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                             </Link>
 
                             {/* Curia Operating Hours Pill */}
-                            <div className="hidden lg:inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs text-slate-300 font-medium ml-4">
-                                <Clock className="w-3.5 h-3.5 text-amber-400" />
+                            <div className="hidden lg:inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-sm text-slate-300 font-medium ml-4">
+                                <Clock className="w-4 h-4 text-amber-400" />
                                 <span>{curia.operating_hours}</span>
                             </div>
                         </div>
@@ -106,8 +106,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 {/* Mobile Touch Drawer Navigation */}
                 {drawerOpen && (
                     <div className="md:hidden border-b border-slate-800 bg-slate-950/95 backdrop-blur-xl px-4 pt-2 pb-6 space-y-3">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs text-slate-300 font-medium w-full justify-center mb-2">
-                            <Clock className="w-3.5 h-3.5 text-amber-400" />
+                        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-sm text-slate-300 font-medium w-full justify-center mb-2">
+                            <Clock className="w-4 h-4 text-amber-400" />
                             <span>{curia.operating_hours}</span>
                         </div>
 

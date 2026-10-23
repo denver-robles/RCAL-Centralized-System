@@ -98,14 +98,14 @@ export default function Index({ auditLogs, accessLogs, filters, auth }: Props) {
             <Head title="Audit Trail - RCAL PIMS" />
 
             {/* Filter controls and Instant Client-Side Tabs */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 mb-6 shadow-sm space-y-4">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 mb-6 shadow-sm space-y-4">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     {/* Instant Tab Switcher (client-side state with zero flash) */}
                     <div className="flex items-center gap-1.5 p-1 bg-slate-100/80 rounded-xl border border-slate-200/60">
                         <button
                             type="button"
                             onClick={() => setActiveTab('audit')}
-                            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
                                 activeTab === 'audit'
                                     ? 'bg-white text-slate-900 shadow-sm'
                                     : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
@@ -113,7 +113,7 @@ export default function Index({ auditLogs, accessLogs, filters, auth }: Props) {
                         >
                             System Events & Mutations
                             {auditLogs && (
-                                <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-600 font-mono">
+                                <span className="ml-1.5 px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-700 font-mono">
                                     {auditLogs.total}
                                 </span>
                             )}
@@ -121,7 +121,7 @@ export default function Index({ auditLogs, accessLogs, filters, auth }: Props) {
                         <button
                             type="button"
                             onClick={() => setActiveTab('access')}
-                            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
                                 activeTab === 'access'
                                     ? 'bg-white text-slate-900 shadow-sm'
                                     : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
@@ -129,7 +129,7 @@ export default function Index({ auditLogs, accessLogs, filters, auth }: Props) {
                         >
                             Confidential Record Access (RA 10173)
                             {accessLogs && (
-                                <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-600 font-mono">
+                                <span className="ml-1.5 px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-700 font-mono">
                                     {accessLogs.total}
                                 </span>
                             )}
@@ -139,7 +139,7 @@ export default function Index({ auditLogs, accessLogs, filters, auth }: Props) {
                     {/* Search & Actions Filter & Prune Action */}
                     <div className="flex flex-wrap items-center gap-3">
                         <div className="relative">
-                            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                             <input
                                 type="text"
                                 placeholder="Search by user, IP, or record..."
@@ -149,7 +149,7 @@ export default function Index({ auditLogs, accessLogs, filters, auth }: Props) {
                                         handleFilter({ search: (e.target as HTMLInputElement).value });
                                     }
                                 }}
-                                className="bg-slate-50 border border-slate-200 text-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs w-64 focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition"
+                                className="bg-slate-50 border border-slate-200 text-slate-800 rounded-xl pl-9 pr-3 py-2 text-sm w-64 focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition"
                             />
                         </div>
 
@@ -157,7 +157,7 @@ export default function Index({ auditLogs, accessLogs, filters, auth }: Props) {
                             <select
                                 value={filters.action}
                                 onChange={(e) => handleFilter({ action: e.target.value })}
-                                className="bg-slate-50 border border-slate-200 text-slate-800 rounded-lg px-3 py-1.5 text-xs focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition"
+                                className="bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-3 py-2 text-sm focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition"
                             >
                                 <option value="all">All Actions</option>
                                 <option value="CREATE">CREATE</option>
@@ -173,10 +173,10 @@ export default function Index({ auditLogs, accessLogs, filters, auth }: Props) {
                             <button
                                 type="button"
                                 onClick={() => setPruneModalOpen(true)}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold transition shadow-sm"
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-sm font-semibold transition shadow-sm"
                                 title="Prune audit records older than 30 days to optimize storage"
                             >
-                                <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                                <Trash2 className="w-4 h-4 text-rose-600" />
                                 Prune Logs (&gt; 30d)
                             </button>
                         )}
@@ -188,59 +188,59 @@ export default function Index({ auditLogs, accessLogs, filters, auth }: Props) {
             {activeTab === 'audit' && auditLogs && (
                 <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs">
-                            <thead className="bg-slate-50/80 text-slate-500 uppercase tracking-wider text-[11px] font-semibold border-b border-slate-200">
+                        <table className="w-full text-left text-sm">
+                            <thead className="bg-slate-50/80 text-slate-700 uppercase tracking-wide text-xs font-semibold border-b border-slate-200">
                                 <tr>
-                                    <th className="py-3 px-4">Timestamp</th>
-                                    <th className="py-3 px-4">Action</th>
-                                    <th className="py-3 px-4">Actor</th>
-                                    <th className="py-3 px-4">Target Resource</th>
-                                    <th className="py-3 px-4">Description</th>
-                                    <th className="py-3 px-4">IP Address</th>
-                                    <th className="py-3 px-4 text-right">Payload</th>
+                                    <th className="py-3.5 px-5">Timestamp</th>
+                                    <th className="py-3.5 px-5">Action</th>
+                                    <th className="py-3.5 px-5">Actor</th>
+                                    <th className="py-3.5 px-5">Target Resource</th>
+                                    <th className="py-3.5 px-5">Description</th>
+                                    <th className="py-3.5 px-5">IP Address</th>
+                                    <th className="py-3.5 px-5 text-right">Payload</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 text-slate-700">
                                 {auditLogs.data.length === 0 ? (
                                     <tr>
-                                        <td colSpan={7} className="text-center py-10 text-slate-500">
+                                        <td colSpan={7} className="text-center py-10 text-slate-600 text-sm">
                                             No audit log entries match your filter.
                                         </td>
                                     </tr>
                                 ) : (
                                     auditLogs.data.map((log) => (
                                         <tr key={log.id} className="hover:bg-slate-50 transition-colors">
-                                            <td className="py-3 px-4 text-slate-500 font-mono text-[11px]">
+                                            <td className="py-3.5 px-5 text-slate-600 font-mono text-xs">
                                                 {log.created_at.slice(0, 19).replace('T', ' ')}
                                             </td>
-                                            <td className="py-3 px-4">
+                                            <td className="py-3.5 px-5">
                                                 <span
-                                                    className={`inline-block border px-2 py-0.5 rounded text-[10px] font-bold ${getActionBadgeClass(
+                                                    className={`inline-block border px-2.5 py-1 rounded text-xs font-bold ${getActionBadgeClass(
                                                         log.action
                                                     )}`}
                                                 >
                                                     {log.action}
                                                 </span>
                                             </td>
-                                            <td className="py-3 px-4 text-slate-900 font-semibold">
+                                            <td className="py-3.5 px-5 text-slate-900 font-semibold">
                                                 {log.actor_username || 'System / Guest'}
                                             </td>
-                                            <td className="py-3 px-4 text-slate-600 font-mono text-[11px]">
+                                            <td className="py-3.5 px-5 text-slate-700 font-mono text-xs">
                                                 {log.subject_type ? `${log.subject_type} #${log.subject_id}` : '—'}
                                             </td>
-                                            <td className="py-3 px-4 text-slate-700 max-w-xs truncate">
+                                            <td className="py-3.5 px-5 text-slate-800 max-w-xs truncate">
                                                 {log.note || '—'}
                                             </td>
-                                            <td className="py-3 px-4 text-slate-500 font-mono text-[11px]">
+                                            <td className="py-3.5 px-5 text-slate-600 font-mono text-xs">
                                                 {log.ip_address || '—'}
                                             </td>
-                                            <td className="py-3 px-4 text-right">
+                                            <td className="py-3.5 px-5 text-right">
                                                 {(log.old_values || log.new_values) && (
                                                     <button
                                                         onClick={() => setSelectedAuditLog(log)}
-                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-[11px] font-semibold transition-all duration-150"
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-semibold transition-all duration-150"
                                                     >
-                                                        <Database className="w-3 h-3 text-amber-600" />
+                                                        <Database className="w-3.5 h-3.5 text-amber-600" />
                                                         Diff
                                                     </button>
                                                 )}
@@ -255,17 +255,17 @@ export default function Index({ auditLogs, accessLogs, filters, auth }: Props) {
                     {/* Pagination Links */}
                     {auditLogs.links && auditLogs.links.length > 3 && (
                         <div className="p-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
-                            <span className="text-xs text-slate-500">
+                            <span className="text-sm text-slate-600">
                                 Showing page {auditLogs.current_page} of {auditLogs.last_page} ({auditLogs.total} total)
                             </span>
-                            <div className="flex gap-1">
+                            <div className="flex gap-1.5">
                                 {auditLogs.links.map((link, idx) => (
                                     <Link
                                         key={idx}
                                         href={link.url || '#'}
                                         preserveState
                                         preserveScroll
-                                        className={`px-3 py-1 rounded text-xs transition ${
+                                        className={`px-3.5 py-1.5 rounded-lg text-sm transition ${
                                             link.active
                                                 ? 'bg-slate-900 text-white font-semibold'
                                                 : link.url
@@ -285,43 +285,43 @@ export default function Index({ auditLogs, accessLogs, filters, auth }: Props) {
             {activeTab === 'access' && accessLogs && (
                 <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs">
-                            <thead className="bg-slate-50/80 text-slate-500 uppercase tracking-wider text-[11px] font-semibold border-b border-slate-200">
+                        <table className="w-full text-left text-sm">
+                            <thead className="bg-slate-50/80 text-slate-700 uppercase tracking-wide text-xs font-semibold border-b border-slate-200">
                                 <tr>
-                                    <th className="py-3 px-4">Access Timestamp</th>
-                                    <th className="py-3 px-4">Authorized User</th>
-                                    <th className="py-3 px-4">Resource Accessed</th>
-                                    <th className="py-3 px-4">Legal Citation Identifier</th>
-                                    <th className="py-3 px-4">Client IP Address</th>
-                                    <th className="py-3 px-4">Browser User Agent</th>
+                                    <th className="py-3.5 px-5">Access Timestamp</th>
+                                    <th className="py-3.5 px-5">Authorized User</th>
+                                    <th className="py-3.5 px-5">Resource Accessed</th>
+                                    <th className="py-3.5 px-5">Legal Citation Identifier</th>
+                                    <th className="py-3.5 px-5">Client IP Address</th>
+                                    <th className="py-3.5 px-5">Browser User Agent</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 text-slate-700">
                                 {accessLogs.data.length === 0 ? (
                                     <tr>
-                                        <td colSpan={6} className="text-center py-10 text-slate-500">
+                                        <td colSpan={6} className="text-center py-10 text-slate-600 text-sm">
                                             No confidential access entries found.
                                         </td>
                                     </tr>
                                 ) : (
                                     accessLogs.data.map((log) => (
                                         <tr key={log.id} className="hover:bg-slate-50 transition-colors">
-                                            <td className="py-3 px-4 text-slate-500 font-mono text-[11px]">
+                                            <td className="py-3.5 px-5 text-slate-600 font-mono text-xs">
                                                 {log.accessed_at.slice(0, 19).replace('T', ' ')}
                                             </td>
-                                            <td className="py-3 px-4 text-slate-900 font-semibold">
+                                            <td className="py-3.5 px-5 text-slate-900 font-semibold">
                                                 {log.user?.display_name || log.user?.username || `User #${log.user_id}`}
                                             </td>
-                                            <td className="py-3 px-4 text-slate-700 capitalize">
+                                            <td className="py-3.5 px-5 text-slate-700 capitalize">
                                                 {log.resource_type.replace('_', ' ')} #{log.resource_id}
                                             </td>
-                                            <td className="py-3 px-4 font-mono font-medium text-amber-800">
+                                            <td className="py-3.5 px-5 font-mono font-medium text-amber-800">
                                                 {log.resource_identifier || '—'}
                                             </td>
-                                            <td className="py-3 px-4 text-slate-500 font-mono text-[11px]">
+                                            <td className="py-3.5 px-5 text-slate-600 font-mono text-xs">
                                                 {log.ip_address || '—'}
                                             </td>
-                                            <td className="py-3 px-4 text-slate-500 text-[10px] max-w-xs truncate">
+                                            <td className="py-3.5 px-5 text-slate-600 text-xs max-w-xs truncate">
                                                 {log.user_agent || '—'}
                                             </td>
                                         </tr>
@@ -334,17 +334,17 @@ export default function Index({ auditLogs, accessLogs, filters, auth }: Props) {
                     {/* Pagination Links */}
                     {accessLogs.links && accessLogs.links.length > 3 && (
                         <div className="p-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
-                            <span className="text-xs text-slate-500">
+                            <span className="text-sm text-slate-600">
                                 Showing page {accessLogs.current_page} of {accessLogs.last_page} ({accessLogs.total} total)
                             </span>
-                            <div className="flex gap-1">
+                            <div className="flex gap-1.5">
                                 {accessLogs.links.map((link, idx) => (
                                     <Link
                                         key={idx}
                                         href={link.url || '#'}
                                         preserveState
                                         preserveScroll
-                                        className={`px-3 py-1 rounded text-xs transition ${
+                                        className={`px-3.5 py-1.5 rounded-lg text-sm transition ${
                                             link.active
                                                 ? 'bg-slate-900 text-white font-semibold'
                                                 : link.url
@@ -371,38 +371,38 @@ export default function Index({ auditLogs, accessLogs, filters, auth }: Props) {
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                            <h3 className="font-serif font-bold text-base text-slate-900 flex items-center gap-2">
-                                <Database className="w-4 h-4 text-amber-600" />
+                            <h3 className="font-serif font-bold text-lg text-slate-900 flex items-center gap-2">
+                                <Database className="w-5 h-5 text-amber-600" />
                                 Audit Log Payload #{selectedAuditLog.id}
                             </h3>
                             <button
                                 onClick={() => setSelectedAuditLog(null)}
-                                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
                             >
-                                <X className="w-4 h-4" />
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 text-xs">
+                        <div className="grid grid-cols-2 gap-4 text-sm">
                             <div>
-                                <span className="font-semibold text-slate-700 block mb-1">Old Values (Previous State)</span>
-                                <pre className="bg-slate-50 border border-slate-200 p-3 rounded-lg text-[11px] font-mono text-slate-700 overflow-x-auto max-h-60">
+                                <span className="font-semibold text-slate-800 block mb-1.5">Old Values (Previous State)</span>
+                                <pre className="bg-slate-50 border border-slate-200 p-3 rounded-lg text-xs font-mono text-slate-800 overflow-x-auto max-h-60">
                                     {JSON.stringify(selectedAuditLog.old_values, null, 2) || 'null'}
                                 </pre>
                             </div>
 
                             <div>
-                                <span className="font-semibold text-slate-700 block mb-1">New Values (Mutated State)</span>
-                                <pre className="bg-emerald-50/50 border border-emerald-200 p-3 rounded-lg text-[11px] font-mono text-emerald-900 overflow-x-auto max-h-60">
+                                <span className="font-semibold text-slate-800 block mb-1.5">New Values (Mutated State)</span>
+                                <pre className="bg-emerald-50/50 border border-emerald-200 p-3 rounded-lg text-xs font-mono text-emerald-950 overflow-x-auto max-h-60">
                                     {JSON.stringify(selectedAuditLog.new_values, null, 2) || 'null'}
                                 </pre>
                             </div>
                         </div>
 
-                        <div className="flex justify-end pt-2">
+                        <div className="flex justify-end pt-3">
                             <button
                                 onClick={() => setSelectedAuditLog(null)}
-                                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl text-xs transition"
+                                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl text-sm transition"
                             >
                                 Done
                             </button>
@@ -426,31 +426,31 @@ export default function Index({ auditLogs, accessLogs, filters, auth }: Props) {
                                 <AlertTriangle className="w-5 h-5" />
                             </div>
                             <div className="space-y-1">
-                                <h3 className="font-serif font-bold text-base text-slate-900">
+                                <h3 className="font-serif font-bold text-lg text-slate-900">
                                     Prune Audit Trail Retention (&gt; 30 Days)
                                 </h3>
-                                <p className="text-xs text-slate-500">
+                                <p className="text-sm text-slate-600">
                                     Archdiocesan Data Retention Policy & Database Optimization
                                 </p>
                             </div>
                         </div>
 
-                        <div className="p-3 bg-amber-50/70 border border-amber-200/80 rounded-xl space-y-2 text-xs text-amber-900">
+                        <div className="p-4 bg-amber-50/70 border border-amber-200/80 rounded-xl space-y-2 text-sm text-amber-950">
                             <p className="leading-relaxed">
                                 This action permanently purges all immutable system event and mutation audit records older than <strong>30 days</strong> to prevent database storage bloat.
                             </p>
-                            <p className="text-[11px] text-amber-700 font-medium flex items-center gap-1.5">
-                                <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+                            <p className="text-xs text-amber-800 font-medium flex items-center gap-1.5">
+                                <Clock className="w-4 h-4 flex-shrink-0" />
                                 Confidential access trail logs (RA 10173) are retained and will not be affected.
                             </p>
                         </div>
 
-                        <div className="flex items-center justify-end gap-2 pt-2">
+                        <div className="flex items-center justify-end gap-2.5 pt-3">
                             <button
                                 type="button"
                                 disabled={isPruning}
                                 onClick={() => setPruneModalOpen(false)}
-                                className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition disabled:opacity-50"
+                                className="px-4 py-2.5 text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition disabled:opacity-50"
                             >
                                 Cancel
                             </button>
@@ -458,9 +458,9 @@ export default function Index({ auditLogs, accessLogs, filters, auth }: Props) {
                                 type="button"
                                 disabled={isPruning}
                                 onClick={handlePrune}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl text-xs transition shadow-sm disabled:opacity-50"
+                                className="inline-flex items-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl text-sm transition shadow-sm disabled:opacity-50"
                             >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <Trash2 className="w-4 h-4" />
                                 {isPruning ? 'Pruning Records...' : 'Execute 30-Day Retention Prune'}
                             </button>
                         </div>

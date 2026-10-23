@@ -100,7 +100,7 @@ export default function SchedulesSettings({ settings }: Props) {
                             <button
                                 type="submit"
                                 disabled={processing}
-                                className="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 disabled:opacity-25 transition ease-in-out duration-150"
+                                className="btn-primary"
                             >
                                 Save Settings
                             </button>

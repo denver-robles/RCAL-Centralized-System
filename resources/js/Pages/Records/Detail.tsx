@@ -193,50 +193,50 @@ export default function Detail({
 
                     {/* Ecclesial Inscription Citation */}
                     <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs">
-                        <h3 className="text-sm font-mono uppercase text-slate-600 font-bold mb-4 border-b border-slate-200 pb-2">
+                        <h3 className="text-sm font-mono uppercase text-slate-700 font-bold mb-4 border-b border-slate-200 pb-2">
                             Canonical Inscription Citation
                         </h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs sm:text-sm">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
                             <div>
-                                <span className="block text-slate-500 text-xs">Book Number:</span>
+                                <span className="block text-slate-600 text-sm font-medium">Book Number:</span>
                                 <span className="font-mono font-bold text-amber-700 text-base">
                                     {record.book_number}
                                 </span>
                             </div>
                             <div>
-                                <span className="block text-slate-500 text-xs">Page / Folio:</span>
+                                <span className="block text-slate-600 text-sm font-medium">Page / Folio:</span>
                                 <span className="font-mono font-bold text-amber-700 text-base">
                                     {record.page_number}
                                 </span>
                             </div>
                             <div>
-                                <span className="block text-slate-500 text-xs">Entry Number:</span>
+                                <span className="block text-slate-600 text-sm font-medium">Entry Number:</span>
                                 <span className="font-mono font-bold text-amber-700 text-base">
                                     {record.entry_number}
                                 </span>
                             </div>
                             <div className="sm:col-span-2">
-                                <span className="block text-slate-500 text-xs">Originating Parish:</span>
-                                <span className="font-semibold text-slate-800">
+                                <span className="block text-slate-600 text-sm font-medium">Originating Parish:</span>
+                                <span className="font-semibold text-slate-800 text-sm">
                                     {record.originating_parish?.name || `Parish #${record.originating_parish_id}`}
                                 </span>
                             </div>
                             <div>
-                                <span className="block text-slate-500 text-xs">Date of Event:</span>
-                                <span className="font-semibold text-slate-800">
+                                <span className="block text-slate-600 text-sm font-medium">Date of Event:</span>
+                                <span className="font-semibold text-slate-800 text-sm">
                                     {record.event_date}
                                 </span>
                             </div>
                             <div className="sm:col-span-2">
-                                <span className="block text-slate-500 text-xs">Officiating Minister:</span>
-                                <span className="font-semibold text-slate-800">
+                                <span className="block text-slate-600 text-sm font-medium">Officiating Minister:</span>
+                                <span className="font-semibold text-slate-800 text-sm">
                                     {record.performed_by_clergy?.titled_name || 'Not recorded'}
                                 </span>
                             </div>
                             {record.legitimacy && (
                                 <div>
-                                    <span className="block text-slate-500 text-xs">Legitimacy:</span>
-                                    <span className="font-semibold text-slate-800 capitalize">
+                                    <span className="block text-slate-600 text-sm font-medium">Legitimacy:</span>
+                                    <span className="font-semibold text-slate-800 text-sm capitalize">
                                         {record.legitimacy}
                                     </span>
                                 </div>
@@ -244,20 +244,20 @@ export default function Detail({
                         </div>
 
                         {record.godparents && (
-                            <div className="mt-4 pt-3 border-t border-slate-200 text-xs">
-                                <span className="block text-slate-500 font-medium">Sponsors / Godparents:</span>
+                            <div className="mt-4 pt-3 border-t border-slate-200 text-sm">
+                                <span className="block text-slate-600 font-medium">Sponsors / Godparents:</span>
                                 <p className="text-slate-800 mt-0.5">{record.godparents}</p>
                             </div>
                         )}
                         {record.witnesses && (
-                            <div className="mt-3 pt-3 border-t border-slate-200 text-xs">
-                                <span className="block text-slate-500 font-medium">Witnesses:</span>
+                            <div className="mt-3 pt-3 border-t border-slate-200 text-sm">
+                                <span className="block text-slate-600 font-medium">Witnesses:</span>
                                 <p className="text-slate-800 mt-0.5">{record.witnesses}</p>
                             </div>
                         )}
                         {record.register_notes && (
-                            <div className="mt-3 pt-3 border-t border-slate-200 text-xs">
-                                <span className="block text-slate-500 font-medium">Register Notes:</span>
+                            <div className="mt-3 pt-3 border-t border-slate-200 text-sm">
+                                <span className="block text-slate-600 font-medium">Register Notes:</span>
                                 <p className="text-slate-800 mt-0.5 italic">{record.register_notes}</p>
                             </div>
                         )}
@@ -286,7 +286,7 @@ export default function Detail({
                         </div>
 
                         {!record.annotations || record.annotations.length === 0 ? (
-                            <div className="py-6 text-center text-xs text-slate-400">
+                            <div className="py-6 text-center text-sm text-slate-500">
                                 No marginal notes have been appended to this register entry.
                             </div>
                         ) : (
@@ -294,24 +294,24 @@ export default function Detail({
                                 {record.annotations.map((ann) => (
                                     <div
                                         key={ann.id}
-                                        className="p-3.5 rounded-xl bg-amber-50/50 border border-amber-200 text-xs space-y-1.5"
+                                        className="p-4 rounded-xl bg-amber-50/50 border border-amber-200 text-sm space-y-1.5"
                                     >
                                         <div className="flex items-center justify-between">
-                                            <span className="font-bold text-amber-800 uppercase tracking-wide">
+                                            <span className="font-bold text-amber-800 uppercase tracking-wide text-xs">
                                                 {ann.annotation_type.replace(/_/g, ' ')}
                                             </span>
-                                            <span className="text-[11px] text-slate-500">
+                                            <span className="text-xs text-slate-600">
                                                 {ann.created_at.split('T')[0]}
                                             </span>
                                         </div>
-                                        <p className="text-slate-700 leading-relaxed">{ann.note_text}</p>
+                                        <p className="text-slate-800 leading-relaxed text-sm">{ann.note_text}</p>
                                         {ann.decree_reference && (
-                                            <div className="text-[11px] text-slate-600">
+                                            <div className="text-xs text-slate-700">
                                                 Decree Ref: <span className="text-slate-900 font-mono font-medium">{ann.decree_reference}</span>
                                             </div>
                                         )}
                                         {ann.reference_record_id && (
-                                            <div className="text-[11px] text-amber-700 font-mono font-medium">
+                                            <div className="text-xs text-amber-700 font-mono font-medium">
                                                 Linked Record: #{ann.reference_record_id}
                                             </div>
                                         )}
@@ -353,9 +353,9 @@ export default function Detail({
                             </button>
                         </div>
 
-                        <form onSubmit={submitOrder} className="space-y-4 text-xs sm:text-sm">
+                        <form onSubmit={submitOrder} className="space-y-4 text-sm">
                             <div>
-                                <label className="block text-slate-700 font-semibold mb-1">
+                                <label className="block text-slate-700 font-semibold mb-1.5 text-sm">
                                     Registered Parishioner Account (Optional)
                                 </label>
                                 <select
@@ -370,7 +370,7 @@ export default function Detail({
                                             requester_contact: found ? (found.phone || found.email) : prev.requester_contact,
                                         }));
                                     }}
-                                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs text-xs"
+                                    className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs text-sm"
                                 >
                                     <option value="">Walk-in / Offline Requester (Unregistered)</option>
                                     {parishioners?.map((p) => (
@@ -380,14 +380,14 @@ export default function Detail({
                                     ))}
                                 </select>
                                 {orderData.parishioner_id && (
-                                    <p className="text-emerald-700 text-[11px] mt-1.5 flex items-center gap-1 font-medium bg-emerald-50 p-2 rounded-lg border border-emerald-200">
+                                    <p className="text-emerald-800 text-xs mt-1.5 flex items-center gap-1 font-medium bg-emerald-50 p-2.5 rounded-lg border border-emerald-200">
                                         <span>✓ This order will automatically appear in this parishioner's portal dashboard with live tracking.</span>
                                     </p>
                                 )}
                             </div>
 
                             <div>
-                                <label className="block text-slate-700 font-semibold mb-1">
+                                <label className="block text-slate-700 font-semibold mb-1.5 text-sm">
                                     Applicant / Requester Name <span className="text-rose-600">*</span>
                                 </label>
                                 <input
@@ -396,7 +396,7 @@ export default function Detail({
                                     value={orderData.requester_name}
                                     onChange={(e) => setOrderData('requester_name', e.target.value)}
                                     placeholder="Full name of person requesting certificate"
-                                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                                    className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs text-sm"
                                 />
                                 {orderErrors.requester_name && (
                                     <p className="text-rose-600 text-xs mt-1 font-medium">{orderErrors.requester_name}</p>
@@ -404,7 +404,7 @@ export default function Detail({
                             </div>
 
                             <div>
-                                <label className="block text-slate-700 font-semibold mb-1">
+                                <label className="block text-slate-700 font-semibold mb-1.5 text-sm">
                                     Requester Contact Phone (7 Digits)
                                 </label>
                                 <input
@@ -418,16 +418,16 @@ export default function Detail({
                                         setOrderData('requester_contact', clean);
                                     }}
                                     placeholder="e.g. 7562572"
-                                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                                    className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs text-sm"
                                 />
-                                <span className="text-[10px] text-slate-500 mt-0.5 block">Batangas standard: exactly 7 numeric digits.</span>
+                                <span className="text-xs text-slate-600 mt-1 block">Batangas standard: exactly 7 numeric digits.</span>
                                 {orderErrors.requester_contact && (
                                     <p className="text-rose-600 text-xs mt-1 font-medium">{orderErrors.requester_contact}</p>
                                 )}
                             </div>
 
                             <div>
-                                <label className="block text-slate-700 font-semibold mb-1">
+                                <label className="block text-slate-700 font-semibold mb-1.5 text-sm">
                                     Purpose of Certificate <span className="text-rose-600">*</span>
                                 </label>
                                 <input
@@ -436,7 +436,7 @@ export default function Detail({
                                     value={orderData.purpose}
                                     onChange={(e) => setOrderData('purpose', e.target.value)}
                                     placeholder="e.g. Marriage License, School Requirement, Personal Copy"
-                                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                                    className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs text-sm"
                                 />
                                 {orderErrors.purpose && (
                                     <p className="text-rose-600 text-xs mt-1 font-medium">{orderErrors.purpose}</p>
@@ -450,14 +450,14 @@ export default function Detail({
                                         setOrderModalOpen(false);
                                         resetOrder();
                                     }}
-                                    className="btn-cancel text-xs"
+                                    className="btn-cancel"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={orderProcessing}
-                                    className="btn-primary text-xs"
+                                    className="btn-primary"
                                 >
                                     {orderProcessing ? 'Creating Order...' : 'Create Certificate Order'}
                                 </button>
@@ -496,15 +496,15 @@ export default function Detail({
                             </button>
                         </div>
 
-                        <form onSubmit={submitAnnotation} className="space-y-4 text-xs sm:text-sm">
+                        <form onSubmit={submitAnnotation} className="space-y-4 text-sm">
                             <div>
-                                <label className="block text-slate-700 font-semibold mb-1">
+                                <label className="block text-slate-700 font-semibold mb-1.5 text-sm">
                                     Annotation Type
                                 </label>
                                 <select
                                     value={annotationData.annotation_type}
                                     onChange={(e) => setAnnotationData('annotation_type', e.target.value)}
-                                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                                    className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs text-sm"
                                 >
                                     {safeAnnotationTypes.map((t) => (
                                         <option key={t.value} value={t.value}>
@@ -515,7 +515,7 @@ export default function Detail({
                             </div>
 
                             <div>
-                                <label className="block text-slate-700 font-semibold mb-1">
+                                <label className="block text-slate-700 font-semibold mb-1.5 text-sm">
                                     Marginal Note Inscription
                                 </label>
                                 <textarea
@@ -524,7 +524,7 @@ export default function Detail({
                                     placeholder="Enter verbatim canonical annotation as inscribed in the physical parish book..."
                                     value={annotationData.note_text}
                                     onChange={(e) => setAnnotationData('note_text', e.target.value)}
-                                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                                    className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs text-sm"
                                 />
                                 {annotationErrors.note_text && (
                                     <p className="text-rose-600 text-xs mt-1 font-medium">{annotationErrors.note_text}</p>
@@ -533,18 +533,18 @@ export default function Detail({
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-slate-700 font-semibold mb-1">
+                                    <label className="block text-slate-700 font-semibold mb-1.5 text-sm">
                                         Date of Event
                                     </label>
                                     <input
                                         type="date"
                                         value={annotationData.event_date}
                                         onChange={(e) => setAnnotationData('event_date', e.target.value)}
-                                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                                        className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs text-sm"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-slate-700 font-semibold mb-1">
+                                    <label className="block text-slate-700 font-semibold mb-1.5 text-sm">
                                         Decree / Protocol Reference
                                     </label>
                                     <input
@@ -552,14 +552,14 @@ export default function Detail({
                                         placeholder="e.g. Curia Decree No. 2026-08"
                                         value={annotationData.decree_reference}
                                         onChange={(e) => setAnnotationData('decree_reference', e.target.value)}
-                                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                                        className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs text-sm"
                                     />
                                 </div>
                             </div>
 
                             {selectedType?.links_to_record && (
                                 <div>
-                                    <label className="block text-slate-700 font-semibold mb-1">
+                                    <label className="block text-slate-700 font-semibold mb-1.5 text-sm">
                                         Related Register Entry ID
                                     </label>
                                     <input
@@ -567,7 +567,7 @@ export default function Detail({
                                         placeholder="Target record ID (e.g. 42)"
                                         value={annotationData.reference_record_id}
                                         onChange={(e) => setAnnotationData('reference_record_id', e.target.value)}
-                                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                                        className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs text-sm"
                                     />
                                     {annotationErrors.reference_record_id && (
                                         <p className="text-rose-600 text-xs mt-1 font-medium">{annotationErrors.reference_record_id}</p>
@@ -582,14 +582,14 @@ export default function Detail({
                                         setModalOpen(false);
                                         resetAnnotation();
                                     }}
-                                    className="btn-cancel text-xs"
+                                    className="btn-cancel"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={annotationProcessing}
-                                    className="btn-primary text-xs"
+                                    className="btn-primary"
                                 >
                                     {annotationProcessing ? 'Recording...' : 'Inscribe Margin Note'}
                                 </button>

@@ -11,11 +11,13 @@ use Stripe\Exception\SignatureVerificationException;
 
 class StripeIdentityController extends Controller
 {
-    protected StripeClient $stripe;
+    protected mixed $stripe = null;
 
     public function __construct()
     {
-        $this->stripe = new StripeClient(config('services.stripe.secret'));
+        if (class_exists(StripeClient::class) && config('services.stripe.secret')) {
+            $this->stripe = new StripeClient(config('services.stripe.secret'));
+        }
     }
 
     /**
@@ -46,6 +48,12 @@ class StripeIdentityController extends Controller
         if (empty($secret) || str_starts_with($secret, 'sk_test_...')) {
             return response()->json([
                 'error' => 'Stripe Secret Key is not configured yet. Please update STRIPE_SECRET in your .env file with your valid Stripe secret key.',
+            ], 422);
+        }
+
+        if (!class_exists(StripeClient::class) || !$this->stripe) {
+            return response()->json([
+                'error' => 'Stripe SDK is not installed. Please run composer require stripe/stripe-php.',
             ], 422);
         }
 
@@ -86,7 +94,7 @@ class StripeIdentityController extends Controller
         $user = $request->user();
 
         // If user is pending and we have a session ID, actively check Stripe in case webhook is delayed
-        if ($user->stripe_verification_session_id && $user->identity_status !== 'verified') {
+        if ($this->stripe && $user->stripe_verification_session_id && $user->identity_status !== 'verified') {
             try {
                 $session = $this->stripe->identity->verificationSessions->retrieve(
                     $user->stripe_verification_session_id
@@ -117,6 +125,10 @@ class StripeIdentityController extends Controller
      */
     public function handleWebhook(Request $request)
     {
+        if (!class_exists(Webhook::class)) {
+            return response()->json(['error' => 'Invalid signature or payload'], 400);
+        }
+
         $payload = $request->getContent();
         $sigHeader = $request->header('Stripe-Signature');
         $endpointSecret = config('services.stripe.webhook_secret');

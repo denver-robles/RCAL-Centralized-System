@@ -40,7 +40,7 @@ export default function ForgotPassword() {
                         <h2 className="text-white font-bold text-xs sm:text-sm tracking-wide uppercase leading-tight">
                             Archdiocese of Lipa
                         </h2>
-                        <p className="text-slate-400 text-[10px] sm:text-xs">
+                        <p className="text-slate-300 text-xs">
                             Centralized Records & Chancery System
                         </p>
                     </div>
@@ -71,21 +71,21 @@ export default function ForgotPassword() {
                         className="w-14 h-14 object-contain rounded-full shadow-xs border border-amber-300"
                     />
 
-                    <div className="mt-3 px-3 py-0.5 rounded-full bg-amber-50 text-amber-800 font-bold text-[10px] tracking-wider uppercase border border-amber-200">
+                    <div className="mt-3 px-3 py-1 rounded-full bg-amber-50 text-amber-800 font-bold text-xs tracking-wide uppercase border border-amber-200">
                         Self-Service Recovery
                     </div>
 
                     <div className="text-center mt-4 mb-6">
-                        <h1 className="font-serif font-bold text-slate-900 text-xl tracking-tight">
+                        <h1 className="font-serif font-bold text-slate-900 text-xl sm:text-2xl tracking-tight">
                             Password Recovery
                         </h1>
-                        <p className="text-slate-600 text-xs mt-1.5 leading-relaxed">
+                        <p className="text-slate-600 text-sm mt-1.5 leading-relaxed">
                             Enter your registered email address or account username. We'll generate a secure reset link so you can recover access immediately.
                         </p>
                     </div>
 
                     {flash?.status && (
-                        <div className="w-full mb-5 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-2.5 text-emerald-800 text-xs">
+                        <div className="w-full mb-5 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-2.5 text-emerald-800 text-sm">
                             <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 mt-0.5" />
                             <div className="leading-relaxed">
                                 <span className="font-semibold block">{flash.status}</span>
@@ -94,26 +94,26 @@ export default function ForgotPassword() {
                     )}
 
                     {flash?.reset_url && (
-                        <div className="w-full mb-5 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-slate-800 text-xs space-y-2">
-                            <div className="flex items-center gap-1.5 font-bold text-amber-900 text-xs">
+                        <div className="w-full mb-5 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-slate-800 text-sm space-y-2">
+                            <div className="flex items-center gap-1.5 font-bold text-amber-900 text-sm">
                                 <KeyRound className="w-4 h-4 text-amber-600" />
                                 <span>Direct Recovery Link Generated:</span>
                             </div>
-                            <p className="text-[11px] text-slate-600">
+                            <p className="text-xs text-slate-600">
                                 For immediate recovery without waiting for email relay:
                             </p>
                             <a
                                 href={flash.reset_url}
-                                className="inline-flex items-center justify-center gap-1.5 w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs transition shadow-xs"
+                                className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-sm transition shadow-xs"
                             >
-                                <ExternalLink className="w-3.5 h-3.5" />
+                                <ExternalLink className="w-4 h-4" />
                                 Proceed to Reset Password Now
                             </a>
                         </div>
                     )}
 
                     {errors.email && (
-                        <div className="w-full mb-5 p-3 rounded-xl bg-rose-50 border border-rose-200 flex items-center gap-2 text-rose-700 text-xs">
+                        <div className="w-full mb-5 p-3 rounded-xl bg-rose-50 border border-rose-200 flex items-center gap-2 text-rose-700 text-sm">
                             <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
                             <span>{errors.email}</span>
                         </div>
@@ -121,7 +121,7 @@ export default function ForgotPassword() {
 
                     <form onSubmit={submit} className="w-full space-y-4">
                         <div>
-                            <label className="block text-xs font-bold text-slate-700 tracking-wider uppercase mb-1.5">
+                            <label className="block text-xs font-bold text-slate-700 tracking-wide uppercase mb-1.5">
                                 Account Email or Username:
                             </label>
                             <div className="relative">
@@ -140,7 +140,7 @@ export default function ForgotPassword() {
                         <button
                             type="submit"
                             disabled={processing}
-                            className="w-full py-3 bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
+                            className="w-full py-3 bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-sm uppercase tracking-wide rounded-xl shadow-md transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
                         >
                             {processing ? 'Generating Recovery Link...' : 'Send Password Recovery Link'}
                         </button>
@@ -149,7 +149,7 @@ export default function ForgotPassword() {
                     <div className="mt-6 pt-5 border-t border-slate-100 w-full text-center">
                         <Link
                             href="/login"
-                            className="text-xs text-amber-700 hover:text-amber-800 font-semibold hover:underline inline-flex items-center gap-1"
+                            className="text-sm text-amber-700 hover:text-amber-800 font-semibold hover:underline inline-flex items-center gap-1"
                         >
                             <ArrowLeft className="w-3.5 h-3.5" />
                             <span>Remember your password? Sign in</span>

@@ -82,7 +82,7 @@ export default function Create({ auth, parishes, clergy, prefillSchedule }: Prop
                                 <span className="text-slate-700">{prefillSchedule.title} ({prefillSchedule.starts_at.slice(0, 10)})</span>
                             </div>
                         </div>
-                        <span className="text-xs bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full uppercase tracking-wider font-bold">
+                        <span className="text-xs bg-amber-100 text-amber-800 px-3 py-1 rounded-full uppercase tracking-wide font-bold">
                             Auto-transcribing
                         </span>
                     </div>
@@ -100,13 +100,13 @@ export default function Create({ auth, parishes, clergy, prefillSchedule }: Prop
 
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                                     Sacrament Type <span className="text-rose-600">*</span>
                                 </label>
                                 <select
                                     value={data.sacrament_type}
                                     onChange={(e) => setData('sacrament_type', e.target.value as SacramentType)}
-                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
+                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3.5 py-2.5 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
                                 >
                                     <option value="baptism">Baptism (Baptismus)</option>
                                     <option value="confirmation">Confirmation (Confirmatio)</option>
@@ -117,7 +117,7 @@ export default function Create({ auth, parishes, clergy, prefillSchedule }: Prop
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                                     Book / Volume No. <span className="text-rose-600">*</span>
                                 </label>
                                 <input
@@ -125,13 +125,13 @@ export default function Create({ auth, parishes, clergy, prefillSchedule }: Prop
                                     min="1"
                                     value={data.book_number}
                                     onChange={(e) => setData('book_number', parseInt(e.target.value) || 1)}
-                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
+                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3.5 py-2.5 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
                                 />
                                 {errors.book_number && <p className="text-rose-600 text-xs mt-1 font-medium">{errors.book_number}</p>}
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                                     Page / Folio No. <span className="text-rose-600">*</span>
                                 </label>
                                 <input
@@ -139,13 +139,13 @@ export default function Create({ auth, parishes, clergy, prefillSchedule }: Prop
                                     min="1"
                                     value={data.page_number}
                                     onChange={(e) => setData('page_number', parseInt(e.target.value) || 1)}
-                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
+                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3.5 py-2.5 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
                                 />
                                 {errors.page_number && <p className="text-rose-600 text-xs mt-1 font-medium">{errors.page_number}</p>}
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                                     Entry No. <span className="text-rose-600">*</span>
                                 </label>
                                 <input
@@ -153,7 +153,7 @@ export default function Create({ auth, parishes, clergy, prefillSchedule }: Prop
                                     min="1"
                                     value={data.entry_number}
                                     onChange={(e) => setData('entry_number', parseInt(e.target.value) || 1)}
-                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
+                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3.5 py-2.5 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
                                 />
                                 {errors.entry_number && <p className="text-rose-600 text-xs mt-1 font-medium">{errors.entry_number}</p>}
                             </div>
@@ -161,14 +161,14 @@ export default function Create({ auth, parishes, clergy, prefillSchedule }: Prop
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                                     Originating Parish <span className="text-rose-600">*</span>
                                 </label>
                                 <select
                                     value={data.originating_parish_id}
                                     disabled={!auth.user?.is_archdiocese_wide}
                                     onChange={(e) => setData('originating_parish_id', parseInt(e.target.value))}
-                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none disabled:opacity-60 shadow-2xs transition-colors"
+                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3.5 py-2.5 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none disabled:opacity-60 shadow-2xs transition-colors"
                                 >
                                     {parishes.map((parish) => (
                                         <option key={parish.id} value={parish.id}>
@@ -182,26 +182,26 @@ export default function Create({ auth, parishes, clergy, prefillSchedule }: Prop
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                                     Event Date <span className="text-rose-600">*</span>
                                 </label>
                                 <input
                                     type="date"
                                     value={data.event_date}
                                     onChange={(e) => setData('event_date', e.target.value)}
-                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
+                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3.5 py-2.5 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
                                 />
                                 {errors.event_date && <p className="text-rose-600 text-xs mt-1 font-medium">{errors.event_date}</p>}
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                                     Officiating Minister (Clergy)
                                 </label>
                                 <select
                                     value={data.performed_by_clergy_id}
                                     onChange={(e) => setData('performed_by_clergy_id', e.target.value ? parseInt(e.target.value) : '')}
-                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
+                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3.5 py-2.5 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
                                 >
                                     <option value="">-- Select Clergy --</option>
                                     {clergy.map((c) => (
@@ -228,7 +228,7 @@ export default function Create({ auth, parishes, clergy, prefillSchedule }: Prop
 
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                                     First Name <span className="text-rose-600">*</span>
                                 </label>
                                 <input
@@ -236,24 +236,24 @@ export default function Create({ auth, parishes, clergy, prefillSchedule }: Prop
                                     value={data.first_name}
                                     onChange={(e) => setData('first_name', e.target.value)}
                                     placeholder="e.g. Juan"
-                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
+                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3.5 py-2.5 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
                                 />
                                 {errors.first_name && <p className="text-rose-600 text-xs mt-1 font-medium">{errors.first_name}</p>}
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">Middle Name</label>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Middle Name</label>
                                 <input
                                     type="text"
                                     value={data.middle_name}
                                     onChange={(e) => setData('middle_name', e.target.value)}
                                     placeholder="e.g. Santos"
-                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
+                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3.5 py-2.5 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                                     Last Name <span className="text-rose-600">*</span>
                                 </label>
                                 <input
@@ -261,17 +261,17 @@ export default function Create({ auth, parishes, clergy, prefillSchedule }: Prop
                                     value={data.last_name}
                                     onChange={(e) => setData('last_name', e.target.value)}
                                     placeholder="e.g. Dela Cruz"
-                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
+                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3.5 py-2.5 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
                                 />
                                 {errors.last_name && <p className="text-rose-600 text-xs mt-1 font-medium">{errors.last_name}</p>}
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">Suffix</label>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Suffix</label>
                                 <select
                                     value={data.suffix}
                                     onChange={(e) => setData('suffix', e.target.value)}
-                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
+                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3.5 py-2.5 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
                                 >
                                     <option value="">None</option>
                                     <option value="Jr.">Jr.</option>
@@ -288,13 +288,13 @@ export default function Create({ auth, parishes, clergy, prefillSchedule }: Prop
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                                     Sex <span className="text-rose-600">*</span>
                                 </label>
                                 <select
                                     value={data.sex}
                                     onChange={(e) => setData('sex', e.target.value)}
-                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
+                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3.5 py-2.5 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
                                 >
                                     <option value="male">Male</option>
                                     <option value="female">Female</option>
@@ -302,48 +302,48 @@ export default function Create({ auth, parishes, clergy, prefillSchedule }: Prop
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">Date of Birth</label>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Date of Birth</label>
                                 <input
                                     type="date"
                                     max={today}
                                     value={data.date_of_birth}
                                     onChange={(e) => setData('date_of_birth', e.target.value)}
-                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
+                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3.5 py-2.5 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">Place of Birth</label>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Place of Birth</label>
                                 <input
                                     type="text"
                                     value={data.place_of_birth}
                                     onChange={(e) => setData('place_of_birth', e.target.value)}
                                     placeholder="City/Municipality, Province"
-                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
+                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3.5 py-2.5 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
                                 />
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">Father's Full Name</label>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Father's Full Name</label>
                                 <input
                                     type="text"
                                     value={data.father_name}
                                     onChange={(e) => setData('father_name', e.target.value)}
                                     placeholder="First Name, Middle, Last Name"
-                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
+                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3.5 py-2.5 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">Mother's Full Maiden Name</label>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Mother's Full Maiden Name</label>
                                 <input
                                     type="text"
                                     value={data.mother_name}
                                     onChange={(e) => setData('mother_name', e.target.value)}
                                     placeholder="First Name, Middle, Maiden Last Name"
-                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
+                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3.5 py-2.5 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
                                 />
                             </div>
                         </div>
@@ -361,7 +361,7 @@ export default function Create({ auth, parishes, clergy, prefillSchedule }: Prop
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                                         Bride First Name <span className="text-rose-600">*</span>
                                     </label>
                                     <input
@@ -369,12 +369,12 @@ export default function Create({ auth, parishes, clergy, prefillSchedule }: Prop
                                         value={data.spouse_first_name}
                                         onChange={(e) => setData('spouse_first_name', e.target.value)}
                                         placeholder="e.g. Maria"
-                                        className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
+                                        className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3.5 py-2.5 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                                         Bride Maiden Last Name <span className="text-rose-600">*</span>
                                     </label>
                                     <input
@@ -382,7 +382,7 @@ export default function Create({ auth, parishes, clergy, prefillSchedule }: Prop
                                         value={data.spouse_last_name}
                                         onChange={(e) => setData('spouse_last_name', e.target.value)}
                                         placeholder="e.g. Santos"
-                                        className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
+                                        className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3.5 py-2.5 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
                                     />
                                 </div>
                             </div>
@@ -401,11 +401,11 @@ export default function Create({ auth, parishes, clergy, prefillSchedule }: Prop
                         {data.sacrament_type === 'baptism' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-semibold text-slate-700 mb-1">Legitimacy Status</label>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Legitimacy Status</label>
                                     <select
                                         value={data.legitimacy}
                                         onChange={(e) => setData('legitimacy', e.target.value)}
-                                        className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
+                                        className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3.5 py-2.5 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
                                     >
                                         <option value="legitimate">Legitimate</option>
                                         <option value="illegitimate">Illegitimate</option>
@@ -415,13 +415,13 @@ export default function Create({ auth, parishes, clergy, prefillSchedule }: Prop
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-semibold text-slate-700 mb-1">Place of Event</label>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Place of Event</label>
                                     <input
                                         type="text"
                                         value={data.place_of_event}
                                         onChange={(e) => setData('place_of_event', e.target.value)}
                                         placeholder="Parish Church / Chapel"
-                                        className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
+                                        className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3.5 py-2.5 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
                                     />
                                 </div>
                             </div>
@@ -429,7 +429,7 @@ export default function Create({ auth, parishes, clergy, prefillSchedule }: Prop
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                                     Godparents / Sponsors (Patrini)
                                 </label>
                                 <textarea
@@ -437,12 +437,12 @@ export default function Create({ auth, parishes, clergy, prefillSchedule }: Prop
                                     value={data.godparents}
                                     onChange={(e) => setData('godparents', e.target.value)}
                                     placeholder="List sponsors separated by commas or newlines..."
-                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
+                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3.5 py-2.5 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                                     Witnesses (Testes)
                                 </label>
                                 <textarea
@@ -450,13 +450,13 @@ export default function Create({ auth, parishes, clergy, prefillSchedule }: Prop
                                     value={data.witnesses}
                                     onChange={(e) => setData('witnesses', e.target.value)}
                                     placeholder="List formal witnesses..."
-                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
+                                    className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3.5 py-2.5 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-xs font-semibold text-slate-700 mb-1">
+                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                                 Initial Register Notes / Canonical Observations
                             </label>
                             <textarea
@@ -464,7 +464,7 @@ export default function Create({ auth, parishes, clergy, prefillSchedule }: Prop
                                 value={data.register_notes}
                                 onChange={(e) => setData('register_notes', e.target.value)}
                                 placeholder="Any special canonical dispensations, annotations made at inscription, or ledger conditions..."
-                                className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
+                                className="w-full bg-white border border-slate-300 text-slate-900 rounded-lg px-3.5 py-2.5 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none shadow-2xs transition-colors"
                             />
                         </div>
                     </div>

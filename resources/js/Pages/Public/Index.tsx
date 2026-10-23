@@ -136,7 +136,7 @@ export default function Index({ stats }: IndexProps) {
                 <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
                     <div className="max-w-4xl mx-auto text-center">
                         {/* Chancery Badge */}
-                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/80 border border-amber-500/40 text-amber-300 text-xs font-semibold uppercase tracking-wider mb-6 shadow-sm backdrop-blur-md hover:-translate-y-0.5 transition-all duration-200">
+                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/80 border border-amber-500/40 text-amber-300 text-xs font-semibold uppercase tracking-wide mb-6 shadow-sm backdrop-blur-md hover:-translate-y-0.5 transition-all duration-200">
                             <Church className="w-4 h-4 text-amber-400" />
                             <span>Roman Catholic Archdiocese of Lipa • Chancery Curia • Est. 1810</span>
                         </div>
@@ -189,15 +189,15 @@ export default function Index({ stats }: IndexProps) {
                                         <Search className="w-4 h-4" />
                                     </div>
                                     <div>
-                                        <h3 className="font-serif font-bold text-slate-900 text-sm sm:text-base">
+                                        <h3 className="font-serif font-bold text-slate-900 text-base">
                                             Track Document Request Status
                                         </h3>
-                                        <p className="text-[11px] text-slate-500">
+                                        <p className="text-sm text-slate-600 mt-0.5">
                                             Enter the tracking code provided upon certificate claim submission
                                         </p>
                                     </div>
                                 </div>
-                                <span className="hidden sm:inline-block px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] font-mono font-medium">
+                                <span className="hidden sm:inline-block px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-mono font-medium">
                                     Instant Verification
                                 </span>
                             </div>
@@ -215,7 +215,7 @@ export default function Index({ stats }: IndexProps) {
                                 <button
                                     type="submit"
                                     disabled={isSearching || !trackingCode.trim()}
-                                    className="px-6 py-3 bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:hover:scale-100 shadow-xs flex items-center justify-center gap-2"
+                                    className="px-6 py-3 bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-sm uppercase tracking-wide rounded-xl transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:hover:scale-100 shadow-xs flex items-center justify-center gap-2"
                                 >
                                     {isSearching ? (
                                         <>
@@ -235,26 +235,26 @@ export default function Index({ stats }: IndexProps) {
                                         <span className="text-xs font-mono font-bold text-amber-900">
                                             {searchResult.tracking_code}
                                         </span>
-                                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                        <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide bg-emerald-100 text-emerald-800 border border-emerald-200">
                                             {searchResult.status}
                                         </span>
                                     </div>
 
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                                         <div>
-                                            <span className="text-[10px] uppercase font-bold text-slate-500 block">Sacrament</span>
+                                            <span className="text-xs uppercase font-bold text-slate-600 block">Sacrament</span>
                                             <span className="font-semibold text-slate-900 capitalize">{searchResult.sacrament_type}</span>
                                         </div>
                                         <div>
-                                            <span className="text-[10px] uppercase font-bold text-slate-500 block">Name on Record</span>
+                                            <span className="text-xs uppercase font-bold text-slate-600 block">Name on Record</span>
                                             <span className="font-semibold text-slate-900">{searchResult.name_on_record}</span>
                                         </div>
                                         <div>
-                                            <span className="text-[10px] uppercase font-bold text-slate-500 block">Holding Parish</span>
+                                            <span className="text-xs uppercase font-bold text-slate-600 block">Holding Parish</span>
                                             <span className="font-semibold text-slate-900 truncate block">{searchResult.parish_name}</span>
                                         </div>
                                         <div>
-                                            <span className="text-[10px] uppercase font-bold text-slate-500 block">Submitted At</span>
+                                            <span className="text-xs uppercase font-bold text-slate-600 block">Submitted At</span>
                                             <span className="font-semibold text-slate-700">
                                                 {new Date(searchResult.submitted_at).toLocaleDateString()}
                                             </span>
@@ -265,7 +265,7 @@ export default function Index({ stats }: IndexProps) {
 
                             {/* Tracking Error View */}
                             {searchError && (
-                                <div className="mt-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2 animate-in fade-in duration-200">
+                                <div className="mt-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-sm flex items-center gap-2 animate-in fade-in duration-200">
                                     <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
                                     <span>{searchError}</span>
                                 </div>
@@ -330,7 +330,7 @@ export default function Index({ stats }: IndexProps) {
             {/* Five-Step Certificate Release Pipeline Stepper */}
             <section className="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="text-center max-w-2xl mx-auto mb-12">
-                    <span className="text-xs font-mono uppercase tracking-widest text-amber-600 font-semibold">
+                    <span className="text-xs font-mono uppercase tracking-wide text-amber-600 font-semibold">
                         Certificates Workflow Simulator
                     </span>
                     <h2 className="mt-2 text-2xl sm:text-3xl font-serif font-bold text-slate-900">
@@ -355,7 +355,7 @@ export default function Index({ stats }: IndexProps) {
                                 key={s.num}
                                 type="button"
                                 onClick={() => setStepperStep(s.num)}
-                                className={`text-center py-2.5 px-2 rounded-xl border transition-all text-xs font-bold ${
+                                className={`text-center py-2.5 px-2 rounded-xl border transition-all text-xs sm:text-sm font-bold ${
                                     stepperStep === s.num
                                         ? 'bg-amber-400 text-slate-950 border-amber-500 shadow-sm'
                                         : stepperStep > s.num
@@ -376,7 +376,7 @@ export default function Index({ stats }: IndexProps) {
                                 <p className="text-slate-600">
                                     The parishioner files a claim specifying the holding parish, year of event, and subject name with RA 10173 data privacy consent and government ID verification.
                                 </p>
-                                <div className="mt-3 text-xs font-mono text-slate-600 bg-white p-3 rounded-lg border border-slate-200 shadow-2xs">
+                                <div className="mt-3 text-sm font-mono text-slate-700 bg-white p-3.5 rounded-lg border border-slate-200 shadow-2xs">
                                     Status: <span className="text-sky-600 font-bold">submitted</span> • Tracking Code: <span className="text-slate-900 font-semibold">RCAL-REQ-7F928A1C</span>
                                 </div>
                             </div>
@@ -387,7 +387,7 @@ export default function Index({ stats }: IndexProps) {
                                 <p className="text-slate-600">
                                     Parish office clerks inspect the physical books or scanned folios, matching the claim to Volume, Page, and Entry number in the parochial register.
                                 </p>
-                                <div className="mt-3 text-xs font-mono text-slate-600 bg-white p-3 rounded-lg border border-slate-200 shadow-2xs">
+                                <div className="mt-3 text-sm font-mono text-slate-700 bg-white p-3.5 rounded-lg border border-slate-200 shadow-2xs">
                                     Status: <span className="text-amber-700 font-bold">verified</span> • Canonical Citation: <span className="text-slate-900 font-semibold">Book 4, Page 12, Entry 8</span>
                                 </div>
                             </div>
@@ -398,7 +398,7 @@ export default function Index({ stats }: IndexProps) {
                                 <p className="text-slate-600">
                                     Authorized clergy or parish staff authorize the generation of the certified copy, ensuring no canonical impediments exist under Canon 535 §2.
                                 </p>
-                                <div className="mt-3 text-xs font-mono text-slate-600 bg-white p-3 rounded-lg border border-slate-200 shadow-2xs">
+                                <div className="mt-3 text-sm font-mono text-slate-700 bg-white p-3.5 rounded-lg border border-slate-200 shadow-2xs">
                                     Status: <span className="text-amber-700 font-bold">approved</span> • Approved by: <span className="text-slate-900 font-semibold">Rev. Fr. Armando Rosales</span>
                                 </div>
                             </div>
@@ -409,7 +409,7 @@ export default function Index({ stats }: IndexProps) {
                                 <p className="text-slate-600">
                                     The document is rendered with the Archdiocesan seal, marginal annotations (Can. 535 §2), and dry seal registration markers.
                                 </p>
-                                <div className="mt-3 text-xs font-mono text-slate-600 bg-white p-3 rounded-lg border border-slate-200 shadow-2xs">
+                                <div className="mt-3 text-sm font-mono text-slate-700 bg-white p-3.5 rounded-lg border border-slate-200 shadow-2xs">
                                     Status: <span className="text-sky-600 font-bold">processing</span> ➔ <span className="text-indigo-600 font-bold">ready</span>
                                 </div>
                             </div>
@@ -420,7 +420,7 @@ export default function Index({ stats }: IndexProps) {
                                 <p className="text-slate-600">
                                     The certified copy is stamped with a unique series number (`RCAL-2026-XXXX`) and verification token verifying provenance for civil and ecclesiastical authorities.
                                 </p>
-                                <div className="mt-3 text-xs font-mono text-slate-600 bg-white p-3 rounded-lg border border-slate-200 shadow-2xs">
+                                <div className="mt-3 text-sm font-mono text-slate-700 bg-white p-3.5 rounded-lg border border-slate-200 shadow-2xs">
                                     Status: <span className="text-emerald-700 font-bold">issued / completed</span> • Certificate No: <span className="text-slate-900 font-semibold">RCAL-2026-0042</span>
                                 </div>
                             </div>
@@ -433,7 +433,7 @@ export default function Index({ stats }: IndexProps) {
             <section id="guidelines" className="py-16 bg-slate-100/70 border-t border-b border-slate-200">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center max-w-2xl mx-auto mb-10">
-                        <span className="text-xs font-mono uppercase tracking-widest text-amber-600 font-semibold">
+                        <span className="text-xs font-mono uppercase tracking-wide text-amber-600 font-semibold">
                             Ecclesiastical Norms
                         </span>
                         <h2 className="mt-2 text-2xl sm:text-3xl font-serif font-bold text-slate-900">
@@ -447,7 +447,7 @@ export default function Index({ stats }: IndexProps) {
                                 key={g}
                                 type="button"
                                 onClick={() => setSelectedGuideline(g)}
-                                className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all capitalize ${
+                                className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all capitalize ${
                                     selectedGuideline === g
                                         ? 'bg-amber-400 text-slate-950 shadow-sm font-bold'
                                         : 'bg-white text-slate-600 border border-slate-200 hover:text-slate-900 hover:bg-slate-50'
@@ -458,14 +458,14 @@ export default function Index({ stats }: IndexProps) {
                         ))}
                     </div>
 
-                    <div className="max-w-3xl mx-auto p-7 rounded-2xl bg-white border border-slate-200 text-sm leading-relaxed text-slate-700 shadow-sm">
+                    <div className="max-w-3xl mx-auto p-7 sm:p-8 rounded-2xl bg-white border border-slate-200 text-sm leading-relaxed text-slate-700 shadow-sm">
                         {selectedGuideline === 'baptism' && (
                             <div className="space-y-3">
                                 <h3 className="font-serif font-bold text-amber-700 text-base">Baptismal Register Guidelines (Can. 877)</h3>
                                 <p>
                                     The parish priest must carefully and without delay record in the baptismal register the names of the baptized, the minister, the parents, the godparents, and the place and date of the baptism, noting also the date and place of birth.
                                 </p>
-                                <p className="text-xs text-slate-500">
+                                <p className="text-sm text-slate-600 italic">
                                     *Note: Marginal annotations for subsequent marriage, religious profession, or holy orders are strictly recorded on this folio.
                                 </p>
                             </div>
@@ -501,7 +501,7 @@ export default function Index({ stats }: IndexProps) {
             {/* Canonical Helpdesk & FAQ */}
             <section id="helpdesk" className="py-16 sm:py-24 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="text-center mb-12">
-                    <span className="text-xs font-mono uppercase tracking-widest text-amber-600 font-semibold">
+                    <span className="text-xs font-mono uppercase tracking-wide text-amber-600 font-semibold">
                         Canonical Helpdesk
                     </span>
                     <h2 className="mt-2 text-2xl sm:text-3xl font-serif font-bold text-slate-900">

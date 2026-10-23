@@ -143,7 +143,7 @@ export default function Login() {
                         <h2 className="text-white font-bold text-xs sm:text-sm tracking-wide uppercase leading-tight">
                             Archdiocese of Lipa
                         </h2>
-                        <p className="text-slate-400 text-[10px] sm:text-xs">
+                        <p className="text-slate-300 text-xs">
                             Centralized Records & Chancery System
                         </p>
                     </div>
@@ -179,7 +179,7 @@ export default function Login() {
                         />
 
                         {/* Pill Chip */}
-                        <div className="mt-2.5 px-3 py-0.5 rounded-full bg-purple-50 text-purple-700 font-bold text-[10px] tracking-wider uppercase border border-purple-200/60">
+                        <div className="mt-2.5 px-3 py-1 rounded-full bg-purple-50 text-purple-700 font-semibold text-xs tracking-wide uppercase border border-purple-200/60">
                             Secure Authentication
                         </div>
 
@@ -188,42 +188,42 @@ export default function Login() {
                             <button
                                 type="button"
                                 onClick={() => setActiveTab('parishioner')}
-                                className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 ${
+                                className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 ${
                                     activeTab === 'parishioner'
                                         ? 'bg-white text-slate-900 shadow-sm font-bold ring-1 ring-slate-900/5'
-                                        : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/50'
+                                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
                                 }`}
                             >
-                                <User className={`w-3.5 h-3.5 transition-colors ${activeTab === 'parishioner' ? 'text-amber-600' : 'text-slate-400'}`} />
+                                <User className={`w-4 h-4 transition-colors ${activeTab === 'parishioner' ? 'text-amber-600' : 'text-slate-500'}`} />
                                 <span>Parishioner Portal</span>
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setActiveTab('staff')}
-                                className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 ${
+                                className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 ${
                                     activeTab === 'staff'
                                         ? 'bg-white text-slate-900 shadow-sm font-bold ring-1 ring-slate-900/5'
-                                        : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/50'
+                                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
                                 }`}
                             >
-                                <Building2 className={`w-3.5 h-3.5 transition-colors ${activeTab === 'staff' ? 'text-amber-600' : 'text-slate-400'}`} />
+                                <Building2 className={`w-4 h-4 transition-colors ${activeTab === 'staff' ? 'text-amber-600' : 'text-slate-500'}`} />
                                 <span>Staff & Chancery</span>
                             </button>
                         </div>
 
                         {/* Flash / Status Alert Banner */}
                         {flash?.success && (
-                            <div className="w-full mt-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold text-center shadow-2xs">
+                            <div className="w-full mt-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold text-center shadow-2xs">
                                 {flash.success}
                             </div>
                         )}
                         {flash?.error && (
-                            <div className="w-full mt-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium text-center shadow-2xs">
+                            <div className="w-full mt-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-sm font-medium text-center shadow-2xs">
                                 {flash.error}
                             </div>
                         )}
                         {errors.identifier && (
-                            <div className="w-full mt-4 p-3 rounded-xl bg-rose-50 border border-rose-200 flex items-center gap-2 text-rose-700 text-xs shadow-2xs">
+                            <div className="w-full mt-4 p-3 rounded-xl bg-rose-50 border border-rose-200 flex items-center gap-2 text-rose-700 text-sm shadow-2xs">
                                 <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
                                 <span>{errors.identifier}</span>
                             </div>
@@ -236,7 +236,7 @@ export default function Login() {
                                     ? 'Parishioner Portal Sign In'
                                     : 'Staff & Chancery Sign In'}
                             </h3>
-                            <p className="text-slate-500 text-xs mt-1 max-w-xs leading-relaxed transition-all duration-150">
+                            <p className="text-slate-600 text-sm mt-1 max-w-xs leading-relaxed transition-all duration-150">
                                 {activeTab === 'parishioner'
                                     ? 'Access your sacramental certificates, document claims, and schedule appointments.'
                                     : 'Enter your canonical credentials to manage parish registers and appointments.'}
@@ -247,7 +247,7 @@ export default function Login() {
                         {loginMode === 'password' ? (
                             <form onSubmit={submit} className="w-full space-y-3.5">
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-700 tracking-wider uppercase mb-1.5">
+                                    <label className="block text-xs font-bold text-slate-700 tracking-wide uppercase mb-1.5">
                                         {activeTab === 'parishioner'
                                             ? 'Registered Email or Username:'
                                             : 'Staff / Clergy Identifier:'}
@@ -262,12 +262,12 @@ export default function Login() {
                                                 ? 'e.g. maria.santos@email.ph'
                                                 : 'e.g. fr.reyes or chancery.admin'
                                         }
-                                        className="w-full px-4 py-3 bg-white border border-slate-300 focus:border-amber-500 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all shadow-xs"
+                                        className="w-full px-4 py-2.5 bg-white border border-slate-300 focus:border-amber-500 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all shadow-xs"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-700 tracking-wider uppercase mb-1.5">
+                                    <label className="block text-xs font-bold text-slate-700 tracking-wide uppercase mb-1.5">
                                         Password:
                                     </label>
                                     <div className="relative">
@@ -277,7 +277,7 @@ export default function Login() {
                                             value={data.password}
                                             onChange={(e) => setData('password', e.target.value)}
                                             placeholder="••••••••••••"
-                                            className="w-full pl-4 pr-11 py-3 bg-white border border-slate-300 focus:border-amber-500 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all shadow-xs"
+                                            className="w-full pl-4 pr-11 py-2.5 bg-white border border-slate-300 focus:border-amber-500 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all shadow-xs"
                                         />
                                         {/* Animated Eye / EyeOff Icon */}
                                         <button
@@ -299,13 +299,13 @@ export default function Login() {
                                     )}
                                 </div>
 
-                                <div className="flex items-center justify-between text-xs pt-0.5">
-                                    <label className="flex items-center gap-2 text-slate-600 cursor-pointer select-none">
+                                <div className="flex items-center justify-between text-sm pt-0.5">
+                                    <label className="flex items-center gap-2 text-slate-700 cursor-pointer select-none">
                                         <input
                                             type="checkbox"
                                             checked={data.remember}
                                             onChange={(e) => setData('remember', e.target.checked)}
-                                            className="rounded border-slate-300 text-amber-500 focus:ring-amber-400 w-3.5 h-3.5"
+                                            className="rounded border-slate-300 text-amber-500 focus:ring-amber-400 w-4 h-4"
                                         />
                                         <span>Remember me</span>
                                     </label>
@@ -313,14 +313,14 @@ export default function Login() {
                                     <button
                                         type="button"
                                         onClick={() => setForgotModalOpen(true)}
-                                        className="text-amber-600 hover:text-amber-700 font-semibold hover:underline text-xs"
+                                        className="text-amber-600 hover:text-amber-700 font-semibold hover:underline text-sm"
                                     >
                                         Forgot password?
                                     </button>
                                 </div>
 
                                 {/* Terms and Privacy Checkbox - Unchecked by default */}
-                                <div className="flex items-start gap-2 text-xs pt-0.5">
+                                <div className="flex items-start gap-2 text-sm pt-0.5">
                                     <input
                                         id="terms_accepted"
                                         type="checkbox"
@@ -329,9 +329,9 @@ export default function Login() {
                                             setTermsAccepted(e.target.checked);
                                             if (e.target.checked) setTermsError(false);
                                         }}
-                                        className="rounded border-slate-300 text-amber-500 focus:ring-amber-400 w-3.5 h-3.5 mt-0.5"
+                                        className="rounded border-slate-300 text-amber-500 focus:ring-amber-400 w-4 h-4 mt-0.5"
                                     />
-                                    <label htmlFor="terms_accepted" className="text-slate-600 text-[11px] leading-tight select-none cursor-pointer">
+                                    <label htmlFor="terms_accepted" className="text-slate-700 text-xs leading-normal select-none cursor-pointer">
                                         I accept the{' '}
                                         <button
                                             type="button"
@@ -345,7 +345,7 @@ export default function Login() {
                                 </div>
 
                                 {termsError && (
-                                    <p className="text-rose-600 text-[11px] font-medium flex items-center gap-1">
+                                    <p className="text-rose-600 text-xs font-medium flex items-center gap-1">
                                         <AlertCircle className="w-3.5 h-3.5" />
                                         Please accept the Terms & Conditions before signing in.
                                     </p>
@@ -354,7 +354,7 @@ export default function Login() {
                                 <button
                                     type="submit"
                                     disabled={processing}
-                                    className={`w-full mt-2 py-3 bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 ${
+                                    className={`w-full mt-2 py-3 bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-sm uppercase tracking-wide rounded-xl shadow-md transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 ${
                                         !termsAccepted ? 'opacity-75' : ''
                                     }`}
                                 >
@@ -371,7 +371,7 @@ export default function Login() {
                                         <div className="w-full border-t border-slate-200" />
                                     </div>
                                     <div className="relative flex justify-center text-xs uppercase">
-                                        <span className="bg-white px-2.5 text-slate-400 text-[10px] font-bold tracking-wider">
+                                        <span className="bg-white px-2.5 text-slate-500 text-xs font-bold tracking-wide">
                                             Or Authenticate With
                                         </span>
                                     </div>
@@ -383,7 +383,7 @@ export default function Login() {
                                         setLoginMode('face');
                                         if (data.identifier) setFaceIdentifier(data.identifier);
                                     }}
-                                    className="w-full py-2.5 px-4 bg-slate-50 hover:bg-amber-50/60 text-slate-800 hover:text-amber-950 border border-slate-200 hover:border-amber-300 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all duration-150 shadow-2xs group"
+                                    className="w-full py-2.5 px-4 bg-slate-50 hover:bg-amber-50/60 text-slate-800 hover:text-amber-950 border border-slate-200 hover:border-amber-300 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-150 shadow-2xs group"
                                 >
                                     <ScanFace className="w-4 h-4 text-amber-600 transition-transform duration-200 group-hover:scale-110" />
                                     <span>Sign In with Face++ Recognition</span>
@@ -394,7 +394,7 @@ export default function Login() {
                             <div className="w-full space-y-3.5">
                                 {/* Mode Header & Back Switcher */}
                                 <div className="flex items-center justify-between pb-1 border-b border-slate-100">
-                                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 uppercase tracking-wide">
+                                    <div className="flex items-center gap-1.5 text-sm font-bold text-slate-800 uppercase tracking-wide">
                                         <ScanFace className="w-4 h-4 text-amber-600" />
                                         <span>Hands-Free Face Biometric Sign In</span>
                                     </div>
@@ -403,7 +403,7 @@ export default function Login() {
                                         onClick={() => {
                                             setLoginMode('password');
                                         }}
-                                        className="text-[11px] font-semibold text-amber-600 hover:text-amber-700 underline"
+                                        className="text-xs font-semibold text-amber-600 hover:text-amber-700 underline"
                                     >
                                         Use Password Instead
                                     </button>
@@ -411,7 +411,7 @@ export default function Login() {
 
                                 {/* Email / Username Input */}
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-700 tracking-wider uppercase mb-1.5">
+                                    <label className="block text-xs font-bold text-slate-700 tracking-wide uppercase mb-1.5">
                                         {activeTab === 'parishioner'
                                             ? 'Registered Email or Username:'
                                             : 'Staff / Clergy Identifier:'}
@@ -435,7 +435,7 @@ export default function Login() {
                                 </div>
 
                                 {/* Terms and Privacy Checkbox */}
-                                <div className="flex items-start gap-2 text-xs pt-0.5">
+                                <div className="flex items-start gap-2 text-sm pt-0.5">
                                     <input
                                         id="face_terms_accepted"
                                         type="checkbox"
@@ -444,11 +444,11 @@ export default function Login() {
                                             setTermsAccepted(e.target.checked);
                                             if (e.target.checked) setTermsError(false);
                                         }}
-                                        className="rounded border-slate-300 text-amber-500 focus:ring-amber-400 w-3.5 h-3.5 mt-0.5"
+                                        className="rounded border-slate-300 text-amber-500 focus:ring-amber-400 w-4 h-4 mt-0.5"
                                     />
                                     <label
                                         htmlFor="face_terms_accepted"
-                                        className="text-slate-600 text-[11px] leading-tight select-none cursor-pointer"
+                                        className="text-slate-700 text-xs leading-normal select-none cursor-pointer"
                                     >
                                         I accept the{' '}
                                         <button
@@ -463,7 +463,7 @@ export default function Login() {
                                 </div>
 
                                 {termsError && (
-                                    <p className="text-rose-600 text-[11px] font-medium flex items-center gap-1">
+                                    <p className="text-rose-600 text-xs font-medium flex items-center gap-1">
                                         <AlertCircle className="w-3.5 h-3.5" />
                                         Please accept the Terms & Conditions before signing in.
                                     </p>
@@ -476,8 +476,6 @@ export default function Login() {
                                     processingMessage="Comparing live biometric scan against registered face reference (Face++)..."
                                     errorMessage={cameraError}
                                     onRetry={() => setCameraError(null)}
-                                    title="Hands-Free Biometric Verification"
-                                    description="Blink naturally and complete the active movement challenge. Capture will trigger automatically once liveness is proven."
                                 />
                             </div>
                         )}
@@ -485,29 +483,29 @@ export default function Login() {
                         {/* Bottom Action Callout - Stable Box to Prevent Switcher Layout Shift */}
                         <div className="w-full mt-4 min-h-[120px] flex flex-col justify-center">
                             {activeTab === 'parishioner' ? (
-                                <div className="w-full bg-amber-50/50 border border-amber-300/80 rounded-2xl p-3.5 text-center flex flex-col justify-center space-y-1.5 transition-all duration-200 shadow-2xs">
-                                    <h4 className="font-bold text-amber-950 text-xs sm:text-sm">
+                                <div className="w-full bg-amber-50/50 border border-amber-300/80 rounded-2xl p-4 text-center flex flex-col justify-center space-y-1.5 transition-all duration-200 shadow-2xs">
+                                    <h4 className="font-bold text-amber-950 text-sm sm:text-base">
                                         Don't have a parishioner account yet?
                                     </h4>
-                                    <p className="text-slate-600 text-[11px] leading-tight">
+                                    <p className="text-slate-700 text-xs leading-normal">
                                         Register to request certificates and schedule sacraments online.
                                     </p>
                                     <Link
                                         href="/register"
-                                        className="block w-full py-2 bg-white border border-amber-400 hover:bg-amber-50 text-slate-900 font-bold rounded-xl text-xs transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] shadow-2xs"
+                                        className="block w-full py-2.5 bg-white border border-amber-400 hover:bg-amber-50 text-slate-900 font-bold rounded-xl text-sm transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] shadow-2xs"
                                     >
                                         + Sign Up / Register an Account
                                     </Link>
                                 </div>
                             ) : (
-                                <div className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-center flex flex-col justify-center space-y-1.5 transition-all duration-200 shadow-2xs">
-                                    <h4 className="font-bold text-slate-900 text-xs sm:text-sm">
+                                <div className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center flex flex-col justify-center space-y-1.5 transition-all duration-200 shadow-2xs">
+                                    <h4 className="font-bold text-slate-900 text-sm sm:text-base">
                                         Archdiocesan Curia Staff Support
                                     </h4>
-                                    <p className="text-slate-600 text-[11px] leading-tight">
+                                    <p className="text-slate-700 text-xs leading-normal">
                                         Parish staff and clergy credentials are provisioned by the Chancery.
                                     </p>
-                                    <div className="py-1.5 px-3 bg-white border border-slate-200 rounded-xl text-amber-800 font-mono text-xs font-semibold">
+                                    <div className="py-2 px-3 bg-white border border-slate-200 rounded-xl text-amber-800 font-mono text-xs font-semibold">
                                         Chancery Hotline: (043) 756-2572
                                     </div>
                                 </div>
@@ -518,7 +516,7 @@ export default function Login() {
                     {/* Right Canvas: Liturgical Archdiocesan Hero Presentation */}
                     <div className="w-full lg:max-w-xl text-left text-white py-4">
                         {/* Chancery Badge */}
-                        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/80 border border-amber-500/40 text-amber-400 text-xs font-semibold tracking-wider uppercase mb-5 backdrop-blur-md shadow-sm hover:-translate-y-0.5 transition-all duration-200">
+                        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/80 border border-amber-500/40 text-amber-400 text-xs font-semibold tracking-wide uppercase mb-5 backdrop-blur-md shadow-sm hover:-translate-y-0.5 transition-all duration-200">
                             <Church className="w-4 h-4 text-amber-400" />
                             <span>Archdiocese of Lipa • Chancery • Est. 1810</span>
                         </div>
@@ -530,43 +528,43 @@ export default function Login() {
                         </h1>
 
                         {/* Mission Description */}
-                        <p className="text-slate-200 text-sm leading-relaxed max-w-xl mt-4">
+                        <p className="text-slate-200 text-base leading-relaxed max-w-xl mt-4">
                             A centralized canonical records management platform serving our parishioners, clergy, and parish communities with integrity, modern security, and ecclesiastical fidelity.
                         </p>
 
                         {/* Three Translucent Glass Cards */}
                         <div className="mt-6 space-y-3">
-                            <div className="bg-slate-900/60 backdrop-blur-md border border-slate-700/60 rounded-xl p-3.5 flex items-start gap-3 shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200">
+                            <div className="bg-slate-900/60 backdrop-blur-md border border-slate-700/60 rounded-xl p-4 flex items-start gap-3 shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200">
                                 <Shield className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
                                 <div>
-                                    <h3 className="font-semibold text-white text-xs">
+                                    <h3 className="font-semibold text-white text-sm">
                                         RA 10173 & Canon Law Protected
                                     </h3>
-                                    <p className="text-slate-300 text-[11px] mt-0.5 leading-relaxed">
+                                    <p className="text-slate-300 text-xs mt-0.5 leading-relaxed">
                                         End-to-end data privacy compliant with strict sacramental confidentiality standards.
                                     </p>
                                 </div>
                             </div>
 
-                            <div className="bg-slate-900/60 backdrop-blur-md border border-slate-700/60 rounded-xl p-3.5 flex items-start gap-3 shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200">
+                            <div className="bg-slate-900/60 backdrop-blur-md border border-slate-700/60 rounded-xl p-4 flex items-start gap-3 shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200">
                                 <FileText className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
                                 <div>
-                                    <h3 className="font-semibold text-white text-xs">
+                                    <h3 className="font-semibold text-white text-sm">
                                         Official Sacramental Registers
                                     </h3>
-                                    <p className="text-slate-300 text-[11px] mt-0.5 leading-relaxed">
+                                    <p className="text-slate-300 text-xs mt-0.5 leading-relaxed">
                                         Canonical certificates for Baptism, Confirmation, Matrimony, and Christian Burial.
                                     </p>
                                 </div>
                             </div>
 
-                            <div className="bg-slate-900/60 backdrop-blur-md border border-slate-700/60 rounded-xl p-3.5 flex items-start gap-3 shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200">
+                            <div className="bg-slate-900/60 backdrop-blur-md border border-slate-700/60 rounded-xl p-4 flex items-start gap-3 shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200">
                                 <Building2 className="w-5 h-5 text-sky-400 shrink-0 mt-0.5" />
                                 <div>
-                                    <h3 className="font-semibold text-white text-xs">
+                                    <h3 className="font-semibold text-white text-sm">
                                         Diocesan-Wide Parish Network
                                     </h3>
-                                    <p className="text-slate-300 text-[11px] mt-0.5 leading-relaxed">
+                                    <p className="text-slate-300 text-xs mt-0.5 leading-relaxed">
                                         Connecting parishes, vicariates, and the Archdiocesan Chancery in Lipa City.
                                     </p>
                                 </div>
@@ -595,7 +593,7 @@ export default function Login() {
                         <div className="flex items-center justify-between border-b border-slate-200 pb-3">
                             <div className="flex items-center gap-2">
                                 <KeyRound className="w-5 h-5 text-amber-600" />
-                                <h3 className="font-serif font-bold text-base text-slate-900">
+                                <h3 className="font-serif font-bold text-lg text-slate-900">
                                     Self-Service Password Recovery
                                 </h3>
                             </div>
@@ -608,25 +606,25 @@ export default function Login() {
                             </button>
                         </div>
 
-                        <p className="text-xs text-slate-600 leading-relaxed">
+                        <p className="text-sm text-slate-700 leading-relaxed">
                             Recover your account password directly online. Enter your registered account email or username below.
                         </p>
 
                         {flash?.status && (
-                            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-2 text-emerald-800 text-xs">
+                            <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-2 text-emerald-800 text-sm">
                                 <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 mt-0.5" />
                                 <span>{flash.status}</span>
                             </div>
                         )}
 
                         {flash?.reset_url && (
-                            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs space-y-2">
+                            <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-sm space-y-2">
                                 <span className="font-bold text-amber-900 block">Instant Recovery Link:</span>
                                 <a
                                     href={flash.reset_url}
-                                    className="inline-flex items-center justify-center gap-1.5 w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs transition shadow-xs"
+                                    className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm transition shadow-xs"
                                 >
-                                    <ExternalLink className="w-3.5 h-3.5" />
+                                    <ExternalLink className="w-4 h-4" />
                                     Proceed to Reset Password
                                 </a>
                             </div>
@@ -634,7 +632,7 @@ export default function Login() {
 
                         <form onSubmit={handleForgotSubmit} className="space-y-3 pt-1">
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 tracking-wider uppercase mb-1">
+                                <label className="block text-xs font-bold text-slate-700 tracking-wide uppercase mb-1.5">
                                     Account Email or Username:
                                 </label>
                                 <div className="relative">
@@ -644,9 +642,9 @@ export default function Login() {
                                         value={forgotForm.data.email}
                                         onChange={(e) => forgotForm.setData('email', e.target.value)}
                                         placeholder="maria.santos@email.ph or username"
-                                        className="w-full pl-9 pr-3 py-2.5 bg-white border border-slate-300 focus:border-amber-500 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500 shadow-2xs"
+                                        className="w-full pl-9 pr-3 py-2.5 bg-white border border-slate-300 focus:border-amber-500 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500 shadow-2xs"
                                     />
-                                    <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                                    <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
                                 </div>
                                 {forgotForm.errors.email && (
                                     <p className="text-rose-600 text-xs mt-1">{forgotForm.errors.email}</p>
@@ -656,26 +654,26 @@ export default function Login() {
                             <button
                                 type="submit"
                                 disabled={forgotForm.processing}
-                                className="w-full py-2.5 bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl shadow-xs transition-all disabled:opacity-60"
+                                className="w-full py-2.5 bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-sm uppercase tracking-wide rounded-xl shadow-xs transition-all disabled:opacity-60"
                             >
                                 {forgotForm.processing ? 'Generating...' : 'Send Recovery Link'}
                             </button>
                         </form>
 
-                        <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
+                        <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-sm">
                             <Link
                                 href="/forgot-password"
                                 onClick={() => setForgotModalOpen(false)}
-                                className="text-amber-700 hover:text-amber-800 font-semibold inline-flex items-center gap-1 hover:underline text-[11px]"
+                                className="text-amber-700 hover:text-amber-800 font-semibold inline-flex items-center gap-1 hover:underline text-xs"
                             >
-                                <ExternalLink className="w-3 h-3" />
+                                <ExternalLink className="w-3.5 h-3.5" />
                                 Open Full Recovery Page
                             </Link>
 
                             <button
                                 type="button"
                                 onClick={() => setForgotModalOpen(false)}
-                                className="px-3 py-1.5 text-slate-600 hover:text-slate-900 text-xs font-medium"
+                                className="px-3 py-1.5 text-slate-600 hover:text-slate-900 text-sm font-medium"
                             >
                                 Close
                             </button>
@@ -697,10 +695,10 @@ export default function Login() {
                         {/* Header */}
                         <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50/80 rounded-t-2xl">
                             <div>
-                                <h3 className="font-serif font-bold text-base text-slate-900">
+                                <h3 className="font-serif font-bold text-lg text-slate-900">
                                     Terms and Conditions & Archdiocesan Privacy Policy
                                 </h3>
-                                <p className="text-[11px] text-slate-500 mt-0.5">
+                                <p className="text-xs text-slate-600 mt-0.5">
                                     Roman Catholic Archdiocese of Lipa • Centralized Records & Chancery System (RCAL PIMS)
                                 </p>
                             </div>
@@ -714,18 +712,18 @@ export default function Login() {
                         </div>
 
                         {/* Scrollable Body */}
-                        <div className="p-5 overflow-y-auto space-y-4 text-xs text-slate-700 leading-relaxed max-h-[60vh]">
-                            <div className="p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-xl space-y-1">
-                                <h4 className="font-bold text-amber-900 text-xs">
+                        <div className="p-5 overflow-y-auto space-y-4 text-sm text-slate-700 leading-relaxed max-h-[60vh]">
+                            <div className="p-4 bg-amber-50/70 border border-amber-200/80 rounded-xl space-y-1.5">
+                                <h4 className="font-bold text-amber-950 text-sm">
                                     1. Institutional Purpose & Canonical Governance
                                 </h4>
-                                <p className="text-slate-700">
+                                <p className="text-slate-800">
                                     This platform is the official centralized repository of canonical and sacramental registries for the Archdiocese of Lipa. Use of this system is governed by the 1983 Code of Canon Law (specifically Canons 535 and 486–491 regarding parish registers and diocesan archives) and relevant pastoral norms.
                                 </p>
                             </div>
 
                             <div className="space-y-1.5">
-                                <h4 className="font-bold text-slate-900 text-xs">
+                                <h4 className="font-bold text-slate-900 text-sm">
                                     2. Data Privacy Act of 2012 (Republic Act No. 10173) Adherence
                                 </h4>
                                 <p>
@@ -734,10 +732,10 @@ export default function Login() {
                             </div>
 
                             <div className="space-y-1.5">
-                                <h4 className="font-bold text-slate-900 text-xs">
+                                <h4 className="font-bold text-slate-900 text-sm">
                                     3. User Responsibilities & Authentication Security
                                 </h4>
-                                <ul className="list-disc pl-4 space-y-1 text-slate-600">
+                                <ul className="list-disc pl-4 space-y-1 text-slate-700">
                                     <li>Users are responsible for safeguarding their login credentials and preventing unauthorized access.</li>
                                     <li>Any document claim filed must belong to the record owner or an authorized representative recognized under canon and civil law.</li>
                                     <li>Falsification of sacramental requests or impersonation is subject to canonical penalties and civil prosecution under Philippine law.</li>
@@ -745,7 +743,7 @@ export default function Login() {
                             </div>
 
                             <div className="space-y-1.5">
-                                <h4 className="font-bold text-slate-900 text-xs">
+                                <h4 className="font-bold text-slate-900 text-sm">
                                     4. Official Certificate Issuance & Immutability
                                 </h4>
                                 <p>
@@ -753,15 +751,15 @@ export default function Login() {
                                 </p>
                             </div>
 
-                            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-500">
+                            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600">
                                 For inquiries or data privacy concerns, contact the Archdiocesan Data Protection Office at:
-                                <span className="font-mono text-slate-700 block mt-0.5">dpo@archdioceselipa.ph • (043) 756-2572</span>
+                                <span className="font-mono text-slate-800 block mt-0.5 font-medium">dpo@archdioceselipa.ph • (043) 756-2572</span>
                             </div>
                         </div>
 
                         {/* Footer Actions */}
                         <div className="p-4 border-t border-slate-200 bg-slate-50/50 flex items-center justify-between rounded-b-2xl">
-                            <span className="text-[11px] text-slate-500">Effective Date: October 2026</span>
+                            <span className="text-xs text-slate-600">Effective Date: October 2026</span>
                             <div className="flex gap-2">
                                 <button
                                     type="button"
@@ -770,7 +768,7 @@ export default function Login() {
                                         setTermsError(false);
                                         setTermsModalOpen(false);
                                     }}
-                                    className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-xs"
+                                    className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm transition shadow-xs"
                                 >
                                     I Agree & Accept Terms
                                 </button>
