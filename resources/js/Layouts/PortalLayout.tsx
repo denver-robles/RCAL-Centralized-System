@@ -23,13 +23,14 @@ import {
     X,
     LayoutDashboard,
     ChevronRight,
+    CalendarDays,
 } from 'lucide-react';
 
 interface PortalLayoutProps {
     children: React.ReactNode;
     title?: string;
     subtitle?: string;
-    activeTab?: 'dashboard' | 'records' | 'certificates' | 'schedules' | 'clergy' | 'users' | 'audit' | 'analytics' | 'portal' | 'portal_request' | 'portal_schedule';
+    activeTab?: 'dashboard' | 'records' | 'certificates' | 'schedules' | 'schedules_calendar' | 'schedules_settings' | 'clergy' | 'users' | 'audit' | 'analytics' | 'portal' | 'portal_request' | 'portal_schedule';
 }
 
 export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, subtitle, activeTab }) => {
@@ -117,9 +118,18 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
                             </Link>
 
                             <Link
+                                href="/schedules/calendar"
+                                onClick={onItemClick}
+                                className={linkClass(activeTab === 'schedules_calendar')}
+                            >
+                                <CalendarDays className="w-4 h-4 shrink-0 text-amber-400" />
+                                <span>Calendar View</span>
+                            </Link>
+
+                            <Link
                                 href="/schedules/settings"
                                 onClick={onItemClick}
-                                className={linkClass(false)}
+                                className={linkClass(activeTab === 'schedules_settings')}
                             >
                                 <Settings className="w-4 h-4 shrink-0 text-slate-400" />
                                 <span>Sacrament Settings</span>

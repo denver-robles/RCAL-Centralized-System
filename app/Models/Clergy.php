@@ -14,6 +14,11 @@ class Clergy extends Model
 
     protected $table = 'clergy';
 
+    protected $appends = [
+        'full_name',
+        'titled_name',
+    ];
+
     protected $fillable = [
         'first_name',
         'middle_name',
@@ -69,6 +74,7 @@ class Clergy extends Model
     public function getTitledNameAttribute(): string
     {
         $titleLabel = $this->title instanceof ClergyTitleEnum ? $this->title->label() : ($this->title ?: 'Rev. Fr.');
+
         return "{$titleLabel} {$this->full_name}";
     }
 }

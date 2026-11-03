@@ -7,6 +7,7 @@ enum ScheduleTypeEnum: string
     case BAPTISM = 'baptism';
     case CONFIRMATION = 'confirmation';
     case WEDDING = 'wedding';
+    case MATRIMONY = 'matrimony';
     case FUNERAL = 'funeral';
     case BLESSING = 'blessing';
     case EUCHARIST = 'eucharist';
@@ -21,7 +22,7 @@ enum ScheduleTypeEnum: string
         return match ($this) {
             self::BAPTISM => 'Baptism',
             self::CONFIRMATION => 'Confirmation',
-            self::WEDDING => 'Wedding / Matrimony',
+            self::WEDDING, self::MATRIMONY => 'Wedding / Matrimony',
             self::FUNERAL => 'Funeral / Burial',
             self::BLESSING => 'Blessing',
             self::EUCHARIST => 'First Holy Communion',
@@ -39,6 +40,7 @@ enum ScheduleTypeEnum: string
             self::BAPTISM,
             self::CONFIRMATION,
             self::WEDDING,
+            self::MATRIMONY,
             self::FUNERAL,
         ], true);
     }
@@ -49,7 +51,7 @@ enum ScheduleTypeEnum: string
             self::BAPTISM,
             self::CONFIRMATION,
             self::WEDDING,
-            self::FUNERAL,
+            self::MATRIMONY,
             self::BLESSING,
             self::EUCHARIST,
             self::ANOINTING,

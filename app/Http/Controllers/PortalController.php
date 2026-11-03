@@ -3,15 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Enums\DocumentRequestStatusEnum;
+use App\Enums\RequestStatusEnum;
 use App\Enums\SacramentTypeEnum;
+use App\Enums\ScheduleStatusEnum;
 use App\Models\CertificateRequest;
+use App\Models\Clergy;
 use App\Models\DocumentRequest;
 use App\Models\Parish;
 use App\Models\SacramentSchedule;
+use App\Models\SacramentSetting;
+use App\Models\ScheduleAttachment;
 use App\Services\DocumentWorkflowService;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -36,7 +43,7 @@ class PortalController extends Controller
             ->get();
 
         foreach ($unlinkedCerts as $cert) {
-            $trackingCode = 'RCAL-REQ-' . strtoupper(Str::random(8));
+            $trackingCode = 'RCAL-REQ-'.strtoupper(Str::random(8));
             DocumentRequest::create([
                 'tracking_code' => $trackingCode,
                 'parishioner_id' => $user->id,
@@ -48,11 +55,11 @@ class PortalController extends Controller
                 'place_of_sacrament' => $cert->record?->originatingParish?->name,
                 'relationship_to_owner' => 'Requester',
                 'purpose' => $cert->purpose,
-                'status' => $cert->status === \App\Enums\RequestStatusEnum::ISSUED
-                    ? \App\Enums\DocumentRequestStatusEnum::COMPLETED
-                    : ($cert->status === \App\Enums\RequestStatusEnum::REJECTED
-                        ? \App\Enums\DocumentRequestStatusEnum::REJECTED
-                        : \App\Enums\DocumentRequestStatusEnum::PROCESSING),
+                'status' => $cert->status === RequestStatusEnum::ISSUED
+                    ? DocumentRequestStatusEnum::COMPLETED
+                    : ($cert->status === RequestStatusEnum::REJECTED
+                        ? DocumentRequestStatusEnum::REJECTED
+                        : DocumentRequestStatusEnum::PROCESSING),
                 'matched_record_id' => $cert->record_id,
                 'certificate_request_id' => $cert->id,
                 'internal_note' => 'Staff-assisted filing initialized at parish office desk.',
@@ -68,7 +75,7 @@ class PortalController extends Controller
             ->get();
 
         $schedules = SacramentSchedule::query()
-            ->with(['parish', 'venue', 'presidingClergy'])
+            ->with(['parish', 'venue', 'presidingClergy', 'requestedClergy', 'attachments'])
             ->where('requester_user_id', $user->id)
             ->orderByDesc('starts_at')
             ->get();
@@ -157,8 +164,19 @@ class PortalController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'city_municipality']);
 
+        $clergy = Clergy::query()
+            ->where('is_active', true)
+            ->orderBy('last_name')
+            ->get();
+
+        $settings = SacramentSetting::query()
+            ->where('is_available', true)
+            ->get(['id', 'parish_id', 'sacrament_type', 'is_available', 'allowed_days', 'time_slots']);
+
         return Inertia::render('Portal/ScheduleRequestCreate', [
             'parishes' => $parishes,
+            'clergy' => $clergy,
+            'settings' => $settings,
         ]);
     }
 
@@ -167,6 +185,8 @@ class PortalController extends Controller
      */
     public function storeScheduleRequest(Request $request): RedirectResponse
     {
+        $isConfirmation = $request->input('sacrament_type') === 'confirmation';
+
         $validated = $request->validate([
             'requester_name' => ['required', 'string', 'max:160'],
             'requester_contact' => ['required', 'string', 'max:255'],
@@ -175,40 +195,98 @@ class PortalController extends Controller
             'requester_address' => ['required', 'string'],
             'parish_id' => ['required', 'integer', 'exists:parishes,id'],
             'sacrament_type' => ['required', 'string'],
-            'starts_at' => ['required', 'date'],
+            'starts_at' => [$isConfirmation ? 'nullable' : 'required', 'date'],
             'alternative_starts_at' => ['nullable', 'date'],
+            'requested_clergy_id' => ['nullable', 'integer', 'exists:clergy,id'],
+            'certificate_submission_mode' => ['nullable', 'string', 'in:online,follow_up_office'],
             'specific_data' => ['nullable', 'array'],
         ]);
 
-        $schedule = new SacramentSchedule();
+        // Validate allowed days for the selected parish and sacrament (if date is supplied)
+        if (! empty($validated['starts_at'])) {
+            $startsAt = Carbon::parse($validated['starts_at']);
+            $dayOfWeek = strtolower($startsAt->englishDayOfWeek);
+            $setting = SacramentSetting::where('parish_id', $validated['parish_id'])
+                ->where('sacrament_type', $validated['sacrament_type'])
+                ->first();
+
+            if ($setting && ! empty($setting->allowed_days)) {
+                $allowed = array_map('strtolower', $setting->allowed_days);
+                if (! in_array($dayOfWeek, $allowed, true)) {
+                    $daysFormatted = implode(', ', array_map('ucfirst', $setting->allowed_days));
+                    throw ValidationException::withMessages([
+                        'starts_at' => 'Scheduling for '.ucfirst($validated['sacrament_type'])." in this parish is only available on: {$daysFormatted}.",
+                    ]);
+                }
+            }
+        }
+
+        $schedule = new SacramentSchedule;
         $schedule->requester_user_id = $request->user()->id;
         $schedule->parish_id = $validated['parish_id'];
         $schedule->sacrament_type = $validated['sacrament_type'];
-        $schedule->title = ucfirst($validated['sacrament_type']) . ' Request - ' . $validated['requester_name'];
-        $schedule->starts_at = $validated['starts_at'];
-        $schedule->ends_at = \Carbon\Carbon::parse($validated['starts_at'])->addHours(1);
+
+        $isMatrimony = in_array($validated['sacrament_type'], ['matrimony', 'wedding'], true);
+
+        if ($isMatrimony) {
+            $groom = $validated['specific_data']['groom_name'] ?? 'Groom';
+            $bride = $validated['specific_data']['bride_name'] ?? 'Bride';
+            $schedule->title = "Matrimony Request - {$groom} & {$bride}";
+            $schedule->certificate_submission_mode = 'follow_up_office';
+        } else {
+            $subjectName = $validated['specific_data']['candidate_name']
+                ?? ($validated['specific_data']['child_name'] ?? $validated['requester_name']);
+            $schedule->title = ucfirst($validated['sacrament_type']).' Request - '.$subjectName;
+            $schedule->certificate_submission_mode = $validated['certificate_submission_mode'] ?? 'online';
+        }
+
+        if (! empty($validated['starts_at'])) {
+            $schedule->starts_at = $validated['starts_at'];
+            $schedule->ends_at = Carbon::parse($validated['starts_at'])->addHours(1);
+        } else {
+            $schedule->starts_at = null;
+            $schedule->ends_at = null;
+        }
+
         $schedule->alternative_starts_at = $validated['alternative_starts_at'] ?? null;
-        $schedule->status = \App\Enums\ScheduleStatusEnum::REQUESTED;
-        
+        $schedule->status = ScheduleStatusEnum::REQUESTED;
+
         $schedule->requester_name = $validated['requester_name'];
         $schedule->requester_contact = $validated['requester_contact'];
         $schedule->requester_email = $validated['requester_email'];
         $schedule->requester_relationship = $validated['requester_relationship'];
         $schedule->requester_address = $validated['requester_address'];
+        $schedule->requested_clergy_id = $isConfirmation ? null : ($validated['requested_clergy_id'] ?? null);
         $schedule->specific_data = $validated['specific_data'] ?? [];
         $schedule->payment_status = 'unpaid';
         $schedule->save();
 
-        // Handle file uploads
-        $filesToUpload = ['gov_id', 'psa_birth_cert', 'cenomar', 'prev_certificate'];
-        foreach ($filesToUpload as $fileKey) {
-            if ($request->hasFile($fileKey)) {
-                $path = $request->file($fileKey)->store('schedule_attachments', 'public');
-                \App\Models\ScheduleAttachment::create([
-                    'sacrament_schedule_id' => $schedule->id,
-                    'document_type' => $fileKey,
-                    'file_path' => $path,
-                ]);
+        // Handle file uploads (only if not matrimony / follow_up_office)
+        if (! $isMatrimony) {
+            $filesToUpload = [
+                'gov_id',
+                'psa_birth_cert',
+                'cenomar',
+                'prev_certificate',
+                'confirmation_cert_godparents',
+                'marriage_cert_parents',
+                'baptismal_cert_father',
+                'baptismal_cert_mother',
+                'baptismal_cert_parents',
+                'baptismal_cert_subject',
+                'baptismal_permit',
+                'confirmation_permit',
+            ];
+
+            foreach ($filesToUpload as $fileKey) {
+                if ($request->hasFile($fileKey)) {
+                    $path = $request->file($fileKey)->store('schedule_attachments', 'public');
+                    ScheduleAttachment::create([
+                        'sacrament_schedule_id' => $schedule->id,
+                        'document_type' => $fileKey,
+                        'file_path' => $path,
+                    ]);
+                }
             }
         }
 

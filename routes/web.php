@@ -5,13 +5,14 @@ use App\Http\Controllers\AuditController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CertificatesController;
 use App\Http\Controllers\ClergyController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\RecordsController;
+use App\Http\Controllers\ScheduleAttachmentController;
 use App\Http\Controllers\SchedulesController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\StripeIdentityController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -49,6 +50,10 @@ Route::post('/stripe/webhook', [StripeIdentityController::class, 'handleWebhook'
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::post('/user/face-reference', [AuthController::class, 'updateFaceReference'])->name('user.face-reference');
+
+    // Secure Sacrament Schedule Attachment Viewing & Download (Bypasses symlink permission issues)
+    Route::get('/schedule-attachments/{attachment}/view', [ScheduleAttachmentController::class, 'view'])->name('schedule-attachments.view');
+    Route::get('/schedule-attachments/{attachment}/download', [ScheduleAttachmentController::class, 'download'])->name('schedule-attachments.download');
 });
 
 /*
@@ -71,11 +76,11 @@ Route::middleware(['auth'])->prefix('portal')->name('portal.')->group(function (
     Route::get('/dashboard', [PortalController::class, 'dashboard'])->name('dashboard');
     Route::get('/requests/create', [PortalController::class, 'createRequest'])->name('requests.create');
     Route::post('/requests', [PortalController::class, 'storeRequest'])->name('requests.store');
-    
+
     // Sacrament Schedule Requests
     Route::get('/schedule-requests/create', [PortalController::class, 'createScheduleRequest'])->name('schedule-requests.create');
     Route::post('/schedule-requests', [PortalController::class, 'storeScheduleRequest'])->name('schedule-requests.store');
-    
+
     // Sacrament Schedule Payment
     Route::get('/schedule-requests/{schedule}/payment', [PortalController::class, 'paymentForm'])->name('schedule-requests.payment');
     Route::post('/schedule-requests/{schedule}/payment', [PortalController::class, 'submitPayment'])->name('schedule-requests.payment.submit');
@@ -113,6 +118,7 @@ Route::middleware(['auth', 'staff'])->group(function () {
 
     // Sacrament Schedules (Zero Mass Intentions)
     Route::get('/schedules', [SchedulesController::class, 'index'])->name('schedules.index');
+    Route::get('/schedules/calendar', [SchedulesController::class, 'calendar'])->name('schedules.calendar');
     Route::get('/schedules/create', [SchedulesController::class, 'create'])->name('schedules.create');
     Route::get('/schedules/settings', [SchedulesController::class, 'settings'])->name('schedules.settings');
     Route::post('/schedules/settings', [SchedulesController::class, 'storeSettings'])->name('schedules.settings.store');
