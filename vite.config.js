@@ -17,4 +17,12 @@ export default defineConfig({
             '@': '/resources/js',
         },
     },
+    server: {
+        host: '127.0.0.1',
+        port: 5173,
+        strictPort: true,
+        hmr: {
+            host: '127.0.0.1',
+        },
+    },
 });

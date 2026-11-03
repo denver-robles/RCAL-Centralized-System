@@ -3,13 +3,11 @@
 namespace Tests\Feature;
 
 use App\Enums\AuditActionEnum;
-use App\Enums\RoleEnum;
 use App\Models\Parish;
 use App\Models\User;
 use App\Models\Vicariate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -39,7 +37,7 @@ class UnifiedRegistrationTest extends TestCase
             ], 200),
         ]);
 
-        $dummyImage = 'data:image/jpeg;base64,' . base64_encode(str_repeat('X', 800));
+        $dummyImage = 'data:image/jpeg;base64,'.base64_encode(str_repeat('X', 800));
 
         $response = $this->postJson('/register/verify-id', [
             'id_image' => $dummyImage,
@@ -83,7 +81,7 @@ class UnifiedRegistrationTest extends TestCase
             ], 200),
         ]);
 
-        $dummyImage = 'data:image/jpeg;base64,' . base64_encode(str_repeat('X', 800));
+        $dummyImage = 'data:image/jpeg;base64,'.base64_encode(str_repeat('X', 800));
 
         // Attempting to register Karl Petallo using an ID belonging to Pamplona
         $response = $this->postJson('/register/verify-id', [
@@ -111,7 +109,7 @@ class UnifiedRegistrationTest extends TestCase
             ], 200),
         ]);
 
-        $dummyImage = 'data:image/jpeg;base64,' . base64_encode(str_repeat('X', 800));
+        $dummyImage = 'data:image/jpeg;base64,'.base64_encode(str_repeat('X', 800));
 
         $response = $this->postJson('/register/verify-id', [
             'id_image' => $dummyImage,
@@ -161,8 +159,8 @@ class UnifiedRegistrationTest extends TestCase
             ], 200),
         ]);
 
-        $dummyId = 'data:image/jpeg;base64,' . base64_encode(str_repeat('I', 800));
-        $dummySelfie = 'data:image/jpeg;base64,' . base64_encode(str_repeat('S', 800));
+        $dummyId = 'data:image/jpeg;base64,'.base64_encode(str_repeat('I', 800));
+        $dummySelfie = 'data:image/jpeg;base64,'.base64_encode(str_repeat('S', 800));
 
         $response = $this->postJson('/register/verify-face', [
             'id_image' => $dummyId,
@@ -206,8 +204,8 @@ class UnifiedRegistrationTest extends TestCase
             ], 200),
         ]);
 
-        $dummyId = 'data:image/jpeg;base64,' . base64_encode(str_repeat('I', 800));
-        $dummySelfie = 'data:image/jpeg;base64,' . base64_encode(str_repeat('S', 800));
+        $dummyId = 'data:image/jpeg;base64,'.base64_encode(str_repeat('I', 800));
+        $dummySelfie = 'data:image/jpeg;base64,'.base64_encode(str_repeat('S', 800));
 
         $response = $this->postJson('/register/verify-face', [
             'id_image' => $dummyId,
@@ -241,8 +239,8 @@ class UnifiedRegistrationTest extends TestCase
             ], 200),
         ]);
 
-        $dummyId = 'data:image/jpeg;base64,' . base64_encode(str_repeat('I', 800));
-        $dummySelfie = 'data:image/jpeg;base64,' . base64_encode(str_repeat('S', 800));
+        $dummyId = 'data:image/jpeg;base64,'.base64_encode(str_repeat('I', 800));
+        $dummySelfie = 'data:image/jpeg;base64,'.base64_encode(str_repeat('S', 800));
 
         $response = $this->postJson('/register/verify-face', [
             'id_image' => $dummyId,
@@ -273,8 +271,8 @@ class UnifiedRegistrationTest extends TestCase
             ], 200),
         ]);
 
-        $dummyId = 'data:image/jpeg;base64,' . base64_encode(str_repeat('I', 800));
-        $dummySelfie = 'data:image/jpeg;base64,' . base64_encode(str_repeat('S', 800));
+        $dummyId = 'data:image/jpeg;base64,'.base64_encode(str_repeat('I', 800));
+        $dummySelfie = 'data:image/jpeg;base64,'.base64_encode(str_repeat('S', 800));
 
         $response = $this->post('/register', [
             'first_name' => 'Clara',
@@ -330,8 +328,8 @@ class UnifiedRegistrationTest extends TestCase
             ], 200),
         ]);
 
-        $dummyId = 'data:image/jpeg;base64,' . base64_encode(str_repeat('I', 800));
-        $dummySelfie = 'data:image/jpeg;base64,' . base64_encode(str_repeat('S', 800));
+        $dummyId = 'data:image/jpeg;base64,'.base64_encode(str_repeat('I', 800));
+        $dummySelfie = 'data:image/jpeg;base64,'.base64_encode(str_repeat('S', 800));
 
         $response = $this->post('/register', [
             'first_name' => 'Clara',

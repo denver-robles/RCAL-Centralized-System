@@ -34,6 +34,10 @@ class SacramentalRecord extends Model
         'voided_reason',
     ];
 
+    protected $appends = [
+        'citation',
+    ];
+
     protected function casts(): array
     {
         return [

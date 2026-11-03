@@ -3,10 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Enums\AuditActionEnum;
+use App\Enums\SacramentTypeEnum;
 use App\Enums\ScheduleStatusEnum;
 use App\Models\Clergy;
 use App\Models\Parish;
+use App\Models\Person;
+use App\Models\SacramentalRecord;
 use App\Models\SacramentSchedule;
+use App\Models\SacramentSetting;
 use App\Models\Venue;
 use App\Services\AuditService;
 use App\Services\ParishScopingService;
@@ -32,7 +36,7 @@ class SchedulesController extends Controller
         $user = $request->user();
 
         $query = SacramentSchedule::query()
-            ->with(['parish', 'venue', 'presidingClergy', 'record']);
+            ->with(['parish', 'venue', 'presidingClergy', 'requestedClergy', 'record', 'attachments', 'requesterUser']);
 
         ParishScopingService::scopeParish($query, $user, 'parish_id');
 
@@ -62,6 +66,113 @@ class SchedulesController extends Controller
             'venues' => $venues,
             'clergy' => $clergy,
             'filters' => $request->only(['status', 'sacrament_type', 'date']),
+        ]);
+    }
+
+    /**
+     * Display interactive calendar view of scheduled and completed sacraments.
+     */
+    public function calendar(Request $request): Response
+    {
+        $user = $request->user();
+
+        $year = $request->integer('year', (int) now()->year);
+        $month = $request->integer('month', (int) now()->month);
+
+        if ($month < 1 || $month > 12) {
+            $month = (int) now()->month;
+        }
+        if ($year < 1900 || $year > 2100) {
+            $year = (int) now()->year;
+        }
+
+        $currentDate = Carbon::createFromDate($year, $month, 1);
+        $startGrid = $currentDate->copy()->startOfMonth()->startOfWeek(Carbon::SUNDAY)->startOfDay();
+        $endGrid = $currentDate->copy()->endOfMonth()->endOfWeek(Carbon::SATURDAY)->endOfDay();
+
+        $query = SacramentSchedule::query()
+            ->with([
+                'parish',
+                'venue',
+                'presidingClergy',
+                'requestedClergy',
+                'record',
+                'attachments',
+                'requesterUser',
+            ])
+            ->whereIn('status', [
+                ScheduleStatusEnum::SCHEDULED,
+                ScheduleStatusEnum::CONFIRMED,
+                ScheduleStatusEnum::COMPLETED,
+            ])
+            ->whereNotNull('starts_at')
+            ->whereBetween('starts_at', [$startGrid, $endGrid]);
+
+        ParishScopingService::scopeParish($query, $user, 'parish_id');
+
+        if ($request->filled('parish_id') && $request->query('parish_id') !== 'all') {
+            $query->where('parish_id', $request->query('parish_id'));
+        }
+
+        if ($request->filled('sacrament_type') && $request->query('sacrament_type') !== 'all') {
+            $query->where('sacrament_type', $request->query('sacrament_type'));
+        }
+
+        if ($request->filled('status') && $request->query('status') !== 'all') {
+            if ($request->query('status') === 'scheduled') {
+                $query->whereIn('status', [ScheduleStatusEnum::SCHEDULED, ScheduleStatusEnum::CONFIRMED]);
+            } elseif ($request->query('status') === 'completed') {
+                $query->where('status', ScheduleStatusEnum::COMPLETED);
+            }
+        }
+
+        $schedules = $query->orderBy('starts_at', 'asc')->get();
+
+        $monthStart = $currentDate->copy()->startOfMonth()->startOfDay();
+        $monthEnd = $currentDate->copy()->endOfMonth()->endOfDay();
+
+        $monthQuery = SacramentSchedule::query()
+            ->whereIn('status', [
+                ScheduleStatusEnum::SCHEDULED,
+                ScheduleStatusEnum::CONFIRMED,
+                ScheduleStatusEnum::COMPLETED,
+            ])
+            ->whereNotNull('starts_at')
+            ->whereBetween('starts_at', [$monthStart, $monthEnd]);
+
+        ParishScopingService::scopeParish($monthQuery, $user, 'parish_id');
+
+        if ($request->filled('parish_id') && $request->query('parish_id') !== 'all') {
+            $monthQuery->where('parish_id', $request->query('parish_id'));
+        }
+
+        $scheduledCount = (clone $monthQuery)
+            ->whereIn('status', [ScheduleStatusEnum::SCHEDULED, ScheduleStatusEnum::CONFIRMED])
+            ->count();
+
+        $completedCount = (clone $monthQuery)
+            ->where('status', ScheduleStatusEnum::COMPLETED)
+            ->count();
+
+        $parishes = $user->isArchdioceseWide()
+            ? Parish::where('is_active', true)->orderBy('name')->get()
+            : Parish::where('id', $user->home_parish_id)->get();
+
+        return Inertia::render('Schedules/Calendar', [
+            'schedules' => $schedules,
+            'parishes' => $parishes,
+            'filters' => [
+                'year' => $year,
+                'month' => $month,
+                'parish_id' => $request->query('parish_id', ''),
+                'sacrament_type' => $request->query('sacrament_type', 'all'),
+                'status' => $request->query('status', 'all'),
+            ],
+            'metrics' => [
+                'scheduled_count' => $scheduledCount,
+                'completed_count' => $completedCount,
+                'total_count' => $scheduledCount + $completedCount,
+            ],
         ]);
     }
 
@@ -102,7 +213,7 @@ class SchedulesController extends Controller
         $clergyId = $request->query('clergy_id') ? (int) $request->query('clergy_id') : null;
         $excludeId = $request->query('exclude_id') ? (int) $request->query('exclude_id') : null;
 
-        if (!$startsAt || !$endsAt || !$parishId) {
+        if (! $startsAt || ! $endsAt || ! $parishId) {
             return response()->json(['has_conflict' => false]);
         }
 
@@ -179,21 +290,26 @@ class SchedulesController extends Controller
     }
 
     /**
-     * Update schedule status (confirmed, completed, cancelled).
+     * Update schedule status (on_hold, processing, scheduled, confirmed, completed, cancelled).
      */
     public function updateStatus(Request $request, SacramentSchedule $schedule): RedirectResponse
     {
         $validated = $request->validate([
-            'status' => ['required', 'string', 'in:confirmed,completed,cancelled'],
+            'status' => ['required', 'string', 'in:on_hold,processing,scheduled,confirmed,completed,cancelled'],
             'cancellation_reason' => ['nullable', 'string', 'max:500'],
+            'staff_notes' => ['nullable', 'string', 'max:2000'],
+            'document_checklist' => ['nullable', 'array'],
             'starts_at' => ['nullable', 'date'],
             'ends_at' => ['nullable', 'date', 'after:starts_at'],
             'presiding_clergy_id' => ['nullable', 'integer', 'exists:clergy,id'],
             'guest_priest_name' => ['nullable', 'string', 'max:255'],
+            'book_number' => ['required_if:status,completed', 'nullable', 'integer', 'min:1'],
+            'page_number' => ['required_if:status,completed', 'nullable', 'integer', 'min:1'],
+            'entry_number' => ['required_if:status,completed', 'nullable', 'integer', 'min:1'],
         ]);
 
         $user = $request->user();
-        if (!$user->isArchdioceseWide() && (int) $user->home_parish_id !== (int) $schedule->parish_id) {
+        if (! $user->isArchdioceseWide() && (int) $user->home_parish_id !== (int) $schedule->parish_id) {
             abort(403, 'Access denied.');
         }
 
@@ -205,8 +321,17 @@ class SchedulesController extends Controller
             'cancellation_reason' => $newStatus === ScheduleStatusEnum::CANCELLED ? ($validated['cancellation_reason'] ?? 'Cancelled by staff') : null,
         ];
 
+        if ($request->has('staff_notes')) {
+            $updateData['staff_notes'] = $validated['staff_notes'];
+        }
+        if ($request->has('document_checklist')) {
+            $updateData['document_checklist'] = $validated['document_checklist'];
+        }
         if ($request->filled('starts_at')) {
             $updateData['starts_at'] = $validated['starts_at'];
+            if (! $request->filled('ends_at')) {
+                $updateData['ends_at'] = Carbon::parse($validated['starts_at'])->addHours(1);
+            }
         }
         if ($request->filled('ends_at')) {
             $updateData['ends_at'] = $validated['ends_at'];
@@ -225,55 +350,121 @@ class SchedulesController extends Controller
         $schedule->update($updateData);
 
         if ($newStatus === ScheduleStatusEnum::COMPLETED && $schedule->record_id === null) {
-            // Auto-transcribe to sacramental_records
-            $fullName = $schedule->specific_data['child_name'] ?? $schedule->requester_name ?? 'Unknown';
-            $nameParts = explode(' ', trim($fullName));
-            $firstName = array_shift($nameParts);
-            $lastName = count($nameParts) > 0 ? implode(' ', $nameParts) : 'Unknown';
+            $book = (int) ($validated['book_number'] ?? 1);
+            $page = (int) ($validated['page_number'] ?? 1);
+            $entry = (int) ($validated['entry_number'] ?? 1);
 
-            $person = \App\Models\Person::firstOrCreate(
-                [
-                    'first_name' => $firstName,
-                    'last_name' => $lastName,
-                ],
-                [
-                    'sex' => 'Unknown',
-                    'date_of_birth' => $schedule->specific_data['dob'] ?? null,
-                    'place_of_birth' => $schedule->specific_data['place_of_birth'] ?? null,
-                    'mother_name' => $schedule->specific_data['mother_name'] ?? null,
-                    'father_name' => $schedule->specific_data['father_name'] ?? null,
-                ]
-            );
-
-            // Fetch latest book/page to auto-increment for the parish
-            $lastRecord = \App\Models\SacramentalRecord::where('originating_parish_id', $schedule->parish_id)
-                ->where('sacrament_type', $schedule->sacrament_type->value ?? $schedule->sacrament_type)
-                ->orderByDesc('id')
-                ->first();
-            
-            $book = $lastRecord ? $lastRecord->book_number : 1;
-            $page = $lastRecord ? $lastRecord->page_number : 1;
-            $entry = $lastRecord ? $lastRecord->entry_number + 1 : 1;
-
-            if ($entry > 50) { // simple pagination logic
-                $page++;
-                $entry = 1;
+            $godparentsVal = $schedule->specific_data['godparent_name']
+                ?? ($schedule->specific_data['godparents'] ?? ($schedule->specific_data['witnesses'] ?? null));
+            if (is_array($godparentsVal)) {
+                $godparentsVal = implode(', ', array_filter(array_map(fn ($g) => is_array($g) ? ($g['name'] ?? '') : (string) $g, $godparentsVal)));
             }
 
-            $record = \App\Models\SacramentalRecord::create([
-                'person_id' => $person->id,
-                'sacrament_type' => $schedule->sacrament_type,
-                'event_date' => $schedule->starts_at->toDateString(),
-                'originating_parish_id' => $schedule->parish_id,
-                'performed_by_clergy_id' => $schedule->presiding_clergy_id,
-                'book_number' => $book,
-                'page_number' => $page,
-                'entry_number' => $entry,
-                'godparents' => $schedule->specific_data['godparents'] ?? null,
-                'status' => 'registered',
-            ]);
+            $sacramentTypeValue = $schedule->sacrament_type instanceof \BackedEnum
+                ? $schedule->sacrament_type->value
+                : (string) $schedule->sacrament_type;
 
-            $schedule->update(['record_id' => $record->id]);
+            if (in_array($sacramentTypeValue, ['matrimony', 'wedding', 'marriage'], true)) {
+                $canonicalType = SacramentTypeEnum::MARRIAGE;
+            } else {
+                $canonicalType = SacramentTypeEnum::tryFrom($sacramentTypeValue);
+            }
+
+            if ($canonicalType === SacramentTypeEnum::MARRIAGE) {
+                // Groom Person
+                $groomFullName = $schedule->specific_data['groom_name']
+                    ?? ($schedule->specific_data['husband_name'] ?? ($schedule->requester_name ?? 'Groom'));
+                $gParts = explode(' ', trim($groomFullName));
+                $gLast = count($gParts) > 1 ? array_pop($gParts) : 'Unknown';
+                $gFirst = count($gParts) > 0 ? implode(' ', $gParts) : ($groomFullName ?: 'Unknown');
+
+                $groomPerson = Person::firstOrCreate(
+                    [
+                        'first_name' => $gFirst,
+                        'last_name' => $gLast,
+                    ],
+                    [
+                        'sex' => 'male',
+                        'date_of_birth' => $schedule->specific_data['groom_dob'] ?? null,
+                        'place_of_birth' => $schedule->specific_data['groom_pob'] ?? null,
+                        'father_name' => $schedule->specific_data['groom_father_name'] ?? null,
+                        'mother_name' => $schedule->specific_data['groom_mother_name'] ?? null,
+                    ]
+                );
+
+                // Bride Person
+                $brideFullName = $schedule->specific_data['bride_name']
+                    ?? ($schedule->specific_data['wife_name'] ?? 'Bride');
+                $bParts = explode(' ', trim($brideFullName));
+                $bLast = count($bParts) > 1 ? array_pop($bParts) : 'Unknown';
+                $bFirst = count($bParts) > 0 ? implode(' ', $bParts) : ($brideFullName ?: 'Unknown');
+
+                $bridePerson = Person::firstOrCreate(
+                    [
+                        'first_name' => $bFirst,
+                        'last_name' => $bLast,
+                    ],
+                    [
+                        'sex' => 'female',
+                        'date_of_birth' => $schedule->specific_data['bride_dob'] ?? null,
+                        'place_of_birth' => $schedule->specific_data['bride_pob'] ?? null,
+                        'father_name' => $schedule->specific_data['bride_father_name'] ?? null,
+                        'mother_name' => $schedule->specific_data['bride_mother_name'] ?? null,
+                    ]
+                );
+
+                $record = SacramentalRecord::create([
+                    'person_id' => $groomPerson->id,
+                    'spouse_person_id' => $bridePerson->id,
+                    'sacrament_type' => SacramentTypeEnum::MARRIAGE,
+                    'event_date' => $schedule->starts_at ? $schedule->starts_at->toDateString() : now()->toDateString(),
+                    'originating_parish_id' => $schedule->parish_id,
+                    'performed_by_clergy_id' => $schedule->presiding_clergy_id,
+                    'book_number' => $book,
+                    'page_number' => $page,
+                    'entry_number' => $entry,
+                    'witnesses' => $godparentsVal,
+                    'status' => 'registered',
+                ]);
+
+                $schedule->update(['record_id' => $record->id]);
+            } elseif ($canonicalType) {
+                // Baptism, Confirmation, etc.
+                $fullName = $schedule->specific_data['candidate_name']
+                    ?? ($schedule->specific_data['child_name'] ?? ($schedule->requester_name ?? 'Unknown'));
+                $nameParts = explode(' ', trim($fullName));
+                $firstName = array_shift($nameParts);
+                $lastName = count($nameParts) > 0 ? implode(' ', $nameParts) : 'Unknown';
+
+                $person = Person::firstOrCreate(
+                    [
+                        'first_name' => $firstName,
+                        'last_name' => $lastName,
+                    ],
+                    [
+                        'sex' => $schedule->specific_data['candidate_gender'] ?? ($schedule->specific_data['gender'] ?? 'Unknown'),
+                        'date_of_birth' => $schedule->specific_data['candidate_dob'] ?? ($schedule->specific_data['dob'] ?? null),
+                        'place_of_birth' => $schedule->specific_data['place_of_birth'] ?? null,
+                        'mother_name' => $schedule->specific_data['candidate_mother_name'] ?? ($schedule->specific_data['mother_name'] ?? null),
+                        'father_name' => $schedule->specific_data['candidate_father_name'] ?? ($schedule->specific_data['father_name'] ?? null),
+                    ]
+                );
+
+                $record = SacramentalRecord::create([
+                    'person_id' => $person->id,
+                    'sacrament_type' => $canonicalType,
+                    'event_date' => $schedule->starts_at ? $schedule->starts_at->toDateString() : now()->toDateString(),
+                    'originating_parish_id' => $schedule->parish_id,
+                    'performed_by_clergy_id' => $schedule->presiding_clergy_id,
+                    'book_number' => $book,
+                    'page_number' => $page,
+                    'entry_number' => $entry,
+                    'godparents' => $godparentsVal,
+                    'status' => 'registered',
+                ]);
+
+                $schedule->update(['record_id' => $record->id]);
+            }
         }
 
         AuditService::record(
@@ -294,9 +485,9 @@ class SchedulesController extends Controller
     public function settings(Request $request): Response
     {
         $user = $request->user();
-        $parishId = $user->home_parish_id;
+        $parishId = $user->home_parish_id ?? Parish::where('is_active', true)->value('id');
 
-        $settings = \App\Models\SacramentSetting::where('parish_id', $parishId)->get();
+        $settings = SacramentSetting::where('parish_id', $parishId)->get();
 
         return Inertia::render('Schedules/Settings', [
             'settings' => $settings,
@@ -312,22 +503,54 @@ class SchedulesController extends Controller
             'settings' => ['required', 'array'],
             'settings.*.sacrament_type' => ['required', 'string'],
             'settings.*.is_available' => ['required', 'boolean'],
+            'settings.*.allowed_days' => ['nullable', 'array'],
             'settings.*.time_slots' => ['nullable', 'array'],
         ]);
 
         $user = $request->user();
-        $parishId = $user->home_parish_id;
+        $parishId = $user->home_parish_id ?? Parish::where('is_active', true)->value('id');
 
         foreach ($validated['settings'] as $settingData) {
-            \App\Models\SacramentSetting::updateOrCreate(
+            SacramentSetting::updateOrCreate(
                 ['parish_id' => $parishId, 'sacrament_type' => $settingData['sacrament_type']],
                 [
                     'is_available' => $settingData['is_available'],
-                    'time_slots' => $settingData['time_slots'] ?? ["08:00-09:00", "09:00-10:00", "10:00-11:00", "11:00-12:00"]
+                    'allowed_days' => $settingData['allowed_days'] ?? null,
+                    'time_slots' => $settingData['time_slots'] ?? ['08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00'],
                 ]
             );
         }
 
         return redirect()->back()->with('success', 'Sacrament settings updated successfully.');
+    }
+
+    /**
+     * Verify online payment receipt or mark payment status.
+     */
+    public function verifyPayment(Request $request, SacramentSchedule $schedule): RedirectResponse
+    {
+        $user = $request->user();
+        if (! $user->isArchdioceseWide() && (int) $user->home_parish_id !== (int) $schedule->parish_id) {
+            abort(403, 'Unauthorized to verify payments for other parishes.');
+        }
+
+        $validated = $request->validate([
+            'payment_status' => ['required', 'string', 'in:paid,rejected,unpaid,pending_verification'],
+        ]);
+
+        $oldStatus = $schedule->payment_status;
+        $schedule->payment_status = $validated['payment_status'];
+        $schedule->save();
+
+        AuditService::record(
+            AuditActionEnum::UPDATE,
+            $schedule,
+            ['payment_status' => $oldStatus],
+            ['payment_status' => $schedule->payment_status],
+            "Payment status for schedule #{$schedule->id} verified as {$schedule->payment_status} by {$user->username}",
+            $user
+        );
+
+        return redirect()->back()->with('success', "Payment verification recorded: marked as {$schedule->payment_status}.");
     }
 }

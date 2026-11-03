@@ -6,6 +6,11 @@ import VerifyIdButton from '@/Components/VerifyIdButton';
 import FaceEnrollmentModal from '@/Components/FaceEnrollmentModal';
 import { DocumentRequest, PageProps, SacramentSchedule } from '@/types';
 import {
+    formatSacramentDate,
+    formatSacramentTime,
+    parseSacramentDate,
+} from '@/utils/date';
+import {
     FileText,
     Calendar,
     Plus,
@@ -27,6 +32,11 @@ import {
     MapPin,
     User as UserIcon,
     ScanFace,
+    Bell,
+    CheckSquare,
+    MessageSquare,
+    Download,
+    Eye,
 } from 'lucide-react';
 
 interface Props extends PageProps {
@@ -49,17 +59,72 @@ interface Props extends PageProps {
 
 export default function Dashboard({ auth, documentRequests, schedules, metrics, sacramentCounts }: Props) {
     const [selectedDoc, setSelectedDoc] = useState<DocumentRequest | null>(null);
+    const [selectedNoticeSchedule, setSelectedNoticeSchedule] = useState<SacramentSchedule | null>(null);
+    const [previewAttachment, setPreviewAttachment] = useState<any>(null);
     const [faceModalOpen, setFaceModalOpen] = useState(false);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
                 setSelectedDoc(null);
+                setSelectedNoticeSchedule(null);
+                setPreviewAttachment(null);
             }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
+
+    const getNeededDocuments = (checklist?: Record<string, boolean> | null): string[] => {
+        if (!checklist) return [];
+        const labels: Record<string, string> = {
+            baptism_subject: "Candidate's Catholic Baptismal Certificate",
+            confirmation_witnesses: 'Confirmation Certificate of Witnesses / Godparents',
+            marriage_parents: 'Marriage Certificate of Parents (if married)',
+            baptism_parents: 'Catholic Baptismal Certificate of Parents (if not married)',
+            baptismal_permit: 'Parish Permit / Endorsement (Territorial Jurisdiction)',
+            psa_birth_cert: "Child's / Subject's PSA Birth Certificate",
+
+            // Marriage / Matrimony documents
+            marriage_baptismal_cert: 'Original Baptismal Certificate (For Marriage Purposes)',
+            marriage_confirmation_cert: 'Original Confirmation Certificate (For Marriage Purposes)',
+            marriage_psa_birth: 'PSA Birth Certificate (Photocopy)',
+            marriage_cenomar: 'PSA CENOMAR (Certificate of No Marriage)',
+            marriage_banns: 'Marriage Banns (Publication in Parish)',
+            marriage_permit: 'Marriage Permit (Territorial Endorsement)',
+            marriage_license: 'Marriage License (from City / Municipal Civil Registrar)',
+            marriage_singleness: 'Certificate of Freedom to Marry / Singleness (OFW / Foreign National)',
+            marriage_precana: 'Pre-Cana Seminar Certificate',
+            marriage_couple_pic: '4R Couple Picture (Colored Photo)',
+        };
+        return Object.entries(checklist)
+            .filter(([_, needed]) => Boolean(needed))
+            .map(([key]) => labels[key] || key.replace(/_/g, ' '));
+    };
+
+    const getDocTypeLabel = (type: string) => {
+        switch (type) {
+            case 'psa_birth_cert': return "Child's / Subject's PSA Birth Certificate";
+            case 'baptismal_cert_subject': return "Candidate's Catholic Baptismal Certificate";
+            case 'confirmation_cert_godparents': return "Confirmation / Marriage Certificate of Godparent(s)";
+            case 'confirmation_permit': return "Confirmation Permit (Territorial Jurisdiction)";
+            case 'marriage_cert_parents': return "Parents' Marriage Certificate";
+            case 'baptismal_cert_father': return "Father's Catholic Baptismal Certificate";
+            case 'baptismal_cert_mother': return "Mother's Catholic Baptismal Certificate";
+            case 'baptismal_cert_parents': return "Parents' Baptismal Certificate";
+            case 'baptismal_permit': return "Baptismal Permit (Territorial Jurisdiction)";
+            case 'gov_id': return "Government Issued ID";
+            case 'cenomar': return "PSA CENOMAR";
+            case 'prev_certificate': return "Previous Canonical Certificate";
+            default: return type.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+        }
+    };
+
+    const schedulesWithNotice = schedules.filter((s) => {
+        const hasNeededDocs = getNeededDocuments(s.document_checklist).length > 0;
+        const hasNotes = Boolean(s.staff_notes && s.staff_notes.trim());
+        return (hasNeededDocs || hasNotes) && !['completed', 'cancelled'].includes(s.status);
+    });
 
     const getStepDetails = (status: string) => {
         switch (status) {
@@ -157,7 +222,7 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                         <h2 className="font-serif text-xl sm:text-2xl font-bold text-white tracking-tight">
                             Canonical Records &amp; Sacramental Claims
                         </h2>
-                        <p className="text-sm text-slate-300 max-w-2xl leading-relaxed">
+                        <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
                             Request certified ecclesiastical copies of your Baptism, Confirmation, Marriage, or Death records. Track each verification stage in real-time under Republic Act 10173 (Data Privacy Act of 2012).
                         </p>
                     </div>
@@ -165,14 +230,14 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                     <div className="relative z-10 flex flex-wrap items-center gap-3 shrink-0">
                         <Link
                             href="/portal/requests/create"
-                            className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm shadow-md transition-all duration-150"
+                            className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs sm:text-sm shadow-md transition-all duration-150"
                         >
                             <Plus className="w-4 h-4" />
                             <span>File Document Claim</span>
                         </Link>
                         <Link
                             href="/portal/schedule-requests/create"
-                            className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-800/90 hover:bg-slate-700 text-white border border-slate-700 font-semibold rounded-xl text-sm shadow-md transition-all duration-150"
+                            className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-800/90 hover:bg-slate-700 text-white border border-slate-700 font-semibold rounded-xl text-xs sm:text-sm shadow-md transition-all duration-150"
                         >
                             <Calendar className="w-4 h-4 text-amber-400" />
                             <span>Book Ceremony</span>
@@ -181,7 +246,7 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                             <button
                                 type="button"
                                 onClick={() => setFaceModalOpen(true)}
-                                className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-800/90 hover:bg-slate-700 text-white border border-slate-700 font-semibold rounded-xl text-sm shadow-md transition-all duration-150 cursor-pointer"
+                                className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-800/90 hover:bg-slate-700 text-white border border-slate-700 font-semibold rounded-xl text-xs sm:text-sm shadow-md transition-all duration-150 cursor-pointer"
                                 title="Enroll your Face++ reference photo for fast sign-in"
                             >
                                 <ScanFace className="w-4 h-4 text-amber-400" />
@@ -206,18 +271,18 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                             </div>
                             <div className="space-y-1">
                                 <div className="flex items-center gap-2">
-                                    <h3 className="font-serif font-bold text-lg text-slate-900">
+                                    <h3 className="font-serif font-bold text-base text-slate-900">
                                         {auth.user?.identity_status === 'pending'
                                             ? 'Stripe Verification In Progress'
                                             : auth.user?.identity_status === 'requires_input'
                                             ? 'Verification Requires Attention'
                                             : 'Verify Government ID (Stripe Identity)'}
                                     </h3>
-                                    <span className="text-xs font-bold uppercase px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
                                         RA 10173 • Can. 535
                                     </span>
                                 </div>
-                                <p className="text-sm text-slate-700 max-w-2xl leading-relaxed">
+                                <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
                                     {auth.user?.identity_status === 'pending' ? (
                                         <>
                                             Your documents were submitted and are being reviewed by Stripe. You can{' '}
@@ -239,7 +304,7 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                             {auth.user?.identity_status === 'pending' ? (
                                 <Link
                                     href="/identity/status"
-                                    className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-xl text-sm transition shadow-xs"
+                                    className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-xl text-xs transition shadow-xs"
                                 >
                                     Check Status
                                 </Link>
@@ -251,7 +316,7 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                                             : 'Verify Government ID'
                                     }
                                     variant="amber"
-                                    className="text-sm uppercase tracking-wide font-bold py-2.5 px-4"
+                                    className="text-xs uppercase tracking-wider font-bold py-2.5 px-4"
                                 />
                             )}
                         </div>
@@ -266,13 +331,13 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                             <FileText className="w-6 h-6" />
                         </div>
                         <div className="min-w-0">
-                            <span className="text-xs font-bold text-slate-600 uppercase tracking-wide block">
+                            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
                                 Total Claims
                             </span>
                             <span className="text-2xl font-serif font-black text-slate-900 leading-tight block">
                                 {derivedMetrics.total_claims}
                             </span>
-                            <span className="text-xs text-slate-600 truncate block">
+                            <span className="text-[11px] text-slate-500 truncate block">
                                 Filed requests
                             </span>
                         </div>
@@ -284,13 +349,13 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                             <Clock className="w-6 h-6" />
                         </div>
                         <div className="min-w-0">
-                            <span className="text-xs font-bold text-slate-600 uppercase tracking-wide block">
+                            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
                                 In Processing
                             </span>
                             <span className="text-2xl font-serif font-black text-slate-900 leading-tight block">
                                 {derivedMetrics.processing_claims}
                             </span>
-                            <span className="text-xs text-sky-700 font-medium truncate block">
+                            <span className="text-[11px] text-sky-600 font-medium truncate block">
                                 Canonical ledger matching
                             </span>
                         </div>
@@ -302,13 +367,13 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                             <Award className="w-6 h-6" />
                         </div>
                         <div className="min-w-0">
-                            <span className="text-xs font-bold text-slate-600 uppercase tracking-wide block">
+                            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
                                 Ready for Pickup
                             </span>
                             <span className="text-2xl font-serif font-black text-emerald-700 leading-tight block">
                                 {derivedMetrics.ready_claims}
                             </span>
-                            <span className="text-xs text-emerald-700 font-medium truncate block">
+                            <span className="text-[11px] text-emerald-600 font-medium truncate block">
                                 Available at Parish Office
                             </span>
                         </div>
@@ -320,13 +385,13 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                             <Calendar className="w-6 h-6" />
                         </div>
                         <div className="min-w-0">
-                            <span className="text-xs font-bold text-slate-600 uppercase tracking-wide block">
+                            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
                                 Appointments
                             </span>
                             <span className="text-2xl font-serif font-black text-slate-900 leading-tight block">
                                 {derivedMetrics.upcoming_schedules}
                             </span>
-                            <span className="text-xs text-slate-600 truncate block">
+                            <span className="text-[11px] text-slate-500 truncate block">
                                 Sacrament ceremonies
                             </span>
                         </div>
@@ -335,22 +400,22 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
 
                 {/* Sacramental Claims Distribution Pills */}
                 {derivedMetrics.total_claims > 0 && (
-                    <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs flex flex-wrap items-center justify-between gap-3 text-sm">
-                        <div className="flex items-center gap-2 text-slate-800 font-semibold">
+                    <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs flex flex-wrap items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-2 text-slate-700 font-semibold">
                             <Layers className="w-4 h-4 text-amber-500" />
                             <span>Your Claimed Sacrament Distribution:</span>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
-                            <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-medium text-xs">
+                            <span className="px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-medium">
                                 Baptism: <strong>{derivedCounts.baptism}</strong>
                             </span>
-                            <span className="px-3 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-medium text-xs">
+                            <span className="px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-medium">
                                 Confirmation: <strong>{derivedCounts.confirmation}</strong>
                             </span>
-                            <span className="px-3 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-medium text-xs">
+                            <span className="px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-medium">
                                 Marriage: <strong>{derivedCounts.marriage}</strong>
                             </span>
-                            <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-medium text-xs">
+                            <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-medium">
                                 Death: <strong>{derivedCounts.death}</strong>
                             </span>
                         </div>
@@ -365,21 +430,21 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                                 <FileText className="w-4 h-4" />
                             </div>
                             <div>
-                                <h3 className="font-serif text-lg font-bold text-slate-900">
+                                <h3 className="font-serif text-base font-bold text-slate-900">
                                     Document Claims &amp; Certificate Requests
                                 </h3>
-                                <p className="text-sm text-slate-600">
+                                <p className="text-xs text-slate-500">
                                     Official submissions requiring ledger verification &amp; seal affixing
                                 </p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="text-sm text-slate-700 font-medium bg-white px-3 py-1 rounded-lg border border-slate-200 shadow-2xs">
+                            <span className="text-xs text-slate-600 font-medium bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
                                 {documentRequests.length} Total Claims
                             </span>
                             <Link
                                 href="/portal/requests/create"
-                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-sm shadow-2xs transition-colors"
+                                className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs shadow-2xs transition-colors"
                             >
                                 <Plus className="w-3.5 h-3.5" />
                                 <span>New Claim</span>
@@ -388,29 +453,29 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                     </div>
 
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-slate-50/90 text-slate-700 uppercase tracking-wide text-xs font-semibold border-b border-slate-200">
+                        <table className="w-full text-left text-xs">
+                            <thead className="bg-slate-50/90 text-slate-600 uppercase tracking-wider text-[11px] font-semibold border-b border-slate-200">
                                 <tr>
-                                    <th className="py-3.5 px-5">Tracking Code</th>
-                                    <th className="py-3.5 px-5">Sacrament</th>
-                                    <th className="py-3.5 px-5">Name on Inscription</th>
-                                    <th className="py-3.5 px-5">Parish Jurisdiction</th>
-                                    <th className="py-3.5 px-5">Date Filed</th>
-                                    <th className="py-3.5 px-5 min-w-[220px]">Workflow Progress</th>
-                                    <th className="py-3.5 px-5 text-right">Actions</th>
+                                    <th className="py-3 px-4">Tracking Code</th>
+                                    <th className="py-3 px-4">Sacrament</th>
+                                    <th className="py-3 px-4">Name on Inscription</th>
+                                    <th className="py-3 px-4">Parish Jurisdiction</th>
+                                    <th className="py-3 px-4">Date Filed</th>
+                                    <th className="py-3 px-4 min-w-[220px]">Workflow Progress</th>
+                                    <th className="py-3 px-4 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 text-slate-700">
                                 {documentRequests.length === 0 ? (
                                     <tr>
-                                        <td colSpan={7} className="text-center py-12 text-slate-600 space-y-2">
+                                        <td colSpan={7} className="text-center py-12 text-slate-500 space-y-2">
                                             <FileText className="w-10 h-10 text-slate-300 mx-auto" />
-                                            <p className="font-medium text-slate-700 text-sm">
+                                            <p className="font-medium text-slate-600">
                                                 You have not filed any document claims yet.
                                             </p>
                                             <Link
                                                 href="/portal/requests/create"
-                                                className="inline-flex items-center gap-1.5 text-amber-700 font-semibold hover:underline text-sm"
+                                                className="inline-flex items-center gap-1.5 text-amber-700 font-semibold hover:underline text-xs"
                                             >
                                                 <Plus className="w-3.5 h-3.5" />
                                                 File your first church record claim now
@@ -424,54 +489,54 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
 
                                         return (
                                             <tr key={doc.id} className="hover:bg-slate-50/70 transition-colors">
-                                                <td className="py-3.5 px-5">
+                                                <td className="py-3.5 px-4">
                                                     <div className="font-mono font-bold text-slate-900 tracking-tight">
                                                         {doc.tracking_code}
                                                     </div>
                                                     <div className="flex flex-wrap gap-1 mt-1">
                                                         {doc.internal_note?.toLowerCase().includes('staff') ||
                                                         doc.internal_note?.toLowerCase().includes('parish') ? (
-                                                            <span className="inline-block px-2 py-0.5 rounded text-xs bg-blue-50 text-blue-700 border border-blue-200 font-medium">
+                                                            <span className="inline-block px-1.5 py-0.5 rounded text-[10px] bg-blue-50 text-blue-700 border border-blue-200 font-medium">
                                                                 Desk Filing
                                                             </span>
                                                         ) : (
-                                                            <span className="inline-block px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200 font-medium">
+                                                            <span className="inline-block px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-600 border border-slate-200 font-medium">
                                                                 Online Claim
                                                             </span>
                                                         )}
                                                         {doc.certificate_request_id && (
-                                                            <span className="inline-block px-2 py-0.5 rounded text-xs bg-amber-50 text-amber-800 border border-amber-300 font-mono font-bold">
+                                                            <span className="inline-block px-1.5 py-0.5 rounded text-[10px] bg-amber-50 text-amber-800 border border-amber-300 font-mono font-bold">
                                                                 Order #{doc.certificate_request_id}
                                                             </span>
                                                         )}
                                                     </div>
                                                 </td>
 
-                                                <td className="py-3.5 px-5 capitalize font-semibold text-slate-900">
+                                                <td className="py-3.5 px-4 capitalize font-semibold text-slate-900">
                                                     <span className="inline-flex items-center gap-1.5">
                                                         <span className="w-2 h-2 rounded-full bg-amber-500"></span>
                                                         {doc.sacrament_type}
                                                     </span>
                                                 </td>
 
-                                                <td className="py-3.5 px-5 font-bold text-slate-900">
+                                                <td className="py-3.5 px-4 font-bold text-slate-900">
                                                     {doc.name_on_record}
                                                 </td>
 
-                                                <td className="py-3.5 px-5 text-slate-700">
+                                                <td className="py-3.5 px-4 text-slate-600">
                                                     {doc.targeted_parish?.name || 'Archdiocesan Curia Chancery'}
                                                 </td>
 
-                                                <td className="py-3.5 px-5 text-slate-600 font-mono text-xs">
+                                                <td className="py-3.5 px-4 text-slate-500 font-mono text-[11px]">
                                                     {doc.created_at.slice(0, 10)}
                                                 </td>
 
                                                 {/* Progressional Workflow Column */}
-                                                <td className="py-3.5 px-5">
+                                                <td className="py-3.5 px-4">
                                                     <div className="space-y-1.5">
                                                         <div className="flex items-center justify-between gap-2">
                                                             <span
-                                                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                                                                     isRejected
                                                                         ? 'bg-rose-50 text-rose-700 border border-rose-200'
                                                                         : doc.status === 'ready'
@@ -492,7 +557,7 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                                                             </span>
 
                                                             {!isRejected && (
-                                                                <span className="font-mono text-xs text-slate-600 font-semibold">
+                                                                <span className="font-mono text-[10px] text-slate-500 font-semibold">
                                                                     Step {details.step}/5 ({details.percent}%)
                                                                 </span>
                                                             )}
@@ -500,7 +565,7 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
 
                                                         {/* Stepper Progress Bar */}
                                                         {!isRejected ? (
-                                                            <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                                            <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
                                                                 <div
                                                                     className={`h-full rounded-full transition-all duration-300 ${
                                                                         doc.status === 'completed'
@@ -513,18 +578,18 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                                                                 />
                                                             </div>
                                                         ) : (
-                                                            <span className="text-xs text-rose-600 block">
+                                                            <span className="text-[10px] text-rose-600 block">
                                                                 Verification halted
                                                             </span>
                                                         )}
 
-                                                        <p className="text-xs text-slate-600 truncate">
+                                                        <p className="text-[10px] text-slate-500 truncate">
                                                             {details.desc}
                                                         </p>
                                                     </div>
                                                 </td>
 
-                                                <td className="py-3.5 px-5 text-right">
+                                                <td className="py-3.5 px-4 text-right">
                                                     <button
                                                         type="button"
                                                         onClick={() => setSelectedDoc(doc)}
@@ -543,6 +608,38 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                     </div>
                 </div>
 
+                {/* Active Parish Secretariat Notices Banner */}
+                {schedulesWithNotice.length > 0 && (
+                    <div className="bg-gradient-to-r from-amber-500/15 via-amber-400/10 to-amber-500/5 border-2 border-amber-400/50 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+                        <div className="flex items-start gap-3.5">
+                            <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400 text-amber-800 flex items-center justify-center shrink-0 mt-0.5">
+                                <Bell className="w-5 h-5 text-amber-700 animate-bounce" />
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                    <span>Parish Secretariat Notice: Action Required</span>
+                                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-500 text-slate-950">
+                                        {schedulesWithNotice.length} Pending {schedulesWithNotice.length === 1 ? 'Notice' : 'Notices'}
+                                    </span>
+                                </h4>
+                                <p className="text-xs text-slate-700 mt-0.5 max-w-2xl">
+                                    The parish office has processed your sacrament schedule request(s). Physical certificates are still required or special staff instructions have been provided.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                            <button
+                                type="button"
+                                onClick={() => setSelectedNoticeSchedule(schedulesWithNotice[0])}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-xs transition-colors cursor-pointer"
+                            >
+                                <Bell className="w-4 h-4" />
+                                <span>View Parish Notice</span>
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {/* Section 2: Scheduled Liturgical Ceremonies */}
                 <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-2xs">
                     <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/60">
@@ -551,21 +648,21 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                                 <Calendar className="w-4 h-4" />
                             </div>
                             <div>
-                                <h3 className="font-serif text-lg font-bold text-slate-900">
+                                <h3 className="font-serif text-base font-bold text-slate-900">
                                     Liturgical Appointments &amp; Ceremonies
                                 </h3>
-                                <p className="text-sm text-slate-600">
+                                <p className="text-xs text-slate-500">
                                     Confirmed schedule dates with presiding ministers &amp; venue bookings
                                 </p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="text-sm text-slate-700 font-medium bg-white px-3 py-1 rounded-lg border border-slate-200 shadow-2xs">
+                            <span className="text-xs text-slate-600 font-medium bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
                                 {schedules.length} Scheduled
                             </span>
                             <Link
                                 href="/portal/schedule-requests/create"
-                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg text-sm shadow-2xs transition-colors"
+                                className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg text-xs shadow-2xs transition-colors"
                             >
                                 <Plus className="w-3.5 h-3.5" />
                                 <span>Book Ceremony</span>
@@ -574,29 +671,29 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                     </div>
 
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-slate-50/90 text-slate-700 uppercase tracking-wide text-xs font-semibold border-b border-slate-200">
+                        <table className="w-full text-left text-xs">
+                            <thead className="bg-slate-50/90 text-slate-600 uppercase tracking-wider text-[11px] font-semibold border-b border-slate-200">
                                 <tr>
-                                    <th className="py-3.5 px-5">Appointment</th>
-                                    <th className="py-3.5 px-5">Sacrament</th>
-                                    <th className="py-3.5 px-5">Parish &amp; Venue</th>
-                                    <th className="py-3.5 px-5">Date &amp; Time</th>
-                                    <th className="py-3.5 px-5">Presiding Minister</th>
-                                    <th className="py-3.5 px-5">Status</th>
-                                    <th className="py-3.5 px-5 text-right">Payment</th>
+                                    <th className="py-3 px-4">Appointment</th>
+                                    <th className="py-3 px-4">Sacrament</th>
+                                    <th className="py-3 px-4">Parish &amp; Venue</th>
+                                    <th className="py-3 px-4">Date &amp; Time</th>
+                                    <th className="py-3 px-4">Presiding Minister</th>
+                                    <th className="py-3 px-4">Status &amp; Notices</th>
+                                    <th className="py-3 px-4 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 text-slate-700">
                                 {schedules.length === 0 ? (
                                     <tr>
-                                        <td colSpan={7} className="text-center py-12 text-slate-600 space-y-2">
+                                        <td colSpan={7} className="text-center py-12 text-slate-500 space-y-2">
                                             <Calendar className="w-10 h-10 text-slate-300 mx-auto" />
-                                            <p className="font-medium text-slate-700 text-sm">
+                                            <p className="font-medium text-slate-600">
                                                 No liturgical appointments recorded for your account.
                                             </p>
                                             <Link
                                                 href="/portal/schedule-requests/create"
-                                                className="inline-flex items-center gap-1.5 text-sky-700 font-semibold hover:underline text-sm"
+                                                className="inline-flex items-center gap-1.5 text-sky-700 font-semibold hover:underline text-xs"
                                             >
                                                 <Plus className="w-3.5 h-3.5" />
                                                 Book a sacrament ceremony appointment now
@@ -605,49 +702,54 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                                     </tr>
                                 ) : (
                                     schedules.map((schedule) => {
-                                        const starts = new Date(schedule.starts_at);
+                                        const starts = schedule.starts_at ? new Date(schedule.starts_at) : null;
+                                        const neededDocs = getNeededDocuments(schedule.document_checklist);
+                                        const hasNotice = neededDocs.length > 0 || Boolean(schedule.staff_notes && schedule.staff_notes.trim());
+
                                         return (
                                             <tr key={schedule.id} className="hover:bg-slate-50/70 transition-colors">
-                                                <td className="py-3.5 px-5 font-bold text-slate-900">
+                                                <td className="py-3.5 px-4 font-bold text-slate-900">
                                                     {schedule.title}
                                                 </td>
 
-                                                <td className="py-3.5 px-5 capitalize font-semibold text-slate-900">
+                                                <td className="py-3.5 px-4 capitalize font-semibold text-slate-900">
                                                     <span className="inline-flex items-center gap-1.5">
                                                         <span className="w-2 h-2 rounded-full bg-sky-500"></span>
                                                         {schedule.sacrament_type}
                                                     </span>
                                                 </td>
 
-                                                <td className="py-3.5 px-5 text-slate-700">
+                                                <td className="py-3.5 px-4 text-slate-700">
                                                     <div className="font-medium text-slate-900">
                                                         {schedule.parish?.name}
                                                     </div>
                                                     {schedule.venue && (
-                                                        <span className="text-xs text-slate-600 flex items-center gap-1 mt-0.5">
+                                                        <span className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
                                                             <MapPin className="w-3 h-3 text-slate-400" />
                                                             {schedule.venue.name}
                                                         </span>
                                                     )}
                                                 </td>
 
-                                                <td className="py-3.5 px-5 text-slate-700 font-medium">
-                                                    <div className="font-semibold text-slate-900">
-                                                        {starts.toLocaleDateString('en-US', {
-                                                            month: 'short',
-                                                            day: 'numeric',
-                                                            year: 'numeric',
-                                                        })}
-                                                    </div>
-                                                    <span className="text-xs text-slate-600">
-                                                        {starts.toLocaleTimeString('en-US', {
-                                                            hour: '2-digit',
-                                                            minute: '2-digit',
-                                                        })}
-                                                    </span>
+                                                <td className="py-3.5 px-4 text-slate-700 font-medium">
+                                                    {schedule.starts_at ? (
+                                                        <>
+                                                            <div className="font-semibold text-slate-900">
+                                                                {formatSacramentDate(schedule.starts_at)}
+                                                            </div>
+                                                            <span className="text-[11px] text-slate-500">
+                                                                {formatSacramentTime(schedule.starts_at)}
+                                                            </span>
+                                                        </>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-semibold">
+                                                            <Calendar className="w-3 h-3 text-amber-600" />
+                                                            Pending Assignment
+                                                        </span>
+                                                    )}
                                                 </td>
 
-                                                <td className="py-3.5 px-5 text-slate-700">
+                                                <td className="py-3.5 px-4 text-slate-700">
                                                     <div className="flex items-center gap-1.5">
                                                         <UserIcon className="w-3.5 h-3.5 text-slate-400" />
                                                         <span>
@@ -656,12 +758,31 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                                                     </div>
                                                 </td>
 
-                                                <td className="py-3.5 px-5">
-                                                    <div className="flex flex-col gap-1">
+                                                <td className="py-3.5 px-4">
+                                                    <div className="flex flex-col gap-1.5 items-start">
                                                         <StatusBadge status={schedule.status} />
+
+                                                        {hasNotice && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setSelectedNoticeSchedule(schedule)}
+                                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-950 font-bold text-[11px] shadow-2xs transition-colors cursor-pointer text-left"
+                                                            >
+                                                                <Bell className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                                                                <span>
+                                                                    View Parish Notice
+                                                                    {neededDocs.length > 0 && (
+                                                                        <span className="ml-1 bg-amber-500 text-slate-950 font-bold px-1.5 py-0.5 rounded-full text-[10px]">
+                                                                            {neededDocs.length} needed
+                                                                        </span>
+                                                                    )}
+                                                                </span>
+                                                            </button>
+                                                        )}
+
                                                         {schedule.status === 'cancelled' &&
                                                             schedule.cancellation_reason && (
-                                                                <span className="text-xs text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 mt-1">
+                                                                <span className="text-[10px] text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
                                                                     <strong>Reason:</strong>{' '}
                                                                     {schedule.cancellation_reason}
                                                                 </span>
@@ -669,30 +790,49 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                                                     </div>
                                                 </td>
 
-                                                <td className="py-3.5 px-5 text-right">
-                                                    {schedule.status === 'confirmed' &&
-                                                        schedule.payment_status !== 'paid' &&
-                                                        schedule.payment_status !== 'pending_cash' && (
-                                                            <Link
-                                                                href={`/portal/schedule-requests/${schedule.id}/payment`}
-                                                                className="inline-flex items-center gap-1 px-3.5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wide shadow-2xs transition-colors"
+                                                <td className="py-3.5 px-4 text-right">
+                                                    <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                                                        {hasNotice && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setSelectedNoticeSchedule(schedule)}
+                                                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs shadow-2xs transition-colors cursor-pointer"
                                                             >
-                                                                <CreditCard className="w-3.5 h-3.5" />
-                                                                Pay Now
-                                                            </Link>
+                                                                <Bell className="w-3 h-3 text-amber-400" />
+                                                                <span>Notice</span>
+                                                            </button>
                                                         )}
-                                                    {schedule.payment_status === 'paid' && (
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold text-xs uppercase">
-                                                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                                                            Paid
-                                                        </span>
-                                                    )}
-                                                    {schedule.payment_status === 'pending_cash' && (
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-amber-50 text-amber-700 border border-amber-200 font-semibold text-xs uppercase">
-                                                            <Clock className="w-3 h-3 text-amber-600" />
-                                                            Cash at Office
-                                                        </span>
-                                                    )}
+                                                        {schedule.status === 'confirmed' &&
+                                                            schedule.payment_status !== 'paid' &&
+                                                            schedule.payment_status !== 'pending_cash' &&
+                                                            schedule.payment_status !== 'pending_verification' && (
+                                                                <Link
+                                                                    href={`/portal/schedule-requests/${schedule.id}/payment`}
+                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider shadow-2xs transition-colors"
+                                                                >
+                                                                    <CreditCard className="w-3.5 h-3.5" />
+                                                                    Pay Now
+                                                                </Link>
+                                                            )}
+                                                        {schedule.payment_status === 'pending_verification' && (
+                                                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200 font-bold text-[10px] uppercase">
+                                                                <Clock className="w-3 h-3 text-blue-600" />
+                                                                Verifying Receipt
+                                                            </span>
+                                                        )}
+                                                        {schedule.payment_status === 'paid' && (
+                                                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[10px] uppercase">
+                                                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                                                Paid
+                                                            </span>
+                                                        )}
+                                                        {schedule.payment_status === 'pending_cash' && (
+                                                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-amber-50 text-amber-700 border border-amber-200 font-bold text-[10px] uppercase">
+                                                                <Clock className="w-3 h-3 text-amber-600" />
+                                                                Cash at Office
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </td>
                                             </tr>
                                         );
@@ -706,15 +846,15 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                 {/* Canonical Secretariat & Collection Notice */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Collection Guidelines */}
-                    <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs space-y-2 text-sm">
-                        <div className="flex items-center gap-2 text-slate-900 font-serif font-bold text-base">
+                    <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs space-y-2 text-xs">
+                        <div className="flex items-center gap-2 text-slate-900 font-serif font-bold text-sm">
                             <Award className="w-4 h-4 text-amber-600" />
                             <span>Certificate Collection Requirements</span>
                         </div>
-                        <p className="text-slate-700 leading-relaxed">
+                        <p className="text-slate-600 leading-relaxed">
                             Once marked <strong>Ready for Collection</strong>, certificates may be claimed at your parish secretariat office. Please prepare:
                         </p>
-                        <ul className="space-y-1 text-slate-700 list-disc list-inside">
+                        <ul className="space-y-1 text-slate-600 list-disc list-inside">
                             <li>One (1) original valid government-issued photo ID.</li>
                             <li>Your official Tracking Code reference.</li>
                             <li>Signed authorization letter &amp; representative ID if claimed on behalf of record holder.</li>
@@ -722,12 +862,12 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                     </div>
 
                     {/* Data Privacy & Canonical Governance */}
-                    <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-2xl p-5 shadow-2xs space-y-2 text-sm text-slate-700">
-                        <div className="flex items-center gap-2 text-emerald-900 font-serif font-bold text-base">
+                    <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-2xl p-5 shadow-2xs space-y-2 text-xs text-slate-700">
+                        <div className="flex items-center gap-2 text-emerald-900 font-serif font-bold text-sm">
                             <ShieldCheck className="w-4 h-4 text-emerald-600" />
                             <span>Republic Act 10173 (Data Privacy Act) Compliance</span>
                         </div>
-                        <p className="text-slate-700 leading-relaxed">
+                        <p className="text-slate-600 leading-relaxed">
                             All canonical registers and submitted identity records are processed strictly under the supervision of the Archdiocese of Lipa Curia Chancery for legitimate ecclesiastical administration. Records are protected by encrypted storage and strict role-based access.
                         </p>
                     </div>
@@ -755,14 +895,14 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                                     </h3>
                                     <StatusBadge status={selectedDoc.status} />
                                 </div>
-                                <span className="font-mono text-sm text-amber-800 font-bold mt-0.5 block">
+                                <span className="font-mono text-xs text-amber-800 font-bold mt-0.5 block">
                                     Tracking Code: {selectedDoc.tracking_code}
                                 </span>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setSelectedDoc(null)}
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -770,7 +910,7 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
 
                         {/* 5-Step Lifecycle Visual Stepper */}
                         <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-4 sm:p-5">
-                            <span className="text-xs font-bold text-slate-600 uppercase tracking-wide block mb-3">
+                            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-3">
                                 5-Step Canonical Certification Pipeline
                             </span>
                             <div className="grid grid-cols-5 gap-1.5 sm:gap-2 text-center text-xs">
@@ -802,7 +942,7 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                                                 )}
                                             </div>
                                             <span
-                                                className={`font-semibold text-xs block leading-tight ${
+                                                className={`font-semibold text-[11px] block leading-tight ${
                                                     isCurrent
                                                         ? 'text-amber-800 font-bold'
                                                         : isDone
@@ -812,7 +952,7 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                                             >
                                                 {step.label}
                                             </span>
-                                            <span className="text-xs text-slate-500 hidden sm:block mt-0.5">
+                                            <span className="text-[9px] text-slate-500 hidden sm:block mt-0.5">
                                                 {step.desc}
                                             </span>
                                         </div>
@@ -822,31 +962,31 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                         </div>
 
                         {/* Subject & Request Details */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm bg-white border border-slate-200 rounded-xl p-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs bg-white border border-slate-200 rounded-xl p-4">
                             <div>
-                                <span className="text-slate-500 text-xs block">Name on Inscription:</span>
+                                <span className="text-slate-500 text-[11px] block">Name on Inscription:</span>
                                 <strong className="text-slate-900">{selectedDoc.name_on_record}</strong>
                             </div>
                             <div>
-                                <span className="text-slate-500 text-xs block">Sacrament Type:</span>
+                                <span className="text-slate-500 text-[11px] block">Sacrament Type:</span>
                                 <strong className="text-slate-900 capitalize">{selectedDoc.sacrament_type}</strong>
                             </div>
                             <div>
-                                <span className="text-slate-500 text-xs block">Parish Jurisdiction:</span>
+                                <span className="text-slate-500 text-[11px] block">Parish Jurisdiction:</span>
                                 <span className="text-slate-800">
                                     {selectedDoc.targeted_parish?.name || 'Curia Chancery'}
                                 </span>
                             </div>
                             <div>
-                                <span className="text-slate-500 text-xs block">Date Filed:</span>
+                                <span className="text-slate-500 text-[11px] block">Date Filed:</span>
                                 <span className="text-slate-800">{selectedDoc.created_at.slice(0, 10)}</span>
                             </div>
                             <div>
-                                <span className="text-slate-500 text-xs block">Intended Purpose:</span>
+                                <span className="text-slate-500 text-[11px] block">Intended Purpose:</span>
                                 <span className="text-slate-800">{selectedDoc.purpose || 'Personal Copy'}</span>
                             </div>
                             <div>
-                                <span className="text-slate-500 text-xs block">Linked Staff Order:</span>
+                                <span className="text-slate-500 text-[11px] block">Linked Staff Order:</span>
                                 <span className="font-mono text-amber-700 font-bold">
                                     {selectedDoc.certificate_request_id
                                         ? `#ORD-${selectedDoc.certificate_request_id}`
@@ -859,8 +999,8 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                         {selectedDoc.certificate_request?.certificate_number && (
                             <div className="p-4 bg-emerald-50/80 border border-emerald-300 rounded-xl flex items-start gap-3">
                                 <Award className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
-                                <div className="text-sm space-y-1">
-                                    <span className="font-bold text-emerald-900 text-base block">
+                                <div className="text-xs space-y-1">
+                                    <span className="font-bold text-emerald-900 text-sm block">
                                         Official Certificate Issued: {selectedDoc.certificate_request.certificate_number}
                                     </span>
                                     <p className="text-slate-700 leading-relaxed">
@@ -872,19 +1012,219 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
 
                         {/* Rejection / Note alert if applicable */}
                         {selectedDoc.rejection_reason && (
-                            <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-900 space-y-1">
+                            <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 space-y-1">
                                 <strong className="block font-bold">Reason for Disapproval:</strong>
                                 <p>{selectedDoc.rejection_reason}</p>
                             </div>
                         )}
 
-                        <div className="flex justify-end pt-3 border-t border-slate-200">
+                        <div className="flex justify-end pt-2 border-t border-slate-200">
                             <button
                                 type="button"
                                 onClick={() => setSelectedDoc(null)}
-                                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-sm font-semibold transition cursor-pointer"
+                                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold transition cursor-pointer"
                             >
                                 Close Tracker
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal: Parish Office Notice & Document Requirements */}
+            {selectedNoticeSchedule && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+                    onClick={() => setSelectedNoticeSchedule(null)}
+                    role="dialog"
+                    aria-modal="true"
+                >
+                    <div
+                        className="w-full max-w-xl rounded-2xl bg-white border border-slate-200 shadow-2xl p-6 text-slate-900 space-y-5 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                            <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                    <span className="p-1.5 rounded-lg bg-amber-500/15 text-amber-700">
+                                        <Bell className="w-4 h-4" />
+                                    </span>
+                                    <h3 className="font-serif font-bold text-base sm:text-lg text-slate-900">
+                                        Parish Office Notice
+                                    </h3>
+                                    <StatusBadge status={selectedNoticeSchedule.status} />
+                                </div>
+                                <p className="text-xs text-slate-500">
+                                    {selectedNoticeSchedule.parish?.name || 'Parish Secretariat'} &bull; {selectedNoticeSchedule.title}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedNoticeSchedule(null)}
+                                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Section 1: Physical Documents Still Needed */}
+                        <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-4 space-y-3">
+                            <div className="flex items-center justify-between border-b border-amber-200 pb-2">
+                                <h4 className="font-bold text-amber-950 text-xs sm:text-sm flex items-center gap-1.5">
+                                    <CheckSquare className="w-4 h-4 text-amber-600" />
+                                    Physical Certificates Still Needed
+                                </h4>
+                                <span className="text-[11px] font-semibold text-amber-800">
+                                    {getNeededDocuments(selectedNoticeSchedule.document_checklist).length} Pending Requirement(s)
+                                </span>
+                            </div>
+
+                            {getNeededDocuments(selectedNoticeSchedule.document_checklist).length > 0 ? (
+                                <div className="space-y-2">
+                                    <p className="text-xs text-amber-900">
+                                        Please bring or submit original / certified true copies of the following document(s) to the parish office prior to the sacrament schedule:
+                                    </p>
+                                    <ul className="space-y-1.5 pt-1">
+                                        {getNeededDocuments(selectedNoticeSchedule.document_checklist).map((docName, idx) => (
+                                            <li
+                                                key={idx}
+                                                className="flex items-start gap-2 text-xs font-semibold text-amber-950 bg-white/90 p-2.5 rounded-lg border border-amber-200 shadow-2xs"
+                                            >
+                                                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                                                <span>{docName}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-2 text-xs font-medium text-emerald-800 bg-emerald-50 p-2.5 rounded-lg border border-emerald-200">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                                    <span>All core required physical documents have been checked and verified by the parish staff.</span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Section 2: Staff Reminders & Special Instructions */}
+                        {selectedNoticeSchedule.staff_notes && (
+                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
+                                <h4 className="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
+                                    <MessageSquare className="w-4 h-4 text-amber-600" />
+                                    Reminders &amp; Instructions from Parish Staff
+                                </h4>
+                                <div className="bg-white p-3 rounded-lg border border-slate-200 text-xs text-slate-800 leading-relaxed whitespace-pre-wrap font-medium">
+                                    {selectedNoticeSchedule.staff_notes}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Section 3: Uploaded Documents / Submission Mode Summary */}
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2 text-xs">
+                            <h4 className="font-bold text-slate-900 flex items-center justify-between">
+                                <span>Uploaded Documents on File</span>
+                                <span className="text-[11px] font-normal text-slate-500">
+                                    {(selectedNoticeSchedule.attachments || []).length} file(s) uploaded
+                                </span>
+                            </h4>
+
+                            {(selectedNoticeSchedule.attachments || []).length > 0 ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                                    {selectedNoticeSchedule.attachments?.map((att) => {
+                                        const viewUrl = att.view_url || `/schedule-attachments/${att.id}/view`;
+                                        const downloadUrl = att.download_url || `/schedule-attachments/${att.id}/download`;
+
+                                        return (
+                                            <div
+                                                key={att.id}
+                                                className="flex items-center justify-between p-2 bg-white border border-slate-200 rounded-lg hover:border-amber-400 hover:bg-amber-50/50 transition-colors"
+                                            >
+                                                <div className="flex items-center gap-2 overflow-hidden min-w-0 pr-1.5">
+                                                    <FileText className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                                                    <span className="font-medium text-slate-800 truncate text-[11px]" title={getDocTypeLabel(att.document_type)}>
+                                                        {getDocTypeLabel(att.document_type)}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-1 shrink-0">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setPreviewAttachment(att)}
+                                                        className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 rounded transition"
+                                                        title="Preview document"
+                                                    >
+                                                        <Eye className="w-3 h-3 text-amber-700" />
+                                                        <span>Preview</span>
+                                                    </button>
+                                                    <a
+                                                        href={viewUrl}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="p-1 text-slate-500 hover:text-slate-800 rounded hover:bg-slate-100 transition"
+                                                        title="Open in new tab"
+                                                    >
+                                                        <span className="text-[10px] font-bold">↗</span>
+                                                    </a>
+                                                    <a
+                                                        href={downloadUrl}
+                                                        className="p-1 text-slate-500 hover:text-slate-800 rounded hover:bg-slate-100 transition"
+                                                        title="Download file"
+                                                    >
+                                                        <Download className="w-3 h-3" />
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <p className="text-slate-500 italic">
+                                    {selectedNoticeSchedule.certificate_submission_mode === 'follow_up_office'
+                                        ? 'Submission mode: You indicated you will submit physical certificates directly at the parish office.'
+                                        : 'No digital document files were attached with this request.'}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Section 4: Ceremony Details Brief */}
+                        <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50/70 border border-slate-200 rounded-xl p-3.5">
+                            <div>
+                                <span className="text-slate-500 text-[11px] block">Appointment:</span>
+                                <strong className="text-slate-900">{selectedNoticeSchedule.title}</strong>
+                            </div>
+                            <div>
+                                <span className="text-slate-500 text-[11px] block">Sacrament:</span>
+                                <span className="font-semibold text-slate-800 capitalize">{selectedNoticeSchedule.sacrament_type}</span>
+                            </div>
+                            <div>
+                                <span className="text-slate-500 text-[11px] block">Date &amp; Time:</span>
+                                <span className="text-slate-800 font-medium">
+                                    {selectedNoticeSchedule.starts_at ? (
+                                        `${formatSacramentDate(selectedNoticeSchedule.starts_at)} at ${formatSacramentTime(selectedNoticeSchedule.starts_at)}`
+                                    ) : (
+                                        'Pending Office Assignment'
+                                    )}
+                                </span>
+                            </div>
+                            <div>
+                                <span className="text-slate-500 text-[11px] block">Presiding Clergy:</span>
+                                <span className="text-slate-800 font-medium">
+                                    {selectedNoticeSchedule.presiding_clergy?.titled_name || 'To be assigned by parish'}
+                                </span>
+                                {selectedNoticeSchedule.requested_clergy && (
+                                    <span className="text-[10px] text-amber-700 block mt-0.5">
+                                        Requested: {selectedNoticeSchedule.requested_clergy.titled_name}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Modal Actions */}
+                        <div className="flex justify-end pt-2 border-t border-slate-200">
+                            <button
+                                type="button"
+                                onClick={() => setSelectedNoticeSchedule(null)}
+                                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold transition cursor-pointer"
+                            >
+                                I Understand / Close
                             </button>
                         </div>
                     </div>
@@ -896,6 +1236,73 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                 isOpen={faceModalOpen}
                 onClose={() => setFaceModalOpen(false)}
             />
+
+            {/* Interactive Document Preview Modal */}
+            {previewAttachment && (
+                <div
+                    className="fixed inset-0 z-60 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 animate-in fade-in duration-150"
+                    onClick={() => setPreviewAttachment(null)}
+                >
+                    <div
+                        className="bg-white rounded-2xl max-w-4xl w-full p-4 sm:p-5 shadow-2xl space-y-3 max-h-[92vh] flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+                            <div className="flex items-center gap-2">
+                                <FileText className="w-5 h-5 text-amber-600" />
+                                <div>
+                                    <h3 className="font-bold text-sm text-slate-900 truncate">
+                                        {getDocTypeLabel(previewAttachment.document_type)}
+                                    </h3>
+                                    <span className="text-[10px] text-slate-500 font-mono">
+                                        {previewAttachment.file_path.split('/').pop()}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <a
+                                    href={previewAttachment.view_url || `/schedule-attachments/${previewAttachment.id}/view`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded-lg transition"
+                                >
+                                    <span>Open Tab</span>
+                                    <span className="font-bold">↗</span>
+                                </a>
+                                <a
+                                    href={previewAttachment.download_url || `/schedule-attachments/${previewAttachment.id}/download`}
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg transition"
+                                >
+                                    <Download className="w-3.5 h-3.5" />
+                                    <span>Download</span>
+                                </a>
+                                <button
+                                    onClick={() => setPreviewAttachment(null)}
+                                    className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 cursor-pointer"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-auto bg-slate-900/5 rounded-xl p-2 flex items-center justify-center min-h-[420px]">
+                            {previewAttachment.file_path.toLowerCase().endsWith('.pdf') ? (
+                                <iframe
+                                    src={previewAttachment.view_url || `/schedule-attachments/${previewAttachment.id}/view`}
+                                    className="w-full h-[68vh] rounded-lg border border-slate-200 bg-white"
+                                    title="Document Preview"
+                                />
+                            ) : (
+                                <img
+                                    src={previewAttachment.view_url || `/schedule-attachments/${previewAttachment.id}/view`}
+                                    alt="Document Preview"
+                                    className="max-h-[68vh] max-w-full object-contain rounded-lg shadow-sm"
+                                />
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </PortalLayout>
     );
 }

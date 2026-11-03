@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Enums\DocumentRequestStatusEnum;
 use App\Enums\RequestStatusEnum;
 use App\Enums\RoleEnum;
 use App\Enums\SacramentTypeEnum;
 use App\Models\CertificateRequest;
-use App\Models\DocumentRequest;
 use App\Models\Parish;
 use App\Models\Person;
 use App\Models\SacramentalRecord;
@@ -20,9 +20,13 @@ use Tests\TestCase;
 class CertificateWorkflowTest extends TestCase
 {
     protected Parish $parish;
+
     protected User $pastor;
+
     protected User $clerk;
+
     protected SacramentalRecord $record;
+
     protected DocumentWorkflowService $workflow;
 
     protected function setUp(): void
@@ -153,7 +157,7 @@ class CertificateWorkflowTest extends TestCase
         $this->workflow->transitionCertificate($cert, RequestStatusEnum::READY, $this->clerk);
         $this->workflow->transitionCertificate($cert, RequestStatusEnum::ISSUED, $this->pastor);
 
-        $this->assertEquals(\App\Enums\DocumentRequestStatusEnum::COMPLETED, $doc->fresh()->status);
+        $this->assertEquals(DocumentRequestStatusEnum::COMPLETED, $doc->fresh()->status);
         $this->assertNotNull($doc->fresh()->issued_at);
     }
 

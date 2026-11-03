@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Stripe\Exception\SignatureVerificationException;
 use Stripe\StripeClient;
 use Stripe\Webhook;
-use Stripe\Exception\SignatureVerificationException;
 
 class StripeIdentityController extends Controller
 {
@@ -51,7 +51,7 @@ class StripeIdentityController extends Controller
             ], 422);
         }
 
-        if (!class_exists(StripeClient::class) || !$this->stripe) {
+        if (! class_exists(StripeClient::class) || ! $this->stripe) {
             return response()->json([
                 'error' => 'Stripe SDK is not installed. Please run composer require stripe/stripe-php.',
             ], 422);
@@ -81,7 +81,7 @@ class StripeIdentityController extends Controller
             ]);
         } catch (\Throwable $e) {
             return response()->json([
-                'error' => 'Failed to initialize verification: ' . $e->getMessage(),
+                'error' => 'Failed to initialize verification: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -125,7 +125,7 @@ class StripeIdentityController extends Controller
      */
     public function handleWebhook(Request $request)
     {
-        if (!class_exists(Webhook::class)) {
+        if (! class_exists(Webhook::class)) {
             return response()->json(['error' => 'Invalid signature or payload'], 400);
         }
 
@@ -135,7 +135,7 @@ class StripeIdentityController extends Controller
 
         try {
             $event = Webhook::constructEvent($payload, $sigHeader, $endpointSecret);
-        } catch (\UnexpectedValueException | SignatureVerificationException $e) {
+        } catch (\UnexpectedValueException|SignatureVerificationException $e) {
             return response()->json(['error' => 'Invalid signature or payload'], 400);
         }
 

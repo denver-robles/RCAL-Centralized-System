@@ -14,6 +14,7 @@ class StripeIdentityTest extends TestCase
     use RefreshDatabase;
 
     protected User $parishioner;
+
     protected Parish $parish;
 
     protected function setUp(): void

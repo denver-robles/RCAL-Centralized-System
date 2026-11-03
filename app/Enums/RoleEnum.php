@@ -40,7 +40,7 @@ enum RoleEnum: string
 
     public function canManageUsers(): bool
     {
-        return $this === self::ADMIN;
+        return in_array($this, [self::ADMIN, self::CHANCERY], true);
     }
 
     public function canIssueCertificates(): bool

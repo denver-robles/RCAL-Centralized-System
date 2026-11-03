@@ -29,6 +29,11 @@ class Person extends Model
         'mother_id',
     ];
 
+    protected $appends = [
+        'full_name',
+        'sort_name',
+    ];
+
     protected function casts(): array
     {
         return [
@@ -67,6 +72,7 @@ class Person extends Model
     public function getSortNameAttribute(): string
     {
         $given = collect([$this->first_name, $this->middle_name, $this->suffix])->filter()->join(' ');
+
         return $given ? "{$this->last_name}, {$given}" : $this->last_name;
     }
 

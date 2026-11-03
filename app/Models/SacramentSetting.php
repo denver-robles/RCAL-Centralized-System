@@ -11,13 +11,18 @@ class SacramentSetting extends Model
         'parish_id',
         'sacrament_type',
         'is_available',
+        'allowed_days',
         'time_slots',
     ];
 
-    protected $casts = [
-        'is_available' => 'boolean',
-        'time_slots' => 'array',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'is_available' => 'boolean',
+            'allowed_days' => 'array',
+            'time_slots' => 'array',
+        ];
+    }
 
     public function parish(): BelongsTo
     {

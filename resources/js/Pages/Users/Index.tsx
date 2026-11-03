@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, Link } from '@inertiajs/react';
 import PortalLayout from '@/Layouts/PortalLayout';
 import { PageProps, User } from '@/types';
-import { Users as UsersIcon, Trash2, Search, AlertTriangle, ShieldCheck, X } from 'lucide-react';
+import { Users as UsersIcon, Trash2, Search, AlertTriangle, ShieldCheck, X, Mail, Phone, Church, User as UserIcon } from 'lucide-react';
 
 interface PaginatedData<T> {
     data: T[];
@@ -89,105 +89,133 @@ export default function Index({ auth, users, filters, currentUserId }: Props) {
                         </select>
                     </div>
 
-                    <div className="text-sm text-slate-600 font-mono">
-                        Active Accounts: <span className="font-bold text-slate-800">{users.total}</span>
+                    <div className="flex items-center gap-4">
+                        <div className="text-sm text-slate-600 font-mono">
+                            Active Accounts: <span className="font-bold text-slate-800">{users.total}</span>
+                        </div>
                     </div>
                 </div>
 
                 {/* Users Table */}
-                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
-                    <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
-                        <div className="flex items-center gap-2 text-slate-800 text-sm font-bold uppercase tracking-wide">
-                            <UsersIcon className="w-4 h-4 text-amber-600" />
-                            Registered System Accounts
+                <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-2xs">
+                        <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
+                            <div className="flex items-center gap-2 text-slate-800 text-sm font-bold uppercase tracking-wide">
+                                <UsersIcon className="w-4 h-4 text-amber-600" />
+                                Registered System Accounts
+                            </div>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm">
+                                <thead className="bg-slate-50 text-slate-700 uppercase tracking-wide border-b border-slate-200 font-semibold text-xs">
+                                    <tr>
+                                        <th className="py-3.5 px-5">User / Display Name</th>
+                                        <th className="py-3.5 px-5">Role</th>
+                                        <th className="py-3.5 px-5">Email & Phone</th>
+                                        <th className="py-3.5 px-5">Assigned Parish</th>
+                                        <th className="py-3.5 px-5">Status</th>
+                                        <th className="py-3.5 px-5 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {users.data.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={6} className="text-center py-10 text-slate-500 text-sm">
+                                                No accounts found matching current search.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        users.data.map((u) => {
+                                            const isSelf = u.id === currentUserId;
+                                            return (
+                                                <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
+                                                    <td className="py-3.5 px-5">
+                                                        <div className="font-semibold text-slate-900">
+                                                            {u.display_name || u.username}
+                                                        </div>
+                                                        <span className="font-mono text-xs text-slate-600 block">
+                                                            @{u.username}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3.5 px-5">
+                                                        <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold tracking-wide ${
+                                                            u.role === 'curia_admin'
+                                                                ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                                                                : u.role === 'parish_priest' || u.role === 'chancery_staff'
+                                                                ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                                                                : u.role === 'parish_staff'
+                                                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                                                : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                                        }`}>
+                                                            {u.role_label || u.role}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3.5 px-5 text-slate-700">
+                                                        <div>{u.email}</div>
+                                                        {u.phone && <div className="text-xs text-slate-600 font-mono">{u.phone}</div>}
+                                                    </td>
+                                                    <td className="py-3.5 px-5 text-slate-700">
+                                                        {u.home_parish?.name || (u.is_archdiocese_wide ? 'Archdiocese Curia' : 'None Assigned')}
+                                                    </td>
+                                                    <td className="py-3.5 px-5">
+                                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                                            u.is_active
+                                                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                                : 'bg-rose-50 text-rose-700 border border-rose-200'
+                                                        }`}>
+                                                            {u.is_active ? 'Active' : 'Inactive'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3.5 px-5 text-right">
+                                                        {isSelf ? (
+                                                            <span className="inline-block px-2.5 py-1 rounded bg-slate-100 text-slate-600 text-xs font-semibold border border-slate-200">
+                                                                Your Account
+                                                            </span>
+                                                        ) : (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setUserToDelete(u)}
+                                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold transition-colors shadow-2xs"
+                                                            >
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                                Delete Account
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-slate-50 text-slate-700 uppercase tracking-wide border-b border-slate-200 font-semibold text-xs">
-                                <tr>
-                                    <th className="py-3.5 px-5">User / Display Name</th>
-                                    <th className="py-3.5 px-5">Role</th>
-                                    <th className="py-3.5 px-5">Email & Phone</th>
-                                    <th className="py-3.5 px-5">Assigned Parish</th>
-                                    <th className="py-3.5 px-5">Status</th>
-                                    <th className="py-3.5 px-5 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {users.data.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={6} className="text-center py-10 text-slate-500 text-sm">
-                                            No accounts found matching current search.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    users.data.map((u) => {
-                                        const isSelf = u.id === currentUserId;
-                                        return (
-                                            <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
-                                                <td className="py-3.5 px-5">
-                                                    <div className="font-semibold text-slate-900">
-                                                        {u.display_name || u.username}
-                                                    </div>
-                                                    <span className="font-mono text-xs text-slate-600 block">
-                                                        @{u.username}
-                                                    </span>
-                                                </td>
-                                                <td className="py-3.5 px-5">
-                                                    <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold tracking-wide ${
-                                                        u.role === 'curia_admin'
-                                                            ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                                                            : u.role === 'parish_priest' || u.role === 'chancery_staff'
-                                                            ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                                                            : u.role === 'parish_staff'
-                                                            ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                                            : 'bg-slate-100 text-slate-700 border border-slate-200'
-                                                    }`}>
-                                                        {u.role_label || u.role}
-                                                    </span>
-                                                </td>
-                                                <td className="py-3.5 px-5 text-slate-700">
-                                                    <div>{u.email}</div>
-                                                    {u.phone && <div className="text-xs text-slate-600 font-mono">{u.phone}</div>}
-                                                </td>
-                                                <td className="py-3.5 px-5 text-slate-700">
-                                                    {u.home_parish?.name || (u.is_archdiocese_wide ? 'Archdiocese Curia' : 'None Assigned')}
-                                                </td>
-                                                <td className="py-3.5 px-5">
-                                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
-                                                        u.is_active
-                                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                                            : 'bg-rose-50 text-rose-700 border border-rose-200'
-                                                    }`}>
-                                                        {u.is_active ? 'Active' : 'Inactive'}
-                                                    </span>
-                                                </td>
-                                                <td className="py-3.5 px-5 text-right">
-                                                    {isSelf ? (
-                                                        <span className="inline-block px-2.5 py-1 rounded bg-slate-100 text-slate-600 text-xs font-semibold border border-slate-200">
-                                                            Your Account
-                                                        </span>
-                                                    ) : (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setUserToDelete(u)}
-                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold transition-colors shadow-2xs"
-                                                        >
-                                                            <Trash2 className="w-3.5 h-3.5" />
-                                                            Delete Account
-                                                        </button>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
-                                )}
-                            </tbody>
-                        </table>
+                {/* Pagination Controls */}
+                {users.links && users.links.length > 3 && (
+                    <div className="flex items-center justify-between mt-6 bg-white border border-slate-200 rounded-xl px-5 py-3 shadow-2xs">
+                        <div className="text-xs text-slate-600 font-medium">
+                            Showing page <span className="font-bold text-slate-900">{users.current_page}</span> of{' '}
+                            <span className="font-bold text-slate-900">{users.last_page}</span> ({users.total} accounts)
+                        </div>
+                        <div className="flex items-center gap-1">
+                            {users.links.map((link, idx) => (
+                                <Link
+                                    key={idx}
+                                    href={link.url || '#'}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                        link.active
+                                            ? 'bg-amber-500 text-slate-950 font-bold shadow-2xs'
+                                            : link.url
+                                            ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                                            : 'text-slate-300 cursor-not-allowed'
+                                    }`}
+                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                />
+                            ))}
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
 
             {/* Modal: Delete Account Confirmation */}

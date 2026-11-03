@@ -38,6 +38,10 @@ class SacramentSchedule extends Model
         'record_id',
         'cancellation_reason',
         'notes',
+        'certificate_submission_mode',
+        'requested_clergy_id',
+        'staff_notes',
+        'document_checklist',
     ];
 
     protected function casts(): array
@@ -49,6 +53,7 @@ class SacramentSchedule extends Model
             'ends_at' => 'datetime',
             'alternative_starts_at' => 'datetime',
             'specific_data' => 'array',
+            'document_checklist' => 'array',
             'expected_attendees' => 'integer',
         ];
     }
@@ -68,6 +73,11 @@ class SacramentSchedule extends Model
         return $this->belongsTo(Clergy::class, 'presiding_clergy_id');
     }
 
+    public function requestedClergy(): BelongsTo
+    {
+        return $this->belongsTo(Clergy::class, 'requested_clergy_id');
+    }
+
     public function requesterUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'requester_user_id');
@@ -83,11 +93,49 @@ class SacramentSchedule extends Model
         return $this->hasMany(ScheduleAttachment::class, 'sacrament_schedule_id');
     }
 
+    protected $appends = [
+        'duration_minutes',
+        'is_past',
+        'needs_register_entry',
+        'formatted_time',
+        'formatted_date',
+    ];
+
+    /**
+     * Prepare a date for array / JSON serialization.
+     * Use local ISO format without trailing 'Z' so client browsers do not incorrectly shift
+     * local church wall-clock appointment times by their timezone offset.
+     */
+    protected function serializeDate(\DateTimeInterface $date): string
+    {
+        return $date->format('Y-m-d\TH:i:s');
+    }
+
+    public function getFormattedTimeAttribute(): string
+    {
+        if (! $this->starts_at) {
+            return 'Pending Assignment';
+        }
+
+        $start = $this->starts_at->format('g:i A');
+        if ($this->ends_at) {
+            return $start.' – '.$this->ends_at->format('g:i A');
+        }
+
+        return $start;
+    }
+
+    public function getFormattedDateAttribute(): string
+    {
+        return $this->starts_at ? $this->starts_at->format('D, M j, Y') : 'Pending Assignment';
+    }
+
     public function getDurationMinutesAttribute(): int
     {
-        if (!$this->starts_at || !$this->ends_at) {
+        if (! $this->starts_at || ! $this->ends_at) {
             return 0;
         }
+
         return max(0, $this->starts_at->diffInMinutes($this->ends_at));
     }
 

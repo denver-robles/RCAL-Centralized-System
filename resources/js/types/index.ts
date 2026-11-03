@@ -25,7 +25,14 @@ export type DocumentRequestStatus =
     | 'rejected'
     | 'cancelled';
 
-export type ScheduleStatus = 'requested' | 'scheduled' | 'confirmed' | 'completed' | 'cancelled';
+export type ScheduleStatus =
+    | 'requested'
+    | 'on_hold'
+    | 'processing'
+    | 'scheduled'
+    | 'confirmed'
+    | 'completed'
+    | 'cancelled';
 
 export type ScheduleType =
     | 'baptism'
@@ -224,6 +231,25 @@ export interface Venue {
     is_active: boolean;
 }
 
+export interface ScheduleAttachment {
+    id: number;
+    sacrament_schedule_id: number;
+    document_type: string;
+    file_path: string;
+    view_url?: string;
+    download_url?: string;
+    created_at?: string;
+}
+
+export interface SacramentSetting {
+    id?: number;
+    parish_id?: number;
+    sacrament_type: string;
+    is_available: boolean;
+    allowed_days?: string[] | null;
+    time_slots: string[];
+}
+
 export interface SacramentSchedule {
     id: number;
     parish_id: number;
@@ -232,7 +258,10 @@ export interface SacramentSchedule {
     venue?: Venue | null;
     presiding_clergy_id?: number | null;
     presiding_clergy?: Clergy | null;
+    requested_clergy_id?: number | null;
+    requested_clergy?: Clergy | null;
     requester_user_id?: number | null;
+    requester_user?: User | null;
     sacrament_type: ScheduleType;
     title: string;
     description?: string | null;
@@ -241,10 +270,25 @@ export interface SacramentSchedule {
     status: ScheduleStatus;
     requester_name?: string | null;
     requester_contact?: string | null;
+    requester_email?: string | null;
+    requester_relationship?: string | null;
+    requester_address?: string | null;
+    alternative_starts_at?: string | null;
+    specific_data?: Record<string, any> | null;
+    payment_method?: string | null;
+    payment_receipt_path?: string | null;
+    payment_status?: string | null;
     expected_attendees?: number | null;
     record_id?: number | null;
+    record?: SacramentalRecord | null;
     cancellation_reason?: string | null;
     notes?: string | null;
+    staff_notes?: string | null;
+    document_checklist?: Record<string, boolean> | null;
+    certificate_submission_mode?: 'online' | 'follow_up_office' | string | null;
+    attachments?: ScheduleAttachment[];
+    formatted_time?: string;
+    formatted_date?: string;
     created_at: string;
 }
 

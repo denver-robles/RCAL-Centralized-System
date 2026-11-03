@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AuditActionEnum;
 use App\Enums\DocumentRequestStatusEnum;
 use App\Enums\RequestStatusEnum;
 use App\Models\CertificateRequest;
@@ -36,7 +37,7 @@ class CertificatesController extends Controller
         $certQuery = CertificateRequest::query()
             ->with(['record.person', 'record.originatingParish', 'requesterUser']);
 
-        if (!$user->isArchdioceseWide()) {
+        if (! $user->isArchdioceseWide()) {
             $certQuery->whereHas('record', fn ($q) => $q->where('originating_parish_id', $user->home_parish_id));
         }
 
@@ -47,11 +48,11 @@ class CertificatesController extends Controller
         if ($search) {
             $certQuery->where(function ($q) use ($search) {
                 $q->where('requester_name', 'like', "%{$search}%")
-                  ->orWhere('certificate_number', 'like', "%{$search}%")
-                  ->orWhereHas('record.person', function ($pq) use ($search) {
-                      $pq->where('first_name', 'like', "%{$search}%")
-                         ->orWhere('last_name', 'like', "%{$search}%");
-                  });
+                    ->orWhere('certificate_number', 'like', "%{$search}%")
+                    ->orWhereHas('record.person', function ($pq) use ($search) {
+                        $pq->where('first_name', 'like', "%{$search}%")
+                            ->orWhere('last_name', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -61,10 +62,10 @@ class CertificatesController extends Controller
         $docQuery = DocumentRequest::query()
             ->with(['targetedParish', 'parishioner', 'certificateRequest', 'matchedRecord.person']);
 
-        if (!$user->isArchdioceseWide()) {
+        if (! $user->isArchdioceseWide()) {
             $docQuery->where(function ($q) use ($user) {
                 $q->where('targeted_parish_id', $user->home_parish_id)
-                  ->orWhereHas('matchedRecord', fn ($rq) => $rq->where('originating_parish_id', $user->home_parish_id));
+                    ->orWhereHas('matchedRecord', fn ($rq) => $rq->where('originating_parish_id', $user->home_parish_id));
             });
         }
 
@@ -75,7 +76,7 @@ class CertificatesController extends Controller
         if ($search) {
             $docQuery->where(function ($q) use ($search) {
                 $q->where('tracking_code', 'like', "%{$search}%")
-                  ->orWhere('name_on_record', 'like', "%{$search}%");
+                    ->orWhere('name_on_record', 'like', "%{$search}%");
             });
         }
 
@@ -84,7 +85,7 @@ class CertificatesController extends Controller
         $stats = ParishScopingService::combinedRequestStats($user);
 
         $recordsQuery = SacramentalRecord::query()->with(['person', 'originatingParish']);
-        if (!$user->isArchdioceseWide()) {
+        if (! $user->isArchdioceseWide()) {
             $recordsQuery->where('originating_parish_id', $user->home_parish_id);
         }
         $availableRecords = $recordsQuery->orderByDesc('id')->limit(50)->get();
@@ -120,11 +121,11 @@ class CertificatesController extends Controller
         $record = SacramentalRecord::with(['person', 'originatingParish'])->findOrFail($validated['record_id']);
         $user = $request->user();
 
-        if (!ParishScopingService::canViewRecord($user, $record)) {
+        if (! ParishScopingService::canViewRecord($user, $record)) {
             abort(403, 'Unauthorized to request certificates for this parish.');
         }
 
-        $requesterUserId = !empty($validated['parishioner_id'])
+        $requesterUserId = ! empty($validated['parishioner_id'])
             ? (int) $validated['parishioner_id']
             : $user->id;
 
@@ -139,8 +140,8 @@ class CertificatesController extends Controller
 
         // If filed on behalf of a registered parishioner, create a synchronized DocumentRequest
         // so it immediately appears in the parishioner's portal dashboard under My Claims & Orders!
-        if (!empty($validated['parishioner_id'])) {
-            $trackingCode = 'RCAL-REQ-' . strtoupper(Str::random(8));
+        if (! empty($validated['parishioner_id'])) {
+            $trackingCode = 'RCAL-REQ-'.strtoupper(Str::random(16));
             DocumentRequest::create([
                 'tracking_code' => $trackingCode,
                 'parishioner_id' => $requesterUserId,
@@ -163,10 +164,10 @@ class CertificatesController extends Controller
 
         AuditService::log(
             $request,
-            \App\Enums\AuditActionEnum::CREATE,
+            AuditActionEnum::CREATE,
             'certificate_request',
             $certificate->id,
-            "Certificate request #{$certificate->id} initialized by {$user->username}" . (!empty($validated['parishioner_id']) ? " on behalf of parishioner #{$validated['parishioner_id']}" : '')
+            "Certificate request #{$certificate->id} initialized by {$user->username}".(! empty($validated['parishioner_id']) ? " on behalf of parishioner #{$validated['parishioner_id']}" : '')
         );
 
         return redirect()->route('certificates.show', $certificate->id)
@@ -187,7 +188,7 @@ class CertificatesController extends Controller
         $doc = DocumentRequest::with(['parishioner'])->findOrFail($validated['document_request_id']);
         $record = SacramentalRecord::with(['person', 'originatingParish'])->findOrFail($validated['record_id']);
 
-        if (!ParishScopingService::canViewRecord($user, $record)) {
+        if (! ParishScopingService::canViewRecord($user, $record)) {
             abort(403, 'Unauthorized to link records outside your parish jurisdiction.');
         }
 
@@ -214,7 +215,7 @@ class CertificatesController extends Controller
 
         AuditService::log(
             $request,
-            \App\Enums\AuditActionEnum::CREATE,
+            AuditActionEnum::CREATE,
             'certificate_request',
             $certificate->id,
             "Claim {$doc->tracking_code} matched to Record #{$record->id} by {$user->username}, initializing Order #{$certificate->id}"
@@ -245,7 +246,7 @@ class CertificatesController extends Controller
             'linkedDocumentRequest',
         ]);
 
-        if (!ParishScopingService::canViewRecord($user, $certificate->record)) {
+        if (! ParishScopingService::canViewRecord($user, $certificate->record)) {
             abort(403, 'Access denied. Certificate belongs to another parish jurisdiction.');
         }
 
@@ -266,14 +267,14 @@ class CertificatesController extends Controller
 
         $user = $request->user();
 
-        if (!ParishScopingService::canWriteRecord($user, $certificate->record)) {
+        if (! ParishScopingService::canWriteRecord($user, $certificate->record)) {
             abort(403, 'Access denied. You may only transition certificates in your parish jurisdiction.');
         }
 
         $targetEnum = RequestStatusEnum::from($validated['target_status']);
 
         // Check permission for issuing: only authorized roles can issue
-        if ($targetEnum === RequestStatusEnum::ISSUED && !$user->canIssueCertificates()) {
+        if ($targetEnum === RequestStatusEnum::ISSUED && ! $user->canIssueCertificates()) {
             abort(403, 'Only Parish Priests, Chancery staff, and Curia Administrators may issue official certificates.');
         }
 
@@ -304,7 +305,7 @@ class CertificatesController extends Controller
             'issuedByUser',
         ]);
 
-        if (!ParishScopingService::canViewRecord($user, $certificate->record)) {
+        if (! ParishScopingService::canViewRecord($user, $certificate->record)) {
             abort(403, 'Access denied. Cannot print certificate.');
         }
 
@@ -317,7 +318,7 @@ class CertificatesController extends Controller
         // Log print action for RA 10173 compliance
         AuditService::log(
             $request,
-            \App\Enums\AuditActionEnum::PRINT,
+            AuditActionEnum::PRINT,
             'certificate_request',
             $certificate->id,
             "Certificate {$certificate->certificate_number} printed by {$user->username}"

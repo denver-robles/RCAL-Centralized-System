@@ -8,12 +8,10 @@ use App\Enums\ScheduleStatusEnum;
 use App\Enums\ScheduleTypeEnum;
 use App\Models\Clergy;
 use App\Models\Parish;
-use App\Models\SacramentSchedule;
 use App\Models\User;
 use App\Models\Venue;
 use App\Models\Vicariate;
 use App\Services\SacramentScheduleService;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
@@ -21,10 +19,15 @@ use Tests\TestCase;
 class SacramentScheduleConflictTest extends TestCase
 {
     protected Parish $parish;
+
     protected Venue $venueMain;
+
     protected Venue $venueChapel;
+
     protected Clergy $priest;
+
     protected User $staff;
+
     protected SacramentScheduleService $scheduleService;
 
     protected function setUp(): void
