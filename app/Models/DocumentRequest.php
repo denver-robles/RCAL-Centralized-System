@@ -84,8 +84,9 @@ class DocumentRequest extends Model
     {
         $typeLabel = $this->sacrament_type instanceof SacramentTypeEnum
             ? $this->sacrament_type->label()
-            : ucfirst((string)$this->sacrament_type);
+            : ucfirst((string) $this->sacrament_type);
         $year = $this->date_of_sacrament ? $this->date_of_sacrament->format('Y') : 'year unknown';
+
         return "{$typeLabel} — {$this->name_on_record} ({$year})";
     }
 }

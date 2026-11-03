@@ -31,7 +31,7 @@ class MigrateFromSqliteCommand extends Command
     {
         $dbPath = $this->argument('path');
 
-        if (!$dbPath) {
+        if (! $dbPath) {
             // Check default location of legacy database
             $defaultCandidate = base_or_relative_path('../RCAL Centralized System/instance/rcal.db');
             if (file_exists($defaultCandidate)) {
@@ -41,8 +41,9 @@ class MigrateFromSqliteCommand extends Command
             }
         }
 
-        if (!file_exists($dbPath)) {
+        if (! file_exists($dbPath)) {
             $this->error("Source SQLite database file not found at: {$dbPath}");
+
             return Command::FAILURE;
         }
 
@@ -109,6 +110,7 @@ class MigrateFromSqliteCommand extends Command
         } catch (\Throwable $e) {
             DB::rollBack();
             $this->error("Migration failed: {$e->getMessage()} in {$e->getFile()}:{$e->getLine()}");
+
             return Command::FAILURE;
         } finally {
             DB::statement('PRAGMA foreign_keys = ON;');
@@ -289,8 +291,8 @@ class MigrateFromSqliteCommand extends Command
                     'clergy_id' => $row['clergy_id'] ?? null,
                     'phone' => $row['phone'] ?? null,
                     'postal_address' => $row['postal_address'] ?? null,
-                    'email_verified_at' => !empty($row['email_verified']) ? now() : null,
-                    'phone_verified_at' => !empty($row['phone_verified']) ? now() : null,
+                    'email_verified_at' => ! empty($row['email_verified']) ? now() : null,
+                    'phone_verified_at' => ! empty($row['phone_verified']) ? now() : null,
                     'last_login_at' => $row['last_login_at'] ?? null,
                     'created_at' => $row['created_at'] ?? now(),
                     'updated_at' => $row['updated_at'] ?? now(),
@@ -318,7 +320,7 @@ class MigrateFromSqliteCommand extends Command
                     'entry_number' => (int) $row['entry_number'],
                     'originating_parish_id' => (int) $row['originating_parish_id'],
                     'performed_by_clergy_id' => $row['performed_by_clergy_id'] ?? null,
-                    'legitimacy' => !empty($row['legitimacy']) ? strtolower($row['legitimacy']) : null,
+                    'legitimacy' => ! empty($row['legitimacy']) ? strtolower($row['legitimacy']) : null,
                     'godparents' => $row['godparents'] ?? null,
                     'witnesses' => $row['witnesses'] ?? null,
                     'place_of_event' => $row['place_of_event'] ?? null,
@@ -378,7 +380,7 @@ class MigrateFromSqliteCommand extends Command
                     'purpose' => $row['purpose'] ?? null,
                     'status' => strtolower($row['status'] ?? 'pending'),
                     'certificate_number' => $row['certificate_number'] ?? null,
-                    'verification_token' => !empty($row['certificate_number'])
+                    'verification_token' => ! empty($row['certificate_number'])
                         ? hash_hmac('sha256', "RCAL-PIMS:{$row['certificate_number']}:{$row['record_id']}", config('app.key'))
                         : null,
                     'verified_by_user_id' => $row['verified_by_user_id'] ?? null,
@@ -404,7 +406,7 @@ class MigrateFromSqliteCommand extends Command
         $rows = $source->query('SELECT * FROM document_requests')->fetchAll(PDO::FETCH_ASSOC);
         $count = 0;
         foreach ($rows as $row) {
-            $tracking = 'RCAL-REQ-' . strtoupper(Str::random(8));
+            $tracking = 'RCAL-REQ-'.strtoupper(Str::random(8));
 
             DB::table('document_requests')->updateOrInsert(
                 ['id' => $row['id']],
@@ -489,10 +491,10 @@ class MigrateFromSqliteCommand extends Command
                     'subject_type' => $row['subject_type'] ?? null,
                     'subject_id' => $row['subject_id'] ?? null,
                     'subject_label' => $row['subject_label'] ?? null,
-                    'old_values' => !empty($row['old_values']) && is_string($row['old_values'])
+                    'old_values' => ! empty($row['old_values']) && is_string($row['old_values'])
                         ? (json_validate($row['old_values']) ? $row['old_values'] : json_encode(['raw' => $row['old_values']]))
                         : null,
-                    'new_values' => !empty($row['new_values']) && is_string($row['new_values'])
+                    'new_values' => ! empty($row['new_values']) && is_string($row['new_values'])
                         ? (json_validate($row['new_values']) ? $row['new_values'] : json_encode(['raw' => $row['new_values']]))
                         : null,
                     'ip_address' => $row['ip_address'] ?? null,

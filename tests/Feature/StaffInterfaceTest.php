@@ -16,8 +16,11 @@ use Tests\TestCase;
 class StaffInterfaceTest extends TestCase
 {
     protected Parish $parish;
+
     protected User $staff;
+
     protected User $chancery;
+
     protected SacramentalRecord $record;
 
     protected function setUp(): void

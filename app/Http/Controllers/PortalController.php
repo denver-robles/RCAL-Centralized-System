@@ -43,7 +43,7 @@ class PortalController extends Controller
             ->get();
 
         foreach ($unlinkedCerts as $cert) {
-            $trackingCode = 'RCAL-REQ-'.strtoupper(Str::random(8));
+            $trackingCode = 'RCAL-REQ-'.strtoupper(Str::random(16));
             DocumentRequest::create([
                 'tracking_code' => $trackingCode,
                 'parishioner_id' => $user->id,
@@ -144,7 +144,7 @@ class PortalController extends Controller
         $user = $request->user();
 
         if ($request->hasFile('id_document')) {
-            $path = $request->file('id_document')->store('id_documents', 'public');
+            $path = $request->file('id_document')->store('id_documents', 'local');
             $validated['id_document_path'] = $path;
         }
 
@@ -328,9 +328,9 @@ class PortalController extends Controller
         $schedule->payment_method = $validated['payment_method'];
 
         if ($validated['payment_method'] === 'online' && $request->hasFile('receipt')) {
-            $path = $request->file('receipt')->store('schedule_receipts', 'public');
+            $path = $request->file('receipt')->store('schedule_receipts', 'local');
             $schedule->payment_receipt_path = $path;
-            $schedule->payment_status = 'paid';
+            $schedule->payment_status = 'pending_verification';
         } else {
             $schedule->payment_status = 'pending_cash';
         }

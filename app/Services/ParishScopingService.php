@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Enums\DocumentRequestStatusEnum;
 use App\Enums\RequestStatusEnum;
-use App\Enums\RoleEnum;
 use App\Enums\SacramentTypeEnum;
 use App\Models\CertificateRequest;
 use App\Models\Clergy;
@@ -25,7 +24,7 @@ class ParishScopingService
      */
     public static function visibleParish(?User $user): ?Parish
     {
-        if (!$user) {
+        if (! $user) {
             return null;
         }
 
@@ -41,7 +40,7 @@ class ParishScopingService
      */
     public static function scopeParish(Builder $query, ?User $user, string $column = 'originating_parish_id'): Builder
     {
-        if (!$user || $user->isArchdioceseWide()) {
+        if (! $user || $user->isArchdioceseWide()) {
             return $query;
         }
 
@@ -50,7 +49,7 @@ class ParishScopingService
 
     public static function canViewRecord(?User $user, SacramentalRecord $record): bool
     {
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -58,12 +57,12 @@ class ParishScopingService
             return true;
         }
 
-        return (int)$user->home_parish_id === (int)$record->originating_parish_id;
+        return (int) $user->home_parish_id === (int) $record->originating_parish_id;
     }
 
     public static function canWriteRecord(?User $user, SacramentalRecord $record): bool
     {
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -71,7 +70,7 @@ class ParishScopingService
             return true;
         }
 
-        return (int)$user->home_parish_id === (int)$record->originating_parish_id;
+        return (int) $user->home_parish_id === (int) $record->originating_parish_id;
     }
 
     /**
@@ -96,7 +95,7 @@ class ParishScopingService
     public static function sacramentCounts(?User $user = null): array
     {
         $query = SacramentalRecord::query();
-        if ($user && !$user->isArchdioceseWide()) {
+        if ($user && ! $user->isArchdioceseWide()) {
             $query->where('originating_parish_id', $user->home_parish_id);
         }
 
@@ -121,19 +120,19 @@ class ParishScopingService
         $certQuery = CertificateRequest::query();
         $docQuery = DocumentRequest::query();
 
-        if ($user && !$user->isArchdioceseWide()) {
-            $certQuery->whereHas('record', fn($q) => $q->where('originating_parish_id', $user->home_parish_id));
+        if ($user && ! $user->isArchdioceseWide()) {
+            $certQuery->whereHas('record', fn ($q) => $q->where('originating_parish_id', $user->home_parish_id));
             $docQuery->where(function ($q) use ($user) {
                 $q->where('targeted_parish_id', $user->home_parish_id)
-                  ->orWhereHas('matchedRecord', fn ($rq) => $rq->where('originating_parish_id', $user->home_parish_id));
+                    ->orWhereHas('matchedRecord', fn ($rq) => $rq->where('originating_parish_id', $user->home_parish_id));
             });
         }
 
         $certs = $certQuery->get();
         $docs = $docQuery->get();
 
-        $certOpen = $certs->filter(fn($c) => $c->isOpen)->count();
-        $docOpen = $docs->filter(fn($d) => $d->isOpen && !$d->certificate_request_id)->count();
+        $certOpen = $certs->filter(fn ($c) => $c->isOpen)->count();
+        $docOpen = $docs->filter(fn ($d) => $d->isOpen && ! $d->certificate_request_id)->count();
 
         $issued = $certs->where('status', RequestStatusEnum::ISSUED)->count() +
                   $docs->where('status', DocumentRequestStatusEnum::COMPLETED)->count();

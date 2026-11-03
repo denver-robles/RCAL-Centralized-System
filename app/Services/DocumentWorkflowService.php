@@ -41,7 +41,8 @@ class DocumentWorkflowService
      */
     public function generateVerificationToken(string $certificateNumber, int $recordId): string
     {
-        $payload = "RCAL-PIMS:{$certificateNumber}:{$recordId}:" . microtime(true);
+        $payload = "RCAL-PIMS:{$certificateNumber}:{$recordId}:".microtime(true);
+
         return hash_hmac('sha256', $payload, config('app.key'));
     }
 
@@ -54,13 +55,13 @@ class DocumentWorkflowService
         User $actor,
         ?string $reason = null
     ): CertificateRequest {
-        if (!$request->status->canTransitionTo($targetStatus)) {
+        if (! $request->status->canTransitionTo($targetStatus)) {
             throw ValidationException::withMessages([
                 'status' => "Cannot transition request from '{$request->status->label()}' to '{$targetStatus->label()}'.",
             ]);
         }
 
-        if ($targetStatus === RequestStatusEnum::REJECTED && empty(trim((string)$reason))) {
+        if ($targetStatus === RequestStatusEnum::REJECTED && empty(trim((string) $reason))) {
             throw ValidationException::withMessages([
                 'reason' => 'A rejection reason is strictly required.',
             ]);
@@ -138,7 +139,7 @@ class DocumentWorkflowService
      */
     public function fileDocumentRequest(array $data, User $parishioner): DocumentRequest
     {
-        $trackingCode = 'RCAL-REQ-' . strtoupper(Str::random(8));
+        $trackingCode = 'RCAL-REQ-'.strtoupper(Str::random(16));
 
         return DB::transaction(function () use ($data, $parishioner, $trackingCode) {
             $doc = DocumentRequest::create([

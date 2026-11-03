@@ -744,6 +744,64 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
                                     <p className="text-amber-950 whitespace-pre-wrap">{viewingSchedule.staff_notes}</p>
                                 </div>
                             )}
+
+                            {/* Payment Info & Receipt Review */}
+                            <div className="sm:col-span-2 bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
+                                <h4 className="font-bold text-slate-800 border-b pb-1">Payment &amp; Receipt Verification</h4>
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                    <p><strong>Method:</strong> {viewingSchedule.payment_method || 'N/A'}</p>
+                                    <p>
+                                        <strong>Status:</strong>{' '}
+                                        <span className="uppercase font-bold text-slate-900">
+                                            {viewingSchedule.payment_status?.replace(/_/g, ' ') || 'UNPAID'}
+                                        </span>
+                                    </p>
+                                </div>
+
+                                {viewingSchedule.payment_receipt_path && (
+                                    <div className="pt-1">
+                                        <a
+                                            href={`/schedules/${viewingSchedule.id}/receipt`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="text-xs text-amber-700 underline font-semibold hover:text-amber-800"
+                                        >
+                                            View Uploaded Payment Receipt (Secure)
+                                        </a>
+                                    </div>
+                                )}
+
+                                {viewingSchedule.payment_status === 'pending_verification' && (
+                                    <div className="flex items-center gap-2 pt-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                router.post(`/schedules/${viewingSchedule.id}/verify-payment`, {
+                                                    payment_status: 'paid',
+                                                }, {
+                                                    onSuccess: () => setViewingSchedule(null),
+                                                });
+                                            }}
+                                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition shadow-xs cursor-pointer"
+                                        >
+                                            Confirm Receipt as Paid
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                router.post(`/schedules/${viewingSchedule.id}/verify-payment`, {
+                                                    payment_status: 'unpaid',
+                                                }, {
+                                                    onSuccess: () => setViewingSchedule(null),
+                                                });
+                                            }}
+                                            className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold transition shadow-xs cursor-pointer"
+                                        >
+                                            Reject Receipt
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <div className="flex justify-between items-center pt-3 border-t">

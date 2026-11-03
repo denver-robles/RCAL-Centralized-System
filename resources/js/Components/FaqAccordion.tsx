@@ -34,7 +34,7 @@ export const FaqAccordion: React.FC<FaqAccordionProps> = ({ items, className = '
                             className="w-full py-4 px-5 text-left flex items-center justify-between gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
                             aria-expanded={isOpen}
                         >
-                            <span className="font-medium text-slate-900 text-sm sm:text-base pr-2">
+                            <span className="font-semibold text-slate-900 text-base pr-2">
                                 {item.question}
                             </span>
                             <ChevronDown
@@ -51,10 +51,10 @@ export const FaqAccordion: React.FC<FaqAccordionProps> = ({ items, className = '
                             }}
                         >
                             <div className="overflow-hidden">
-                                <div className="px-5 pb-5 pt-1 text-sm text-slate-600 leading-relaxed border-t border-slate-100">
+                                <div className="px-5 pb-5 pt-2 text-sm text-slate-700 leading-relaxed border-t border-slate-100">
                                     <p>{item.answer}</p>
                                     {item.citation && (
-                                        <div className="mt-3 inline-flex items-center gap-1.5 text-xs font-mono text-amber-800 bg-amber-50 px-2.5 py-1 rounded border border-amber-200">
+                                        <div className="mt-3 inline-flex items-center gap-1.5 text-xs font-mono text-amber-900 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200">
                                             <span>Canonical Handle:</span>
                                             <span className="font-semibold">{item.citation}</span>
                                         </div>

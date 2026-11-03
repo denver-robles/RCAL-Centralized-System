@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Enums\ScheduleStatusEnum;
-use App\Enums\ScheduleTypeEnum;
 use App\Models\SacramentSchedule;
 use App\Models\User;
 use Carbon\Carbon;
@@ -25,8 +24,8 @@ class SacramentScheduleService
         ?int $clergyId = null,
         ?int $excludeScheduleId = null
     ): Collection {
-        if (!$venueId && !$clergyId) {
-            return new Collection();
+        if (! $venueId && ! $clergyId) {
+            return new Collection;
         }
 
         $query = SacramentSchedule::where('parish_id', $parishId)
@@ -41,7 +40,7 @@ class SacramentScheduleService
         $query->where(function ($q) use ($venueId, $clergyId) {
             if ($venueId && $clergyId) {
                 $q->where('venue_id', $venueId)
-                  ->orWhere('presiding_clergy_id', $clergyId);
+                    ->orWhere('presiding_clergy_id', $clergyId);
             } elseif ($venueId) {
                 $q->where('venue_id', $venueId);
             } elseif ($clergyId) {
@@ -68,8 +67,9 @@ class SacramentScheduleService
             $reasons[] = 'Time interval overlaps an existing schedule';
         }
 
-        $timeWindow = $schedule->starts_at->format('d M Y H:i') . '–' . $schedule->ends_at->format('H:i');
-        return implode('; ', $reasons) . " ({$timeWindow}): {$schedule->title}";
+        $timeWindow = $schedule->starts_at->format('d M Y H:i').'–'.$schedule->ends_at->format('H:i');
+
+        return implode('; ', $reasons)." ({$timeWindow}): {$schedule->title}";
     }
 
     /**
@@ -96,16 +96,16 @@ class SacramentScheduleService
         $conflicts = $this->detectConflicts(
             $startsAt,
             $endsAt,
-            (int)$data['parish_id'],
-            isset($data['venue_id']) ? (int)$data['venue_id'] : null,
-            isset($data['presiding_clergy_id']) ? (int)$data['presiding_clergy_id'] : null
+            (int) $data['parish_id'],
+            isset($data['venue_id']) ? (int) $data['venue_id'] : null,
+            isset($data['presiding_clergy_id']) ? (int) $data['presiding_clergy_id'] : null
         );
 
         if ($conflicts->isNotEmpty()) {
             $desc = $this->describeConflict(
                 $conflicts->first(),
-                isset($data['venue_id']) ? (int)$data['venue_id'] : null,
-                isset($data['presiding_clergy_id']) ? (int)$data['presiding_clergy_id'] : null
+                isset($data['venue_id']) ? (int) $data['venue_id'] : null,
+                isset($data['presiding_clergy_id']) ? (int) $data['presiding_clergy_id'] : null
             );
             throw ValidationException::withMessages([
                 'starts_at' => "Schedule conflict detected: {$desc}",

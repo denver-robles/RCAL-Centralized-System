@@ -804,7 +804,8 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                                                         )}
                                                         {schedule.status === 'confirmed' &&
                                                             schedule.payment_status !== 'paid' &&
-                                                            schedule.payment_status !== 'pending_cash' && (
+                                                            schedule.payment_status !== 'pending_cash' &&
+                                                            schedule.payment_status !== 'pending_verification' && (
                                                                 <Link
                                                                     href={`/portal/schedule-requests/${schedule.id}/payment`}
                                                                     className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider shadow-2xs transition-colors"
@@ -813,6 +814,12 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                                                                     Pay Now
                                                                 </Link>
                                                             )}
+                                                        {schedule.payment_status === 'pending_verification' && (
+                                                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200 font-bold text-[10px] uppercase">
+                                                                <Clock className="w-3 h-3 text-blue-600" />
+                                                                Verifying Receipt
+                                                            </span>
+                                                        )}
                                                         {schedule.payment_status === 'paid' && (
                                                             <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[10px] uppercase">
                                                                 <CheckCircle2 className="w-3 h-3 text-emerald-600" />
