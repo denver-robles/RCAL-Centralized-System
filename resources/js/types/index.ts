@@ -275,6 +275,9 @@ export interface SacramentSchedule {
     requester_address?: string | null;
     alternative_starts_at?: string | null;
     specific_data?: Record<string, any> | null;
+    baptism_type?: 'regular' | 'solo' | string | null;
+    amount?: number | null;
+    donation_amount?: number | null;
     payment_method?: string | null;
     payment_receipt_path?: string | null;
     payment_status?: string | null;

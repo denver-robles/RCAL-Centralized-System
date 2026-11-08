@@ -123,7 +123,8 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
     const schedulesWithNotice = schedules.filter((s) => {
         const hasNeededDocs = getNeededDocuments(s.document_checklist).length > 0;
         const hasNotes = Boolean(s.staff_notes && s.staff_notes.trim());
-        return (hasNeededDocs || hasNotes) && !['completed', 'cancelled'].includes(s.status);
+        const hasPriceNotice = Boolean(s.amount ?? s.donation_amount ?? s.specific_data?.amount ?? s.specific_data?.donation_amount);
+        return (hasNeededDocs || hasNotes || hasPriceNotice) && !['completed', 'cancelled'].includes(s.status);
     });
 
     const getStepDetails = (status: string) => {
@@ -704,7 +705,9 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                                     schedules.map((schedule) => {
                                         const starts = schedule.starts_at ? new Date(schedule.starts_at) : null;
                                         const neededDocs = getNeededDocuments(schedule.document_checklist);
-                                        const hasNotice = neededDocs.length > 0 || Boolean(schedule.staff_notes && schedule.staff_notes.trim());
+                                        const scheduleAmount = schedule.amount ?? schedule.donation_amount ?? schedule.specific_data?.amount ?? schedule.specific_data?.donation_amount;
+                                        const scheduleBaptismType = schedule.baptism_type || schedule.specific_data?.baptism_type;
+                                        const hasNotice = neededDocs.length > 0 || Boolean(schedule.staff_notes && schedule.staff_notes.trim()) || Boolean(scheduleAmount);
 
                                         return (
                                             <tr key={schedule.id} className="hover:bg-slate-50/70 transition-colors">
@@ -712,11 +715,25 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                                                     {schedule.title}
                                                 </td>
 
-                                                <td className="py-3.5 px-4 capitalize font-semibold text-slate-900">
-                                                    <span className="inline-flex items-center gap-1.5">
+                                                <td className="py-3.5 px-4 font-semibold text-slate-900">
+                                                    <span className="inline-flex items-center gap-1.5 capitalize">
                                                         <span className="w-2 h-2 rounded-full bg-sky-500"></span>
                                                         {schedule.sacrament_type}
                                                     </span>
+                                                    {schedule.sacrament_type === 'baptism' && scheduleBaptismType && (
+                                                        <span className={`block text-[10px] font-bold mt-1 px-1.5 py-0.5 rounded border w-fit ${
+                                                            scheduleBaptismType === 'solo'
+                                                                ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                        }`}>
+                                                            {scheduleBaptismType === 'solo' ? 'Solo Baptism' : 'Regular Baptism'}
+                                                        </span>
+                                                    )}
+                                                    {scheduleAmount !== null && scheduleAmount !== undefined && scheduleAmount !== '' && (
+                                                        <span className="block text-[11px] font-bold text-amber-900 mt-1">
+                                                            ₱{Number(scheduleAmount).toLocaleString()}
+                                                        </span>
+                                                    )}
                                                 </td>
 
                                                 <td className="py-3.5 px-4 text-slate-700">
@@ -1105,6 +1122,51 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                             )}
                         </div>
 
+                        {/* Section 2: Sacrament Offering & Tariff Details */}
+                        {(selectedNoticeSchedule.sacrament_type === 'baptism' || (selectedNoticeSchedule.amount ?? selectedNoticeSchedule.donation_amount ?? selectedNoticeSchedule.specific_data?.amount ?? selectedNoticeSchedule.specific_data?.donation_amount)) && (
+                            <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-4 space-y-3">
+                                <div className="flex items-center justify-between border-b border-amber-200 pb-2">
+                                    <h4 className="font-bold text-amber-950 text-xs sm:text-sm flex items-center gap-1.5">
+                                        <CreditCard className="w-4 h-4 text-amber-600" />
+                                        Sacrament Offering &amp; Stipend Notice
+                                    </h4>
+                                    {(selectedNoticeSchedule.amount ?? selectedNoticeSchedule.donation_amount ?? selectedNoticeSchedule.specific_data?.amount ?? selectedNoticeSchedule.specific_data?.donation_amount) && (
+                                        <span className="text-xs font-bold text-amber-950 bg-amber-200/80 px-2.5 py-1 rounded-lg border border-amber-300">
+                                            ₱{Number(selectedNoticeSchedule.amount ?? selectedNoticeSchedule.donation_amount ?? selectedNoticeSchedule.specific_data?.amount ?? selectedNoticeSchedule.specific_data?.donation_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                        </span>
+                                    )}
+                                </div>
+
+                                <div className="text-xs text-amber-950 space-y-2">
+                                    {selectedNoticeSchedule.sacrament_type === 'baptism' && (
+                                        <div className="flex items-center justify-between bg-white/90 p-2.5 rounded-lg border border-amber-200">
+                                            <span className="font-medium text-slate-700">Scheduled Ceremony Format:</span>
+                                            <span className="font-bold capitalize text-slate-900">
+                                                {(selectedNoticeSchedule.baptism_type || selectedNoticeSchedule.specific_data?.baptism_type) === 'solo' ? 'Solo / Special Baptism' : 'Regular Community Baptism'}
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    <div className="bg-white/80 p-3 rounded-lg border border-amber-200 text-[11px] space-y-1.5">
+                                        <div className="font-bold text-slate-800">Parish Canonical Tariff / Price Guide:</div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-0.5">
+                                            <div className="p-2 rounded bg-amber-100/50 border border-amber-200">
+                                                <span className="font-semibold block text-amber-950">Monday–Friday Special:</span>
+                                                <span className="font-bold text-amber-900">PHP 1,500.00</span>
+                                            </div>
+                                            <div className="p-2 rounded bg-amber-100/50 border border-amber-200">
+                                                <span className="font-semibold block text-amber-950">Saturday/Sunday Special or Regular:</span>
+                                                <span className="font-bold text-amber-900">PHP 800.00</span>
+                                            </div>
+                                        </div>
+                                        <p className="text-slate-600 mt-1 leading-relaxed">
+                                            Offerings support church maintenance and liturgical requisites. You may settle in cash at the parish office when submitting your certificates, or via online payment once your schedule is confirmed.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Section 2: Staff Reminders & Special Instructions */}
                         {selectedNoticeSchedule.staff_notes && (
                             <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
@@ -1118,73 +1180,7 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                             </div>
                         )}
 
-                        {/* Section 3: Uploaded Documents / Submission Mode Summary */}
-                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2 text-xs">
-                            <h4 className="font-bold text-slate-900 flex items-center justify-between">
-                                <span>Uploaded Documents on File</span>
-                                <span className="text-[11px] font-normal text-slate-500">
-                                    {(selectedNoticeSchedule.attachments || []).length} file(s) uploaded
-                                </span>
-                            </h4>
-
-                            {(selectedNoticeSchedule.attachments || []).length > 0 ? (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                                    {selectedNoticeSchedule.attachments?.map((att) => {
-                                        const viewUrl = att.view_url || `/schedule-attachments/${att.id}/view`;
-                                        const downloadUrl = att.download_url || `/schedule-attachments/${att.id}/download`;
-
-                                        return (
-                                            <div
-                                                key={att.id}
-                                                className="flex items-center justify-between p-2 bg-white border border-slate-200 rounded-lg hover:border-amber-400 hover:bg-amber-50/50 transition-colors"
-                                            >
-                                                <div className="flex items-center gap-2 overflow-hidden min-w-0 pr-1.5">
-                                                    <FileText className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                                                    <span className="font-medium text-slate-800 truncate text-[11px]" title={getDocTypeLabel(att.document_type)}>
-                                                        {getDocTypeLabel(att.document_type)}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-1 shrink-0">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setPreviewAttachment(att)}
-                                                        className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 rounded transition"
-                                                        title="Preview document"
-                                                    >
-                                                        <Eye className="w-3 h-3 text-amber-700" />
-                                                        <span>Preview</span>
-                                                    </button>
-                                                    <a
-                                                        href={viewUrl}
-                                                        target="_blank"
-                                                        rel="noreferrer"
-                                                        className="p-1 text-slate-500 hover:text-slate-800 rounded hover:bg-slate-100 transition"
-                                                        title="Open in new tab"
-                                                    >
-                                                        <span className="text-[10px] font-bold">↗</span>
-                                                    </a>
-                                                    <a
-                                                        href={downloadUrl}
-                                                        className="p-1 text-slate-500 hover:text-slate-800 rounded hover:bg-slate-100 transition"
-                                                        title="Download file"
-                                                    >
-                                                        <Download className="w-3 h-3" />
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            ) : (
-                                <p className="text-slate-500 italic">
-                                    {selectedNoticeSchedule.certificate_submission_mode === 'follow_up_office'
-                                        ? 'Submission mode: You indicated you will submit physical certificates directly at the parish office.'
-                                        : 'No digital document files were attached with this request.'}
-                                </p>
-                            )}
-                        </div>
-
-                        {/* Section 4: Ceremony Details Brief */}
+                        {/* Ceremony Details Brief */}
                         <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50/70 border border-slate-200 rounded-xl p-3.5">
                             <div>
                                 <span className="text-slate-500 text-[11px] block">Appointment:</span>
@@ -1215,6 +1211,22 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
                                     </span>
                                 )}
                             </div>
+                            {(selectedNoticeSchedule.baptism_type || selectedNoticeSchedule.specific_data?.baptism_type) && (
+                                <div>
+                                    <span className="text-slate-500 text-[11px] block">Ceremony Format:</span>
+                                    <span className="font-semibold text-slate-800 capitalize">
+                                        {(selectedNoticeSchedule.baptism_type || selectedNoticeSchedule.specific_data?.baptism_type) === 'solo' ? 'Solo / Special Baptism' : 'Regular Community Baptism'}
+                                    </span>
+                                </div>
+                            )}
+                            {(selectedNoticeSchedule.amount ?? selectedNoticeSchedule.donation_amount ?? selectedNoticeSchedule.specific_data?.amount ?? selectedNoticeSchedule.specific_data?.donation_amount) && (
+                                <div>
+                                    <span className="text-slate-500 text-[11px] block">Sacrament Offering:</span>
+                                    <span className="font-bold text-amber-900">
+                                        ₱{Number(selectedNoticeSchedule.amount ?? selectedNoticeSchedule.donation_amount ?? selectedNoticeSchedule.specific_data?.amount ?? selectedNoticeSchedule.specific_data?.donation_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                    </span>
+                                </div>
+                            )}
                         </div>
 
                         {/* Modal Actions */}
