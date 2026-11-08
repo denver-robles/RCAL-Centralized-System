@@ -185,14 +185,16 @@ class PortalController extends Controller
      */
     public function storeScheduleRequest(Request $request): RedirectResponse
     {
+        $isBaptism = $request->input('sacrament_type') === 'baptism';
         $isConfirmation = $request->input('sacrament_type') === 'confirmation';
+        $isMatrimony = in_array($request->input('sacrament_type'), ['matrimony', 'wedding'], true);
 
         $validated = $request->validate([
-            'requester_name' => ['required', 'string', 'max:160'],
+            'requester_name' => [$isBaptism ? 'nullable' : 'required', 'string', 'max:160'],
             'requester_contact' => ['required', 'string', 'max:255'],
-            'requester_email' => ['required', 'email', 'max:160'],
-            'requester_relationship' => ['required', 'string', 'max:100'],
-            'requester_address' => ['required', 'string'],
+            'requester_email' => [$isBaptism ? 'nullable' : 'required', 'email', 'max:160'],
+            'requester_relationship' => [$isBaptism ? 'nullable' : 'required', 'string', 'max:100'],
+            'requester_address' => [$isBaptism ? 'nullable' : 'required', 'string'],
             'parish_id' => ['required', 'integer', 'exists:parishes,id'],
             'sacrament_type' => ['required', 'string'],
             'starts_at' => [$isConfirmation ? 'nullable' : 'required', 'date'],
@@ -226,16 +228,47 @@ class PortalController extends Controller
         $schedule->parish_id = $validated['parish_id'];
         $schedule->sacrament_type = $validated['sacrament_type'];
 
-        $isMatrimony = in_array($validated['sacrament_type'], ['matrimony', 'wedding'], true);
+        $specificData = $validated['specific_data'] ?? [];
 
         if ($isMatrimony) {
-            $groom = $validated['specific_data']['groom_name'] ?? 'Groom';
-            $bride = $validated['specific_data']['bride_name'] ?? 'Bride';
+            $groom = $specificData['groom_name'] ?? 'Groom';
+            $bride = $specificData['bride_name'] ?? 'Bride';
             $schedule->title = "Matrimony Request - {$groom} & {$bride}";
             $schedule->certificate_submission_mode = 'follow_up_office';
+        } elseif ($isBaptism) {
+            $subjectName = $specificData['child_name']
+                ?? ($specificData['name_to_be_baptized'] ?? ($validated['requester_name'] ?? 'Candidate'));
+            $schedule->title = 'Baptism Request - '.$subjectName;
+            $schedule->certificate_submission_mode = $validated['certificate_submission_mode'] ?? 'follow_up_office';
+
+            // Harmonize godparents composite and birthplace
+            if (empty($specificData['godparents'])) {
+                $gods = array_filter([
+                    ! empty($specificData['godfather_name']) ? $specificData['godfather_name'].' (Ninong)' : '',
+                    ! empty($specificData['godmother_name']) ? $specificData['godmother_name'].' (Ninang)' : '',
+                ]);
+                if (! empty($gods)) {
+                    $specificData['godparents'] = implode(', ', $gods);
+                }
+            }
+            if (empty($specificData['place_of_birth']) && ! empty($specificData['birthplace'])) {
+                $specificData['place_of_birth'] = $specificData['birthplace'];
+            }
+            if (empty($specificData['birthplace']) && ! empty($specificData['place_of_birth'])) {
+                $specificData['birthplace'] = $specificData['place_of_birth'];
+            }
+            if (empty($specificData['child_name']) && ! empty($specificData['name_to_be_baptized'])) {
+                $specificData['child_name'] = $specificData['name_to_be_baptized'];
+            }
+            if (empty($specificData['parents_status']) && ! empty($specificData['parents_marital_status'])) {
+                $specificData['parents_status'] = $specificData['parents_marital_status'];
+            }
+            if (empty($specificData['parents_marital_status']) && ! empty($specificData['parents_status'])) {
+                $specificData['parents_marital_status'] = $specificData['parents_status'];
+            }
         } else {
-            $subjectName = $validated['specific_data']['candidate_name']
-                ?? ($validated['specific_data']['child_name'] ?? $validated['requester_name']);
+            $subjectName = $specificData['candidate_name']
+                ?? ($specificData['child_name'] ?? $validated['requester_name']);
             $schedule->title = ucfirst($validated['sacrament_type']).' Request - '.$subjectName;
             $schedule->certificate_submission_mode = $validated['certificate_submission_mode'] ?? 'online';
         }
@@ -251,13 +284,33 @@ class PortalController extends Controller
         $schedule->alternative_starts_at = $validated['alternative_starts_at'] ?? null;
         $schedule->status = ScheduleStatusEnum::REQUESTED;
 
-        $schedule->requester_name = $validated['requester_name'];
+        if ($isBaptism) {
+            $schedule->requester_name = ! empty($validated['requester_name'])
+                ? $validated['requester_name']
+                : ($request->user()?->name ?? ($specificData['child_name'] ?? 'Parishioner'));
+            $schedule->requester_email = ! empty($validated['requester_email'])
+                ? $validated['requester_email']
+                : ($request->user()?->email ?? 'parishioner@rcal.ph');
+            $schedule->requester_relationship = ! empty($validated['requester_relationship'])
+                ? $validated['requester_relationship']
+                : 'Parent / Applicant';
+            $parentAddress = ! empty($specificData['father_address'])
+                ? $specificData['father_address']
+                : (! empty($specificData['mother_address']) ? $specificData['mother_address'] : 'Parish Jurisdiction');
+
+            $schedule->requester_address = ! empty($validated['requester_address'])
+                ? $validated['requester_address']
+                : $parentAddress;
+        } else {
+            $schedule->requester_name = $validated['requester_name'];
+            $schedule->requester_email = $validated['requester_email'];
+            $schedule->requester_relationship = $validated['requester_relationship'];
+            $schedule->requester_address = $validated['requester_address'];
+        }
+
         $schedule->requester_contact = $validated['requester_contact'];
-        $schedule->requester_email = $validated['requester_email'];
-        $schedule->requester_relationship = $validated['requester_relationship'];
-        $schedule->requester_address = $validated['requester_address'];
         $schedule->requested_clergy_id = $isConfirmation ? null : ($validated['requested_clergy_id'] ?? null);
-        $schedule->specific_data = $validated['specific_data'] ?? [];
+        $schedule->specific_data = $specificData;
         $schedule->payment_status = 'unpaid';
         $schedule->save();
 

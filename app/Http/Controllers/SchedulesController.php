@@ -303,6 +303,8 @@ class SchedulesController extends Controller
             'ends_at' => ['nullable', 'date', 'after:starts_at'],
             'presiding_clergy_id' => ['nullable', 'integer', 'exists:clergy,id'],
             'guest_priest_name' => ['nullable', 'string', 'max:255'],
+            'baptism_type' => ['nullable', 'string', 'in:regular,solo'],
+            'amount' => ['nullable', 'numeric', 'min:0'],
             'book_number' => ['required_if:status,completed', 'nullable', 'integer', 'min:1'],
             'page_number' => ['required_if:status,completed', 'nullable', 'integer', 'min:1'],
             'entry_number' => ['required_if:status,completed', 'nullable', 'integer', 'min:1'],
@@ -340,11 +342,29 @@ class SchedulesController extends Controller
             $updateData['presiding_clergy_id'] = $validated['presiding_clergy_id'];
         }
 
+        $specificData = $schedule->specific_data ?? [];
+        $hasSpecificDataUpdates = false;
+
         if ($request->filled('guest_priest_name')) {
-            $specificData = $schedule->specific_data ?? [];
             $specificData['guest_priest_name'] = $validated['guest_priest_name'];
-            $updateData['specific_data'] = $specificData;
             $updateData['presiding_clergy_id'] = null; // Unset clergy ID if guest is used
+            $hasSpecificDataUpdates = true;
+        }
+
+        if ($request->has('baptism_type')) {
+            $specificData['baptism_type'] = $validated['baptism_type'];
+            $hasSpecificDataUpdates = true;
+        }
+
+        if ($request->has('amount')) {
+            $amountVal = $validated['amount'];
+            $specificData['amount'] = ($amountVal !== null && $amountVal !== '') ? (float) $amountVal : null;
+            $specificData['donation_amount'] = $specificData['amount'];
+            $hasSpecificDataUpdates = true;
+        }
+
+        if ($hasSpecificDataUpdates) {
+            $updateData['specific_data'] = $specificData;
         }
 
         $schedule->update($updateData);
@@ -356,6 +376,15 @@ class SchedulesController extends Controller
 
             $godparentsVal = $schedule->specific_data['godparent_name']
                 ?? ($schedule->specific_data['godparents'] ?? ($schedule->specific_data['witnesses'] ?? null));
+            if (! $godparentsVal) {
+                $gList = array_filter([
+                    ! empty($schedule->specific_data['godfather_name']) ? $schedule->specific_data['godfather_name'].' (Ninong)' : '',
+                    ! empty($schedule->specific_data['godmother_name']) ? $schedule->specific_data['godmother_name'].' (Ninang)' : '',
+                ]);
+                if (! empty($gList)) {
+                    $godparentsVal = implode(', ', $gList);
+                }
+            }
             if (is_array($godparentsVal)) {
                 $godparentsVal = implode(', ', array_filter(array_map(fn ($g) => is_array($g) ? ($g['name'] ?? '') : (string) $g, $godparentsVal)));
             }
@@ -444,7 +473,7 @@ class SchedulesController extends Controller
                     [
                         'sex' => $schedule->specific_data['candidate_gender'] ?? ($schedule->specific_data['gender'] ?? 'Unknown'),
                         'date_of_birth' => $schedule->specific_data['candidate_dob'] ?? ($schedule->specific_data['dob'] ?? null),
-                        'place_of_birth' => $schedule->specific_data['place_of_birth'] ?? null,
+                        'place_of_birth' => $schedule->specific_data['place_of_birth'] ?? ($schedule->specific_data['birthplace'] ?? null),
                         'mother_name' => $schedule->specific_data['candidate_mother_name'] ?? ($schedule->specific_data['mother_name'] ?? null),
                         'father_name' => $schedule->specific_data['candidate_father_name'] ?? ($schedule->specific_data['father_name'] ?? null),
                     ]

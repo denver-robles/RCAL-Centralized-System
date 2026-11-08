@@ -18,6 +18,10 @@ interface Schedule {
     payment_method: string | null;
     payment_status: string;
     attachments: Attachment[];
+    amount?: number | null;
+    donation_amount?: number | null;
+    baptism_type?: string | null;
+    specific_data?: Record<string, any> | null;
 }
 
 interface Props extends PageProps {
@@ -54,7 +58,7 @@ export default function SchedulePayment({ schedule, flash }: Props) {
                         <div className="bg-amber-50 border border-amber-200 text-amber-900 p-4 rounded-xl text-sm leading-relaxed text-left flex items-start gap-3 mt-4">
                             <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                             <p>
-                                To proceed with your scheduling request, you must bring the <strong>original copies</strong> of all the required documents you uploaded during your next visit to the parish office. Your request will remain on hold until these physical documents are verified by the parish staff.
+                                To proceed with your scheduling request, you must bring the <strong>original copies</strong> of all the required canonical documents during your next visit to the parish office. Your request will remain on hold until these physical documents are verified by the parish staff.
                             </p>
                         </div>
 
@@ -95,10 +99,36 @@ export default function SchedulePayment({ schedule, flash }: Props) {
         );
     }
 
+    const scheduleAmount = schedule.amount ?? schedule.donation_amount ?? schedule.specific_data?.amount ?? schedule.specific_data?.donation_amount;
+    const baptismType = schedule.baptism_type || schedule.specific_data?.baptism_type;
+
     return (
         <PortalLayout title="Schedule Payment" subtitle={`Complete payment for: ${schedule.title}`}>
             <Head title="Payment - RCAL PIMS" />
             <div className="max-w-2xl mx-auto bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm mt-8">
+                {scheduleAmount && (
+                    <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-4 mb-6 flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <span className="text-[11px] font-bold text-amber-800 uppercase block tracking-wider">
+                                Required Sacrament Offering (Stipend)
+                            </span>
+                            <span className="text-2xl font-serif font-bold text-amber-950">
+                                ₱{Number(scheduleAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            </span>
+                            {baptismType && (
+                                <span className="text-xs text-amber-900 block font-medium mt-0.5 capitalize">
+                                    Format: <strong>{baptismType === 'solo' ? 'Solo / Special Ceremony' : 'Regular Community Ceremony'}</strong>
+                                </span>
+                            )}
+                        </div>
+                        <div className="text-right">
+                            <span className="px-2.5 py-1 bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold uppercase">
+                                {schedule.payment_status === 'paid' ? 'Paid' : 'Unpaid'}
+                            </span>
+                        </div>
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
                         <h2 className="font-serif text-lg font-bold text-slate-900 flex items-center gap-2 mb-4">

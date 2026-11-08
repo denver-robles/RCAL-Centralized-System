@@ -32,6 +32,8 @@ import {
     Eye,
     CalendarDays,
     Settings,
+    Church,
+    CreditCard,
 } from 'lucide-react';
 
 interface PaginatedData<T> {
@@ -58,6 +60,26 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
     const [cancelReason, setCancelReason] = useState('');
     const [viewingSchedule, setViewingSchedule] = useState<SacramentSchedule | null>(null);
 
+    // Helper for calculating standard baptism fee: Mon-Fri Special = 1500; Sat-Sun Regular or Special = 800
+    const getRecommendedBaptismFee = (startsAt?: string | null, baptismType?: string | null): number => {
+        const isSolo = baptismType === 'solo';
+        if (!startsAt) {
+            return isSolo ? 1500 : 800;
+        }
+        const datePart = startsAt.slice(0, 10);
+        const [y, m, d] = datePart.split('-').map(Number);
+        if (!y || !m || !d) {
+            return isSolo ? 1500 : 800;
+        }
+        const day = new Date(y, m - 1, d).getDay(); // 0 = Sun, 6 = Sat
+        const isWeekend = day === 0 || day === 6;
+
+        if (!isWeekend && isSolo) {
+            return 1500;
+        }
+        return 800;
+    };
+
     // Processing modal state
     const [processingSchedule, setProcessingSchedule] = useState<SacramentSchedule | null>(null);
     const [processForm, setProcessForm] = useState({
@@ -67,6 +89,8 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
         presiding_clergy_id: '',
         guest_priest_name: '',
         staff_notes: '',
+        baptism_type: 'regular',
+        amount: '' as string | number,
         document_checklist: {
             baptism_subject: false,
             confirmation_witnesses: false,
@@ -105,6 +129,26 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
         if (!endStr && startStr) {
             endStr = addHoursToDateTimeLocal(startStr, 1);
         }
+
+        const existingType = schedule.baptism_type || schedule.specific_data?.baptism_type || '';
+        const rawAmount = schedule.amount ?? schedule.donation_amount ?? schedule.specific_data?.amount ?? schedule.specific_data?.donation_amount;
+
+        let initialType = existingType || 'regular';
+        if (!existingType && startStr) {
+            const datePart = startStr.slice(0, 10);
+            const [y, m, d] = datePart.split('-').map(Number);
+            if (y && m && d) {
+                const day = new Date(y, m - 1, d).getDay();
+                const isWeekend = day === 0 || day === 6;
+                initialType = isWeekend ? 'regular' : 'solo';
+            }
+        }
+
+        let initialAmount: string | number = rawAmount !== null && rawAmount !== undefined && rawAmount !== '' ? rawAmount : '';
+        if (schedule.sacrament_type === 'baptism' && (initialAmount === '' || initialAmount === null || initialAmount === undefined)) {
+            initialAmount = getRecommendedBaptismFee(startStr, initialType);
+        }
+
         setProcessForm({
             status: schedule.status === 'requested' ? 'processing' : schedule.status,
             starts_at: startStr,
@@ -112,6 +156,8 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
             presiding_clergy_id: schedule.presiding_clergy_id ? schedule.presiding_clergy_id.toString() : (schedule.requested_clergy_id ? schedule.requested_clergy_id.toString() : ''),
             guest_priest_name: schedule.specific_data?.guest_priest_name || '',
             staff_notes: schedule.staff_notes || '',
+            baptism_type: initialType,
+            amount: initialAmount,
             document_checklist: {
                 baptism_subject: schedule.document_checklist?.baptism_subject || false,
                 confirmation_witnesses: schedule.document_checklist?.confirmation_witnesses || false,
@@ -135,6 +181,15 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
         });
     };
 
+    const handleBaptismTypeChange = (newType: string) => {
+        const recommended = getRecommendedBaptismFee(processForm.starts_at, newType);
+        setProcessForm(prev => ({
+            ...prev,
+            baptism_type: newType,
+            amount: recommended,
+        }));
+    };
+
     const handleProcessSubmit = () => {
         if (!processingSchedule) return;
         router.post(`/schedules/${processingSchedule.id}/status`, {
@@ -145,6 +200,8 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
             guest_priest_name: processForm.presiding_clergy_id === 'guest' ? processForm.guest_priest_name : null,
             staff_notes: processForm.staff_notes,
             document_checklist: processForm.document_checklist,
+            baptism_type: processingSchedule.sacrament_type === 'baptism' ? processForm.baptism_type : null,
+            amount: processingSchedule.sacrament_type === 'baptism' ? (processForm.amount !== '' && processForm.amount !== null ? parseFloat(processForm.amount.toString()) : null) : null,
         });
         setProcessingSchedule(null);
     };
@@ -384,6 +441,22 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
                                                                 : 'bg-amber-50 text-amber-800 border-amber-200'
                                                         }`}>
                                                             {schedule.certificate_submission_mode === 'online' ? 'Online Docs' : 'In-Person Submission'}
+                                                        </span>
+                                                    )}
+                                                    {schedule.sacrament_type === 'baptism' && (schedule.baptism_type || schedule.specific_data?.baptism_type) && (
+                                                        <span className={`px-2 py-0.5 rounded border font-bold ${
+                                                            (schedule.baptism_type || schedule.specific_data?.baptism_type) === 'solo'
+                                                                ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                        }`}>
+                                                            {(schedule.baptism_type || schedule.specific_data?.baptism_type) === 'solo' ? 'Solo Baptism' : 'Regular Baptism'}
+                                                        </span>
+                                                    )}
+                                                    {(schedule.amount ?? schedule.donation_amount ?? schedule.specific_data?.amount ?? schedule.specific_data?.donation_amount) !== undefined &&
+                                                     (schedule.amount ?? schedule.donation_amount ?? schedule.specific_data?.amount ?? schedule.specific_data?.donation_amount) !== null &&
+                                                     (schedule.amount ?? schedule.donation_amount ?? schedule.specific_data?.amount ?? schedule.specific_data?.donation_amount) !== '' && (
+                                                        <span className="bg-amber-50 text-amber-900 border border-amber-300 px-2 py-0.5 rounded font-bold">
+                                                            ₱{Number(schedule.amount ?? schedule.donation_amount ?? schedule.specific_data?.amount ?? schedule.specific_data?.donation_amount).toLocaleString()}
                                                         </span>
                                                     )}
                                                 </div>
@@ -634,31 +707,74 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
 
                                         {/* Baptism specific keys */}
                                         {viewingSchedule.specific_data.child_name && (
-                                            <div><strong>Candidate (Child):</strong> {viewingSchedule.specific_data.child_name}</div>
+                                            <div><strong>Name of Child/Adult:</strong> {viewingSchedule.specific_data.child_name}</div>
                                         )}
                                         {viewingSchedule.specific_data.dob && (
                                             <div><strong>Date of Birth:</strong> {viewingSchedule.specific_data.dob}</div>
                                         )}
+                                        {(viewingSchedule.specific_data.place_of_birth || viewingSchedule.specific_data.birthplace) && (
+                                            <div><strong>Birthplace:</strong> {viewingSchedule.specific_data.place_of_birth || viewingSchedule.specific_data.birthplace}</div>
+                                        )}
                                         {viewingSchedule.specific_data.gender && (
                                             <div><strong>Gender:</strong> {viewingSchedule.specific_data.gender}</div>
                                         )}
-                                        {viewingSchedule.specific_data.place_of_birth && (
-                                            <div><strong>Place of Birth:</strong> {viewingSchedule.specific_data.place_of_birth}</div>
-                                        )}
+
+                                        {/* Father Information */}
                                         {viewingSchedule.specific_data.father_name && (
-                                            <div><strong>Father:</strong> {viewingSchedule.specific_data.father_name}</div>
+                                            <div className="col-span-2 border-t border-slate-200/80 pt-1.5 mt-1">
+                                                <strong>Father:</strong> {viewingSchedule.specific_data.father_name}
+                                                <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 mt-0.5">
+                                                    {viewingSchedule.specific_data.father_dob && <span>Birthdate: {viewingSchedule.specific_data.father_dob}</span>}
+                                                    {viewingSchedule.specific_data.father_pob && <span>Birth Place: {viewingSchedule.specific_data.father_pob}</span>}
+                                                    {viewingSchedule.specific_data.father_address && <span className="col-span-2">Address: {viewingSchedule.specific_data.father_address}</span>}
+                                                </div>
+                                            </div>
                                         )}
+
+                                        {/* Mother Information */}
                                         {viewingSchedule.specific_data.mother_name && (
-                                            <div><strong>Mother:</strong> {viewingSchedule.specific_data.mother_name}</div>
+                                            <div className="col-span-2 border-t border-slate-200/80 pt-1.5 mt-1">
+                                                <strong>Mother:</strong> {viewingSchedule.specific_data.mother_name}
+                                                <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 mt-0.5">
+                                                    {viewingSchedule.specific_data.mother_dob && <span>Birthdate: {viewingSchedule.specific_data.mother_dob}</span>}
+                                                    {viewingSchedule.specific_data.mother_pob && <span>Birth Place: {viewingSchedule.specific_data.mother_pob}</span>}
+                                                    {viewingSchedule.specific_data.mother_address && <span className="col-span-2">Address: {viewingSchedule.specific_data.mother_address}</span>}
+                                                </div>
+                                            </div>
                                         )}
-                                        {viewingSchedule.specific_data.parents_status && (
-                                            <div><strong>Parents Marital Status:</strong> {viewingSchedule.specific_data.parents_status}</div>
+
+                                        {/* Parents Marital Status */}
+                                        {(viewingSchedule.specific_data.parents_status || viewingSchedule.specific_data.parents_marital_status) && (
+                                            <div className="col-span-2 border-t border-slate-200/80 pt-1.5 mt-1">
+                                                <strong>Parents Marital Status:</strong> {viewingSchedule.specific_data.parents_status || viewingSchedule.specific_data.parents_marital_status}
+                                            </div>
                                         )}
-                                        {viewingSchedule.specific_data.resides_within_parish && (
-                                            <div><strong>Territory Vicinity:</strong> {viewingSchedule.specific_data.resides_within_parish === 'yes' ? 'Within Parish' : 'Outside Parish (Permit Needed)'}</div>
+
+                                        {/* Godfather (Ninong) */}
+                                        {viewingSchedule.specific_data.godfather_name && (
+                                            <div className="col-span-2 border-t border-slate-200/80 pt-1.5 mt-1">
+                                                <strong>Godfather (Ninong):</strong> {viewingSchedule.specific_data.godfather_name}
+                                                <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 mt-0.5">
+                                                    {viewingSchedule.specific_data.godfather_pob && <span>Birthplace: {viewingSchedule.specific_data.godfather_pob}</span>}
+                                                    {viewingSchedule.specific_data.godfather_address && <span className="col-span-2">Address: {viewingSchedule.specific_data.godfather_address}</span>}
+                                                </div>
+                                            </div>
                                         )}
-                                        {viewingSchedule.specific_data.godparents && (
-                                            <div className="col-span-2">
+
+                                        {/* Godmother (Ninang) */}
+                                        {viewingSchedule.specific_data.godmother_name && (
+                                            <div className="col-span-2 border-t border-slate-200/80 pt-1.5 mt-1">
+                                                <strong>Godmother (Ninang):</strong> {viewingSchedule.specific_data.godmother_name}
+                                                <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 mt-0.5">
+                                                    {viewingSchedule.specific_data.godmother_pob && <span>Birthplace: {viewingSchedule.specific_data.godmother_pob}</span>}
+                                                    {viewingSchedule.specific_data.godmother_address && <span className="col-span-2">Address: {viewingSchedule.specific_data.godmother_address}</span>}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Legacy Godparents string if neither godfather_name nor godmother_name is present */}
+                                        {!viewingSchedule.specific_data.godfather_name && !viewingSchedule.specific_data.godmother_name && viewingSchedule.specific_data.godparents && (
+                                            <div className="col-span-2 border-t border-slate-200/80 pt-1.5 mt-1">
                                                 <strong>Godparents / Witnesses:</strong>{' '}
                                                 {typeof viewingSchedule.specific_data.godparents === 'string'
                                                     ? viewingSchedule.specific_data.godparents
@@ -868,79 +984,72 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
                                 </select>
                             </div>
 
-                            {/* Uploaded Requirement Documents Review */}
-                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
-                                <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
-                                    <h4 className="font-bold text-slate-900 flex items-center gap-1.5">
-                                        <FileText className="w-4 h-4 text-amber-600" />
-                                        Uploaded Documents Review
-                                    </h4>
-                                    <span className="text-[11px] font-medium text-slate-500">
-                                        Submission Mode:{' '}
-                                        <strong className="text-slate-800">
-                                            {processingSchedule.certificate_submission_mode === 'follow_up_office'
-                                                ? 'In-Person (Office Follow-up)'
-                                                : 'Online Submission'}
-                                        </strong>
-                                    </span>
-                                </div>
+                            {/* Baptism Ceremony Type & Offering / Stipend */}
+                            {processingSchedule.sacrament_type === 'baptism' && (
+                                <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3.5 space-y-3">
+                                    <div className="flex items-center justify-between border-b border-amber-200 pb-1.5">
+                                        <h4 className="font-bold text-amber-950 text-xs flex items-center gap-1.5">
+                                            <Church className="w-4 h-4 text-amber-600" />
+                                            Baptism Classification &amp; Offering (Stipend)
+                                        </h4>
+                                        <span className="text-[10px] font-semibold text-amber-800 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-full">
+                                            Parish Schedule Rate
+                                        </span>
+                                    </div>
 
-                                {(processingSchedule.attachments || []).length > 0 ? (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                                        {processingSchedule.attachments?.map((att) => {
-                                            const viewUrl = att.view_url || `/schedule-attachments/${att.id}/view`;
-                                            const downloadUrl = att.download_url || `/schedule-attachments/${att.id}/download`;
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-[11px] font-bold text-slate-800 mb-1">
+                                                Baptism Ceremony Type <span className="text-amber-600">*</span>
+                                            </label>
+                                            <select
+                                                value={processForm.baptism_type}
+                                                onChange={(e) => handleBaptismTypeChange(e.target.value)}
+                                                className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs font-semibold text-slate-900 focus:ring-1 focus:ring-amber-500"
+                                            >
+                                                <option value="regular">Regular Baptism</option>
+                                                <option value="solo">Solo / Special Baptism</option>
+                                            </select>
+                                            <p className="text-[10px] text-slate-500 mt-1">
+                                                Choose whether the sacrament is community regular or solo / private.
+                                            </p>
+                                        </div>
 
-                                            return (
-                                                <div
-                                                    key={att.id}
-                                                    className="flex items-center justify-between p-2.5 bg-white border border-slate-200 rounded-lg hover:border-amber-400 hover:bg-amber-50/50 transition-colors"
+                                        <div>
+                                            <label className="block text-[11px] font-bold text-slate-800 mb-1">
+                                                Sacrament Amount / Donation (PHP) <span className="text-amber-600">*</span>
+                                            </label>
+                                            <div className="relative">
+                                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">
+                                                    ₱
+                                                </span>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    step="0.01"
+                                                    value={processForm.amount}
+                                                    onChange={(e) => setProcessForm({ ...processForm, amount: e.target.value })}
+                                                    placeholder="e.g. 800 or 1500"
+                                                    className="w-full bg-white border border-slate-300 rounded-lg py-2 pl-7 pr-2.5 text-xs font-bold text-slate-900 focus:ring-1 focus:ring-amber-500"
+                                                />
+                                            </div>
+                                            <div className="flex items-center justify-between text-[10px] text-amber-900 mt-1">
+                                                <span>Mon–Fri Special: ₱1,500 | Sat–Sun: ₱800</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const rec = getRecommendedBaptismFee(processForm.starts_at, processForm.baptism_type);
+                                                        setProcessForm(prev => ({ ...prev, amount: rec }));
+                                                    }}
+                                                    className="text-amber-700 hover:text-amber-900 underline font-semibold cursor-pointer"
                                                 >
-                                                    <div className="flex items-center gap-2 overflow-hidden min-w-0 pr-2">
-                                                        <FileText className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                                                        <span className="font-semibold text-slate-800 text-[11px] truncate" title={getDocTypeLabel(att.document_type)}>
-                                                            {getDocTypeLabel(att.document_type)}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex items-center gap-1 shrink-0">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setPreviewAttachment(att)}
-                                                            className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 rounded-md transition"
-                                                            title="Preview document inline"
-                                                        >
-                                                            <Eye className="w-3 h-3 text-amber-700" />
-                                                            <span>Preview</span>
-                                                        </button>
-                                                        <a
-                                                            href={viewUrl}
-                                                            target="_blank"
-                                                            rel="noreferrer"
-                                                            className="p-1 text-slate-500 hover:text-slate-800 rounded hover:bg-slate-100 transition"
-                                                            title="Open in new tab"
-                                                        >
-                                                            <span className="text-[11px] font-bold">↗</span>
-                                                        </a>
-                                                        <a
-                                                            href={downloadUrl}
-                                                            className="p-1 text-slate-500 hover:text-slate-800 rounded hover:bg-slate-100 transition"
-                                                            title="Download file"
-                                                        >
-                                                            <Download className="w-3.5 h-3.5" />
-                                                        </a>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
+                                                    Auto-fill
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
-                                ) : (
-                                    <div className="p-2.5 bg-amber-50/60 border border-amber-200/80 rounded-lg text-amber-900 text-xs">
-                                        {processingSchedule.certificate_submission_mode === 'follow_up_office'
-                                            ? 'ℹ The parishioner elected to submit required physical certificates directly at the parish office.'
-                                            : 'No online documents were uploaded with this appointment request.'}
-                                    </div>
-                                )}
-                            </div>
+                                </div>
+                            )}
 
                             {/* Physical Certificate Checklist */}
                             <div className="bg-amber-50/40 border border-amber-200 rounded-xl p-4 space-y-2.5">
@@ -1341,7 +1450,27 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
                                                 if (newStart && (!newEnd || newEnd <= newStart)) {
                                                     newEnd = addHoursToDateTimeLocal(newStart, 1);
                                                 }
-                                                setProcessForm({ ...processForm, starts_at: newStart, ends_at: newEnd });
+                                                let newAmount = processForm.amount;
+                                                let newType = processForm.baptism_type;
+                                                if (processingSchedule?.sacrament_type === 'baptism' && newStart) {
+                                                    const datePart = newStart.slice(0, 10);
+                                                    const [y, m, d] = datePart.split('-').map(Number);
+                                                    if (y && m && d) {
+                                                        const day = new Date(y, m - 1, d).getDay();
+                                                        const isWeekend = day === 0 || day === 6;
+                                                        if (!isWeekend && newType === 'regular') {
+                                                            newType = 'solo';
+                                                        }
+                                                        newAmount = getRecommendedBaptismFee(newStart, newType);
+                                                    }
+                                                }
+                                                setProcessForm({
+                                                    ...processForm,
+                                                    starts_at: newStart,
+                                                    ends_at: newEnd,
+                                                    baptism_type: newType,
+                                                    amount: newAmount,
+                                                });
                                             }}
                                             className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs"
                                         />

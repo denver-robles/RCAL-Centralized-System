@@ -27,7 +27,7 @@ export default function ScheduleRequestCreate({ auth, parishes, clergy = [], set
         starts_at: '',
         alternative_starts_at: '',
         requested_clergy_id: '',
-        certificate_submission_mode: 'online', // 'online' | 'follow_up_office'
+        certificate_submission_mode: 'follow_up_office',
         
         // Sacrament Specific Data
         specific_data: {
@@ -85,19 +85,6 @@ export default function ScheduleRequestCreate({ auth, parishes, clergy = [], set
             bride_is_foreign_or_ofw: 'no', // 'yes' | 'no'
             witnesses: '',
         } as Record<string, any>,
-        
-        // Attachments
-        gov_id: null as File | null,
-        psa_birth_cert: null as File | null,
-        confirmation_cert_godparents: null as File | null,
-        marriage_cert_parents: null as File | null,
-        baptismal_cert_father: null as File | null,
-        baptismal_cert_mother: null as File | null,
-        baptismal_cert_subject: null as File | null,
-        baptismal_permit: null as File | null,
-        confirmation_permit: null as File | null,
-        cenomar: null as File | null,
-        prev_certificate: null as File | null,
     });
 
     const calculateAge = (dobString?: string): number | null => {
@@ -141,34 +128,114 @@ export default function ScheduleRequestCreate({ auth, parishes, clergy = [], set
     const isStartInvalid = data.starts_at ? !isDateAllowed(data.starts_at) : false;
     const isAltInvalid = data.alternative_starts_at ? !isDateAllowed(data.alternative_starts_at) : false;
 
+    const isSingleParent = data.sacrament_type === 'baptism' && (
+        data.specific_data.parents_status === 'Single Parent' ||
+        (typeof data.specific_data.parents_status === 'string' && data.specific_data.parents_status.toLowerCase().includes('single'))
+    );
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (data.sacrament_type !== 'confirmation' && isStartInvalid) {
-            alert(`The selected preferred date (${getDayName(data.starts_at)}) is not available for this sacrament. Available days: ${allowedDays?.map(d => d.toUpperCase()).join(', ')}`);
-            return;
-        }
 
-        if (data.sacrament_type === 'matrimony') {
-            if (!data.specific_data.groom_name?.trim() || !data.specific_data.bride_name?.trim()) {
-                alert('Please enter both the Groom (Husband) and Bride (Wife) full names for the matrimony appointment.');
+        if (data.sacrament_type === 'baptism') {
+            if (!data.parish_id) {
+                alert('Please select a parish church.');
                 return;
             }
+            if (!data.starts_at) {
+                alert('Please select the requested Date of Baptism.');
+                return;
+            }
+            if (isStartInvalid) {
+                alert(`The selected preferred date (${getDayName(data.starts_at)}) is not available for this parish. Available days: ${allowedDays?.map(d => d.toUpperCase()).join(', ')}`);
+                return;
+            }
+            if (!data.requester_contact?.trim()) {
+                alert('Please enter a Contact Number.');
+                return;
+            }
+            if (!data.specific_data.child_name?.trim()) {
+                alert('Please enter the Name of Child/Adult to be Baptized.');
+                return;
+            }
+            if (!data.specific_data.dob) {
+                alert('Please enter the Date of Birth of the person to be baptized.');
+                return;
+            }
+            if (!data.specific_data.place_of_birth?.trim()) {
+                alert('Please enter the Birthplace of the person to be baptized.');
+                return;
+            }
+
+            // Parental information validation:
+            // If single parent, at least one parent (Father OR Mother) must be provided.
+            // If married / other, both Father and Mother are required.
+            if (isSingleParent) {
+                if (!data.specific_data.father_name?.trim() && !data.specific_data.mother_name?.trim()) {
+                    alert('As a single parent applicant, please provide the details of at least one parent (either Father or Mother).');
+                    return;
+                }
+            } else {
+                if (!data.specific_data.father_name?.trim() || !data.specific_data.mother_name?.trim()) {
+                    alert('Please provide the information for both Father and Mother (or choose "Single Parent" under Parents Marital Status if applicable).');
+                    return;
+                }
+            }
+
+            // Sync aliases
+            const godfather = data.specific_data.godfather_name?.trim() || '';
+            const godmother = data.specific_data.godmother_name?.trim() || '';
+            const combinedGodparents = [
+                godfather ? `${godfather} (Ninong)` : '',
+                godmother ? `${godmother} (Ninang)` : '',
+            ].filter(Boolean).join(', ');
+
+            data.specific_data.godparents = combinedGodparents;
+            data.specific_data.name_to_be_baptized = data.specific_data.child_name;
+            data.specific_data.birthplace = data.specific_data.place_of_birth || data.specific_data.birthplace || '';
+            data.specific_data.place_of_birth = data.specific_data.birthplace;
+            data.specific_data.parents_status = data.specific_data.parents_status || data.specific_data.parents_marital_status || 'Married (Catholic Church)';
+            data.specific_data.parents_marital_status = data.specific_data.parents_status;
+
+            if (!data.requester_name) {
+                data.requester_name = data.specific_data.child_name || auth.user?.display_name || auth.user?.name || 'Applicant';
+            }
+            if (!data.requester_email) {
+                data.requester_email = auth.user?.email || 'parishioner@rcal.ph';
+            }
+            if (!data.requester_address) {
+                data.requester_address = data.specific_data.father_address || data.specific_data.mother_address || 'Parish Jurisdiction';
+            }
+            data.certificate_submission_mode = 'follow_up_office';
+        } else {
+            if (data.sacrament_type !== 'confirmation' && isStartInvalid) {
+                alert(`The selected preferred date (${getDayName(data.starts_at)}) is not available for this sacrament. Available days: ${allowedDays?.map(d => d.toUpperCase()).join(', ')}`);
+                return;
+            }
+
+            if (data.sacrament_type === 'matrimony') {
+                if (!data.specific_data.groom_name?.trim() || !data.specific_data.bride_name?.trim()) {
+                    alert('Please enter both the Groom (Husband) and Bride (Wife) full names for the matrimony appointment.');
+                    return;
+                }
+            }
+
+            if (data.sacrament_type === 'confirmation') {
+                const age = calculateAge(data.specific_data.candidate_dob);
+                if (age !== null && age < 12) {
+                    if (!confirm(`Canonical Notice: The candidate is indicated as ${age} years old. Under Canon 891, the subject for Confirmation must be at least 12 years of age. Do you still wish to submit this application for parish evaluation?`)) {
+                        return;
+                    }
+                }
+                const sponsorAge = parseInt(data.specific_data.godparent_age);
+                if (!isNaN(sponsorAge) && sponsorAge < 16) {
+                    if (!confirm(`Canonical Notice: The godparent/witness is indicated as ${sponsorAge} years old. Under Canon 874 §1, sponsors must be at least 16 years of age. Do you still wish to proceed?`)) {
+                        return;
+                    }
+                }
+            }
         }
 
-        if (data.sacrament_type === 'confirmation') {
-            const age = calculateAge(data.specific_data.candidate_dob);
-            if (age !== null && age < 12) {
-                if (!confirm(`Canonical Notice: The candidate is indicated as ${age} years old. Under Canon 891, the subject for Confirmation must be at least 12 years of age. Do you still wish to submit this application for parish evaluation?`)) {
-                    return;
-                }
-            }
-            const sponsorAge = parseInt(data.specific_data.godparent_age);
-            if (!isNaN(sponsorAge) && sponsorAge < 16) {
-                if (!confirm(`Canonical Notice: The godparent/witness is indicated as ${sponsorAge} years old. Under Canon 874 §1, sponsors must be at least 16 years of age. Do you still wish to proceed?`)) {
-                    return;
-                }
-            }
-        }
+        data.certificate_submission_mode = 'follow_up_office';
 
         post('/portal/schedule-requests', {
             forceFormData: true,
@@ -180,217 +247,61 @@ export default function ScheduleRequestCreate({ auth, parishes, clergy = [], set
             <Head title="Book Schedule - RCAL PIMS" />
             <div className="max-w-3xl mx-auto space-y-6 pb-12">
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    
-                    {/* Adult Baptism / Conversion Escalate Notice */}
-                    {data.sacrament_type === 'baptism' && (
-                        <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-5 text-xs text-amber-900 space-y-2 shadow-xs">
-                            <div className="flex items-center gap-2 font-bold text-amber-900 text-sm">
-                                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
-                                Important Canonical Notice: Infant & Child Baptism
-                            </div>
-                            <p className="leading-relaxed">
-                                This online scheduling form is strictly for <strong>infant and child baptisms (under 7 years of age)</strong>.
-                            </p>
-                            <p className="leading-relaxed">
-                                <strong>Adult baptism</strong> (individuals aged 7 and above) and <strong>conversion / reception</strong> into the Roman Catholic Church require comprehensive canonical instruction, pastoral preparation, and the Order of Christian Initiation of Adults (OCIA/RCIA).
-                                Please visit or contact the Parish Office directly to begin the appropriate catechetical process.
-                            </p>
-                        </div>
-                    )}
 
-                    {/* Confirmation Canonical Age & Schedule Notice */}
-                    {data.sacrament_type === 'confirmation' && (
-                        <div className="bg-gradient-to-r from-amber-50 via-amber-50/80 to-amber-100/40 border-2 border-amber-300 rounded-2xl p-5 text-xs text-amber-950 space-y-3 shadow-xs">
-                            <div className="flex items-center gap-2 font-bold text-amber-900 text-sm">
-                                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
-                                Canonical Norms for the Sacrament of Confirmation (Kumpil)
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                                <div className="bg-white/90 p-3.5 rounded-xl border border-amber-200 shadow-2xs space-y-1">
-                                    <strong className="text-amber-900 text-xs font-bold flex items-center gap-1.5">
-                                        <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
-                                        Subject Age: 12 Years Old &amp; Above
-                                    </strong>
-                                    <p className="text-[11px] text-amber-800 leading-relaxed">
-                                        Under Canon 891 and archdiocesan norms, the candidate for Confirmation must have reached the age of reason and discretion (at least 12 years of age).
-                                    </p>
-                                </div>
-                                <div className="bg-white/90 p-3.5 rounded-xl border border-amber-200 shadow-2xs space-y-1">
-                                    <strong className="text-amber-900 text-xs font-bold flex items-center gap-1.5">
-                                        <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
-                                        Sponsor / Witness Age: 16 Years &amp; Above
-                                    </strong>
-                                    <p className="text-[11px] text-amber-800 leading-relaxed">
-                                        Under Canon 874 §1 / Canon 893, the godparent or witness must be a confirmed practicing Catholic at least 16 years of age.
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="bg-amber-100/60 p-2.5 rounded-xl text-[11px] text-amber-900 leading-relaxed flex items-start gap-2">
-                                <Info className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                                <span>
-                                    <strong>Schedule &amp; Minister Assignment:</strong> Confirmation dates are scheduled in communal rites or episcopal pastoral visits. The specific ceremony date and presiding minister are <strong>assigned directly by the parish office</strong> upon evaluating your submitted canonical documents.
-                                </span>
-                            </div>
-                        </div>
-                    )}
+                    {/* DEDICATED BAPTISM SACRAMENT FORM */}
+                    {data.sacrament_type === 'baptism' ? (
+                        <div className="space-y-6">
+                            {/* 1. Parish & Schedule Details */}
+                            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+                                <h2 className="font-serif text-base font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
+                                    <Calendar className="w-4 h-4 text-amber-600" /> Parish Church &amp; Schedule
+                                </h2>
 
-                    {/* Matrimony / Wedding Canonical Notice & Document Rule */}
-                    {data.sacrament_type === 'matrimony' && (
-                        <div className="bg-gradient-to-r from-purple-50 via-pink-50/70 to-amber-50/50 border-2 border-purple-300 rounded-2xl p-5 text-xs text-purple-950 space-y-3 shadow-xs">
-                            <div className="flex items-center gap-2 font-bold text-purple-900 text-sm">
-                                <Heart className="w-5 h-5 text-purple-600 shrink-0" />
-                                Archdiocesan Canonical Directives for Holy Matrimony (Kasal)
-                            </div>
-                            <p className="leading-relaxed text-[11px] text-purple-900">
-                                Marriage is a sacred covenant and sacrament. In accordance with universal canon law and Archdiocesan norms, couples must complete canonical investigations, marriage banns publication, and pre-nuptial formation before the wedding ceremony can be solemnized.
-                            </p>
-                            <div className="bg-white/90 p-3.5 rounded-xl border border-purple-200 shadow-2xs space-y-1">
-                                <strong className="text-purple-900 text-xs font-bold flex items-center gap-1.5">
-                                    <AlertCircle className="w-3.5 h-3.5 text-purple-600" />
-                                    Mandatory Physical Document Submission at Parish Office
-                                </strong>
-                                <p className="text-[11px] text-purple-800 leading-relaxed">
-                                    <strong>All required marriage documents must be submitted physically in original copies to the Parish Secretariat.</strong> Online file uploads are not accepted for Holy Matrimony. You can file your booking request here, and the parish office will track your submitted documents and notify you of any pending requirements.
-                                </p>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Phase 1: Requestor Details */}
-                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-5">
-                        <h2 className="font-serif text-base font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
-                            <User className="w-4 h-4 text-amber-600" /> 1. Requestor / Applicant Details
-                        </h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs font-semibold mb-1 text-slate-700">Full Name</label>
-                                <input
-                                    type="text"
-                                    value={data.requester_name}
-                                    onChange={e => setData('requester_name', e.target.value)}
-                                    required
-                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
-                                />
-                                {errors.requester_name && <p className="text-xs text-rose-500 mt-1">{errors.requester_name}</p>}
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold mb-1 text-slate-700">Contact Number (Landline or Mobile)</label>
-                                <input
-                                    type="text"
-                                    value={data.requester_contact}
-                                    onChange={e => setData('requester_contact', e.target.value)}
-                                    required
-                                    placeholder="e.g. 7562572 or 09171234567"
-                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
-                                />
-                                {errors.requester_contact && <p className="text-xs text-rose-500 mt-1">{errors.requester_contact}</p>}
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold mb-1 text-slate-700">Email Address</label>
-                                <input
-                                    type="email"
-                                    value={data.requester_email}
-                                    onChange={e => setData('requester_email', e.target.value)}
-                                    required
-                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
-                                />
-                                {errors.requester_email && <p className="text-xs text-rose-500 mt-1">{errors.requester_email}</p>}
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold mb-1 text-slate-700">Relationship to Candidate / Contracting Party</label>
-                                <select
-                                    value={data.requester_relationship}
-                                    onChange={e => setData('requester_relationship', e.target.value)}
-                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs bg-white focus:ring-1 focus:ring-amber-500"
-                                >
-                                    <option value="Groom">Groom (Husband)</option>
-                                    <option value="Bride">Bride (Wife)</option>
-                                    <option value="Parent">Parent (Father / Mother)</option>
-                                    <option value="Legal Guardian">Legal Guardian</option>
-                                    <option value="Godparent">Godparent (Ninong / Ninang)</option>
-                                    <option value="Self">Self / Candidate</option>
-                                    <option value="Representative">Authorized Representative</option>
-                                </select>
-                            </div>
-                            <div className="sm:col-span-2">
-                                <label className="block text-xs font-semibold mb-1 text-slate-700">Current Residential Address</label>
-                                <input
-                                    type="text"
-                                    value={data.requester_address}
-                                    onChange={e => setData('requester_address', e.target.value)}
-                                    required
-                                    placeholder="House/Unit No., Street, Barangay, City/Municipality, Province"
-                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Phase 2: Schedule & Parish Details */}
-                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-5">
-                        <h2 className="font-serif text-base font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
-                            <Calendar className="w-4 h-4 text-amber-600" /> 2. Parish & Liturgical Schedule
-                        </h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs font-semibold mb-1 text-slate-700">Parish</label>
-                                <select
-                                    value={data.parish_id}
-                                    onChange={e => setData('parish_id', e.target.value)}
-                                    required
-                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs bg-white focus:ring-1 focus:ring-amber-500"
-                                >
-                                    <option value="">-- Select Parish --</option>
-                                    {parishes.map(p => (
-                                        <option key={p.id} value={p.id}>{p.name} ({p.city_municipality})</option>
-                                    ))}
-                                </select>
-                                {errors.parish_id && <p className="text-xs text-rose-500 mt-1">{errors.parish_id}</p>}
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold mb-1 text-slate-700">Sacrament / Ceremony</label>
-                                <select
-                                    value={data.sacrament_type}
-                                    onChange={e => {
-                                        const newType = e.target.value;
-                                        setData({
-                                            ...data,
-                                            sacrament_type: newType,
-                                            certificate_submission_mode: newType === 'matrimony' ? 'follow_up_office' : data.certificate_submission_mode,
-                                        });
-                                    }}
-                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs bg-white focus:ring-1 focus:ring-amber-500"
-                                >
-                                    <option value="baptism">Baptism (Binyag)</option>
-                                    <option value="matrimony">Matrimony / Wedding</option>
-                                    <option value="confirmation">Confirmation (Kumpil)</option>
-                                    <option value="anointing">Anointing of the Sick</option>
-                                    <option value="blessing">Blessing</option>
-                                </select>
-                            </div>
-
-                            {/* Confirmation: Parish Office assigns Date & Minister notice */}
-                            {data.sacrament_type === 'confirmation' ? (
-                                <div className="sm:col-span-2 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-950 space-y-2">
-                                    <div className="font-bold text-amber-900 flex items-center gap-2">
-                                        <Calendar className="w-4 h-4 text-amber-600" />
-                                        Parish Office Assignment for Schedule &amp; Officiating Minister
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-semibold mb-1 text-slate-700">Parish</label>
+                                        <select
+                                            value={data.parish_id}
+                                            onChange={e => setData('parish_id', e.target.value)}
+                                            required
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs bg-white focus:ring-1 focus:ring-amber-500"
+                                        >
+                                            <option value="">-- Select Parish Church --</option>
+                                            {parishes.map(p => (
+                                                <option key={p.id} value={p.id}>{p.name} ({p.city_municipality})</option>
+                                            ))}
+                                        </select>
+                                        {errors.parish_id && <p className="text-xs text-rose-500 mt-1">{errors.parish_id}</p>}
                                     </div>
-                                    <p className="leading-relaxed text-[11px] text-amber-800">
-                                        <strong>Ceremony Date:</strong> The Sacrament of Confirmation (Kumpil) is administered communally or during episcopal pastoral visitations. Confirmation dates cannot be selected in advance by the applicant. Once your application and canonical documents are reviewed and approved, the parish office will assign and notify you of the designated schedule.
-                                    </p>
-                                    <p className="leading-relaxed text-[11px] text-amber-800">
-                                        <strong>Presiding Minister:</strong> In accordance with Canon 882 of the Code of Canon Law, the ordinary minister of Confirmation is the Bishop or a priest endowed with the faculty by universal law or special grant. The celebrant is assigned directly by the parish and archdiocesan authority.
-                                    </p>
-                                </div>
-                            ) : (
-                                <>
-                                    {/* Allowed Days Notice */}
+
+                                    <div>
+                                        <label className="block text-xs font-semibold mb-1 text-slate-700">Sacrament / Ceremony</label>
+                                        <select
+                                            value={data.sacrament_type}
+                                            onChange={e => {
+                                                const newType = e.target.value;
+                                                setData({
+                                                    ...data,
+                                                    sacrament_type: newType,
+                                                    certificate_submission_mode: newType === 'matrimony' ? 'follow_up_office' : data.certificate_submission_mode,
+                                                });
+                                            }}
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs bg-white focus:ring-1 focus:ring-amber-500"
+                                        >
+                                            <option value="baptism">Baptism (Binyag)</option>
+                                            <option value="matrimony">Matrimony / Wedding</option>
+                                            <option value="confirmation">Confirmation (Kumpil)</option>
+                                            <option value="anointing">Anointing of the Sick</option>
+                                            <option value="blessing">Blessing</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Allowed Days Notice for Baptism */}
                                     {allowedDays && allowedDays.length > 0 && (
                                         <div className="sm:col-span-2 bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center gap-2.5 text-xs text-slate-700">
                                             <Info className="w-4 h-4 text-amber-600 shrink-0" />
                                             <span>
-                                                Available Days for <strong>{data.sacrament_type.toUpperCase()}</strong>:
+                                                Available Days for <strong>BAPTISM</strong>:
                                                 <span className="font-bold text-amber-800 ml-1">
                                                     {allowedDays.map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(', ')}
                                                 </span>
@@ -399,7 +310,9 @@ export default function ScheduleRequestCreate({ auth, parishes, clergy = [], set
                                     )}
 
                                     <div>
-                                        <label className="block text-xs font-semibold mb-1 text-slate-700">Preferred Date & Time</label>
+                                        <label className="block text-xs font-bold mb-1 text-slate-800">
+                                            Date of Baptism (Requested): <span className="text-rose-500">*</span>
+                                        </label>
                                         <input
                                             type="datetime-local"
                                             value={data.starts_at}
@@ -418,375 +331,575 @@ export default function ScheduleRequestCreate({ auth, parishes, clergy = [], set
                                     </div>
 
                                     <div>
-                                        <label className="block text-xs font-semibold mb-1 text-slate-700">Alternative Date & Time (Optional)</label>
-                                        <input
-                                            type="datetime-local"
-                                            value={data.alternative_starts_at}
-                                            onChange={e => setData('alternative_starts_at', e.target.value)}
-                                            className={`w-full border rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500 ${
-                                                isAltInvalid ? 'border-rose-400 bg-rose-50 text-rose-900' : 'border-slate-300 bg-white'
-                                            }`}
-                                        />
-                                        {data.alternative_starts_at && (
-                                            <p className={`text-[11px] mt-1 ${isAltInvalid ? 'text-rose-600 font-semibold' : 'text-slate-500'}`}>
-                                                Selected: {getDayName(data.alternative_starts_at)} {isAltInvalid && '— Not an available day!'}
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    {/* Preferred Clergy with disclaimer */}
-                                    <div className="sm:col-span-2">
-                                        <label className="block text-xs font-semibold mb-1 text-slate-700">
-                                            Request Preferred Officiating Clergy (Optional)
+                                        <label className="block text-xs font-bold mb-1 text-slate-800">
+                                            Contact Number <span className="text-rose-500">*</span>
                                         </label>
-                                        <select
-                                            value={data.requested_clergy_id}
-                                            onChange={e => setData('requested_clergy_id', e.target.value)}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs bg-white focus:ring-1 focus:ring-amber-500"
-                                        >
-                                            <option value="">-- No Specific Preference (Assigned by Parish) --</option>
-                                            {clergy.map(c => (
-                                                <option key={c.id} value={c.id}>{c.titled_name}</option>
-                                            ))}
-                                        </select>
-                                        <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2 mt-1.5 flex items-start gap-1.5">
-                                            <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-                                            <span>
-                                                <strong>Important Note on Clergy Request:</strong> Indicating a requested clergy is an expression of preference only. Officiating priest assignment is strictly subject to clergy availability, parish liturgical duties, and archdiocesan schedules and <strong>cannot be promised or guaranteed to be granted</strong>.
-                                            </span>
-                                        </p>
+                                        <input
+                                            type="text"
+                                            value={data.requester_contact}
+                                            onChange={e => setData('requester_contact', e.target.value)}
+                                            required
+                                            placeholder="e.g. 09171234567 or 7562572"
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
+                                        />
+                                        {errors.requester_contact && <p className="text-xs text-rose-500 mt-1">{errors.requester_contact}</p>}
                                     </div>
-                                </>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Phase 3: Baptismal Specific Data & Requirements */}
-                    {data.sacrament_type === 'baptism' && (
-                        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6">
-                            <h2 className="font-serif text-base font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
-                                <FileText className="w-4 h-4 text-amber-600" /> 3. Candidate & Parent Information
-                            </h2>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="sm:col-span-2">
-                                    <label className="text-xs font-semibold text-slate-700 mb-1 block">Candidate's Full Name (Child)</label>
-                                    <input
-                                        type="text"
-                                        value={data.specific_data.child_name || ''}
-                                        onChange={e => handleSpecificDataChange('child_name', e.target.value)}
-                                        required
-                                        placeholder="First Name, Middle Name, Last Name"
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
-                                    />
                                 </div>
-                                <div>
-                                    <label className="text-xs font-semibold text-slate-700 mb-1 block">Date of Birth</label>
-                                    <input
-                                        type="date"
-                                        value={data.specific_data.dob || ''}
-                                        onChange={e => handleSpecificDataChange('dob', e.target.value)}
-                                        required
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs bg-white focus:ring-1 focus:ring-amber-500"
-                                    />
+                            </div>
+
+                            {/* 2. Name of Child/Adult to be Baptized */}
+                            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+                                <h2 className="font-serif text-base font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
+                                    <User className="w-4 h-4 text-amber-600" /> Person to be Baptized
+                                </h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="sm:col-span-2">
+                                        <label className="text-xs font-bold text-slate-800 mb-1 block">
+                                            Name of Child/Adult to be Baptized <span className="text-rose-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={data.specific_data.child_name || ''}
+                                            onChange={e => handleSpecificDataChange('child_name', e.target.value)}
+                                            required
+                                            placeholder="Full Name (First Name, Middle Name, Last Name)"
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-800 mb-1 block">
+                                            Date of Birth <span className="text-rose-500">*</span>
+                                        </label>
+                                        <input
+                                            type="date"
+                                            value={data.specific_data.dob || ''}
+                                            onChange={e => handleSpecificDataChange('dob', e.target.value)}
+                                            required
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs bg-white focus:ring-1 focus:ring-amber-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-800 mb-1 block">
+                                            Birthplace <span className="text-rose-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={data.specific_data.place_of_birth || ''}
+                                            onChange={e => handleSpecificDataChange('place_of_birth', e.target.value)}
+                                            required
+                                            placeholder="Hospital / City / Municipality, Province"
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
+                                        />
+                                    </div>
                                 </div>
+                            </div>
+
+                            {/* 3. Name of Father */}
+                            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+                                <div className="flex items-center justify-between border-b pb-3">
+                                    <h2 className="font-serif text-base font-bold text-slate-900 flex items-center gap-2">
+                                        <User className="w-4 h-4 text-amber-600" /> Father&apos;s Information
+                                    </h2>
+                                    {isSingleParent ? (
+                                        <span className="text-xs text-sky-700 bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200 font-semibold">
+                                            Optional for Single Parent
+                                        </span>
+                                    ) : (
+                                        <span className="text-xs text-slate-500 font-medium">
+                                            Required for Married Parents <span className="text-rose-500">*</span>
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="sm:col-span-2">
+                                        <label className="text-xs font-bold text-slate-800 mb-1 block">
+                                            Name of Father {!isSingleParent && <span className="text-rose-500">*</span>}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={data.specific_data.father_name || ''}
+                                            onChange={e => handleSpecificDataChange('father_name', e.target.value)}
+                                            placeholder="Full Name of Father"
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-800 mb-1 block">Birthdate</label>
+                                        <input
+                                            type="date"
+                                            value={data.specific_data.father_dob || ''}
+                                            onChange={e => handleSpecificDataChange('father_dob', e.target.value)}
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs bg-white focus:ring-1 focus:ring-amber-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-800 mb-1 block">Birth Place</label>
+                                        <input
+                                            type="text"
+                                            value={data.specific_data.father_pob || ''}
+                                            onChange={e => handleSpecificDataChange('father_pob', e.target.value)}
+                                            placeholder="City / Municipality, Province"
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
+                                        />
+                                    </div>
+                                    <div className="sm:col-span-2">
+                                        <label className="text-xs font-bold text-slate-800 mb-1 block">Present Address</label>
+                                        <input
+                                            type="text"
+                                            value={data.specific_data.father_address || ''}
+                                            onChange={e => handleSpecificDataChange('father_address', e.target.value)}
+                                            placeholder="Complete Present Residential Address"
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 4. Name of Mother */}
+                            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+                                <div className="flex items-center justify-between border-b pb-3">
+                                    <h2 className="font-serif text-base font-bold text-slate-900 flex items-center gap-2">
+                                        <User className="w-4 h-4 text-amber-600" /> Mother&apos;s Information
+                                    </h2>
+                                    {isSingleParent ? (
+                                        <span className="text-xs text-sky-700 bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200 font-semibold">
+                                            Optional for Single Parent
+                                        </span>
+                                    ) : (
+                                        <span className="text-xs text-slate-500 font-medium">
+                                            Required for Married Parents <span className="text-rose-500">*</span>
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="sm:col-span-2">
+                                        <label className="text-xs font-bold text-slate-800 mb-1 block">
+                                            Name of Mother {!isSingleParent && <span className="text-rose-500">*</span>}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={data.specific_data.mother_name || ''}
+                                            onChange={e => handleSpecificDataChange('mother_name', e.target.value)}
+                                            placeholder="Full Maiden Name of Mother"
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-800 mb-1 block">Birthdate</label>
+                                        <input
+                                            type="date"
+                                            value={data.specific_data.mother_dob || ''}
+                                            onChange={e => handleSpecificDataChange('mother_dob', e.target.value)}
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs bg-white focus:ring-1 focus:ring-amber-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-800 mb-1 block">Birth place</label>
+                                        <input
+                                            type="text"
+                                            value={data.specific_data.mother_pob || ''}
+                                            onChange={e => handleSpecificDataChange('mother_pob', e.target.value)}
+                                            placeholder="City / Municipality, Province"
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
+                                        />
+                                    </div>
+                                    <div className="sm:col-span-2">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <label className="text-xs font-bold text-slate-800">Present Address</label>
+                                            {data.specific_data.father_address && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleSpecificDataChange('mother_address', data.specific_data.father_address)}
+                                                    className="text-[11px] text-amber-700 hover:text-amber-800 underline font-semibold"
+                                                >
+                                                    Same as Father&apos;s Address
+                                                </button>
+                                            )}
+                                        </div>
+                                        <input
+                                            type="text"
+                                            value={data.specific_data.mother_address || ''}
+                                            onChange={e => handleSpecificDataChange('mother_address', e.target.value)}
+                                            placeholder="Complete Present Residential Address"
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 5. Parents marital status */}
+                            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+                                <h2 className="font-serif text-base font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
+                                    <Heart className="w-4 h-4 text-amber-600" /> Parents Marital Status
+                                </h2>
                                 <div>
-                                    <label className="text-xs font-semibold text-slate-700 mb-1 block">Gender / Sex</label>
+                                    <label className="text-xs font-bold text-slate-800 mb-1.5 block">Parents marital status</label>
                                     <select
-                                        value={data.specific_data.gender || 'Male'}
-                                        onChange={e => handleSpecificDataChange('gender', e.target.value)}
+                                        value={data.specific_data.parents_status || 'Married (Catholic Church)'}
+                                        onChange={e => handleSpecificDataChange('parents_status', e.target.value)}
                                         className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs bg-white focus:ring-1 focus:ring-amber-500"
                                     >
-                                        <option value="Male">Male</option>
-                                        <option value="Female">Female</option>
+                                        <option value="Married (Catholic Church)">Married (Catholic Church)</option>
+                                        <option value="Civilly Married">Civilly Married</option>
+                                        <option value="Not Married / Living Together">Not Married / Living Together</option>
+                                        <option value="Single Parent">Single Parent</option>
+                                        <option value="Widowed">Widowed</option>
+                                        <option value="Other">Other</option>
                                     </select>
+                                    {isSingleParent && (
+                                        <div className="mt-2.5 text-[11px] text-sky-900 bg-sky-50 border border-sky-200 rounded-xl p-3 flex items-start gap-2">
+                                            <Info className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
+                                            <span>
+                                                <strong>Single Parent Status:</strong> You are not required to fill in both parents&apos; sections. You only need to provide the information for the custodial parent (either Father or Mother).
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="sm:col-span-2">
-                                    <label className="text-xs font-semibold text-slate-700 mb-1 block">Place of Birth (Hospital / Municipality)</label>
-                                    <input
-                                        type="text"
-                                        value={data.specific_data.place_of_birth || ''}
-                                        onChange={e => handleSpecificDataChange('place_of_birth', e.target.value)}
-                                        placeholder="e.g. Lipa City District Hospital, Lipa City, Batangas"
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-xs font-semibold text-slate-700 mb-1 block">Father's Full Name</label>
-                                    <input
-                                        type="text"
-                                        value={data.specific_data.father_name || ''}
-                                        onChange={e => handleSpecificDataChange('father_name', e.target.value)}
-                                        required
-                                        placeholder="First Name, Middle Name, Last Name"
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-xs font-semibold text-slate-700 mb-1 block">Mother's Full Maiden Name</label>
-                                    <input
-                                        type="text"
-                                        value={data.specific_data.mother_name || ''}
-                                        onChange={e => handleSpecificDataChange('mother_name', e.target.value)}
-                                        required
-                                        placeholder="Mother's Maiden Name (before marriage)"
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
-                                    />
-                                </div>
+                            </div>
 
-                                {/* Parents Marriage Status */}
-                                <div className="sm:col-span-2 border-t pt-4">
-                                    <label className="text-xs font-bold text-slate-900 mb-1.5 block">
-                                        Parents' Marital Status
-                                    </label>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-                                        <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                                            data.specific_data.parents_married === 'married' ? 'bg-amber-50/70 border-amber-400 ring-1 ring-amber-400' : 'bg-slate-50 border-slate-200'
-                                        }`}>
-                                            <input
-                                                type="radio"
-                                                name="parents_married"
-                                                value="married"
-                                                checked={data.specific_data.parents_married === 'married'}
-                                                onChange={() => {
-                                                    handleSpecificDataChange('parents_married', 'married');
-                                                    handleSpecificDataChange('parents_status', 'Married (Catholic Church)');
-                                                }}
-                                                className="mt-0.5 text-amber-600"
-                                            />
-                                            <div>
-                                                <div className="text-xs font-bold text-slate-900">Parents are Married</div>
-                                                <div className="text-[11px] text-slate-500">Requires <strong>Parents' Marriage Certificate</strong></div>
-                                            </div>
-                                        </label>
-
-                                        <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                                            data.specific_data.parents_married === 'not_married' ? 'bg-amber-50/70 border-amber-400 ring-1 ring-amber-400' : 'bg-slate-50 border-slate-200'
-                                        }`}>
-                                            <input
-                                                type="radio"
-                                                name="parents_married"
-                                                value="not_married"
-                                                checked={data.specific_data.parents_married === 'not_married'}
-                                                onChange={() => {
-                                                    handleSpecificDataChange('parents_married', 'not_married');
-                                                    handleSpecificDataChange('parents_status', 'Not Married');
-                                                }}
-                                                className="mt-0.5 text-amber-600"
-                                            />
-                                            <div>
-                                                <div className="text-xs font-bold text-slate-900">Parents are Not Married</div>
-                                                <div className="text-[11px] text-slate-500">Requires <strong>Baptismal Certificates of Both Parents</strong></div>
-                                            </div>
-                                        </label>
+                            {/* 6. Name of Godfather (Ninong) */}
+                            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+                                <h2 className="font-serif text-base font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
+                                    <Users className="w-4 h-4 text-amber-600" /> Godfather (Ninong)
+                                </h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="sm:col-span-2">
+                                        <label className="text-xs font-bold text-slate-800 mb-1 block">Name of Godfather (Ninong)</label>
+                                        <input
+                                            type="text"
+                                            value={data.specific_data.godfather_name || ''}
+                                            onChange={e => handleSpecificDataChange('godfather_name', e.target.value)}
+                                            placeholder="Full Name of Godfather"
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
+                                        />
                                     </div>
-                                </div>
-
-                                {/* Godparents / Witnesses */}
-                                <div className="sm:col-span-2 border-t pt-4">
-                                    <label className="text-xs font-bold text-slate-900 mb-1 block">
-                                        Godparents / Witnesses (Ninong & Ninang)
-                                    </label>
-                                    <p className="text-[11px] text-slate-500 mb-2">
-                                        Can. 874 requirement: At least one practicing Catholic sponsor who has received the Sacrament of Confirmation.
-                                    </p>
-                                    <textarea
-                                        value={data.specific_data.godparents || ''}
-                                        onChange={e => handleSpecificDataChange('godparents', e.target.value)}
-                                        placeholder="List full names of Ninong and Ninang (e.g. Juan Perez, Maria Santos)"
-                                        rows={3}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
-                                    />
-                                </div>
-
-                                {/* Territorial Vicinity Check */}
-                                <div className="sm:col-span-2 border-t pt-4">
-                                    <label className="text-xs font-bold text-slate-900 mb-1 block">
-                                        Parish Territorial Jurisdiction
-                                    </label>
-                                    <div className="flex items-center gap-6 mt-1 text-xs text-slate-700">
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="radio"
-                                                name="resides_within_parish"
-                                                value="yes"
-                                                checked={data.specific_data.resides_within_parish === 'yes'}
-                                                onChange={() => handleSpecificDataChange('resides_within_parish', 'yes')}
-                                            />
-                                            <span>We reside within the territorial boundary of this parish</span>
-                                        </label>
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="radio"
-                                                name="resides_within_parish"
-                                                value="no"
-                                                checked={data.specific_data.resides_within_parish === 'no'}
-                                                onChange={() => handleSpecificDataChange('resides_within_parish', 'no')}
-                                            />
-                                            <span>We reside outside this parish boundary (Baptismal Permit required)</span>
-                                        </label>
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-800 mb-1 block">Birthplace</label>
+                                        <input
+                                            type="text"
+                                            value={data.specific_data.godfather_pob || ''}
+                                            onChange={e => handleSpecificDataChange('godfather_pob', e.target.value)}
+                                            placeholder="City / Municipality, Province"
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-800 mb-1 block">Present Address</label>
+                                        <input
+                                            type="text"
+                                            value={data.specific_data.godfather_address || ''}
+                                            onChange={e => handleSpecificDataChange('godfather_address', e.target.value)}
+                                            placeholder="Complete Present Residential Address"
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
+                                        />
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Phase 4: Submission Mode & Document Attachments */}
-                            <div className="border-t pt-6 space-y-4">
-                                <h3 className="font-serif text-sm font-bold text-slate-900 flex items-center gap-2">
-                                    <Upload className="w-4 h-4 text-amber-600" /> 4. Required Canonical Certificates
-                                </h3>
-
-                                {/* Submission Mode Selector */}
-                                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
-                                    <label className="block text-xs font-bold text-slate-800">
-                                        How will you submit the required certificates?
-                                    </label>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                                            data.certificate_submission_mode === 'online' ? 'bg-amber-50 border-amber-400 ring-1 ring-amber-400' : 'bg-white border-slate-300'
-                                        }`}>
-                                            <input
-                                                type="radio"
-                                                name="certificate_submission_mode"
-                                                value="online"
-                                                checked={data.certificate_submission_mode === 'online'}
-                                                onChange={e => setData('certificate_submission_mode', e.target.value)}
-                                                className="mt-0.5 text-amber-600"
-                                            />
-                                            <div>
-                                                <div className="text-xs font-bold text-slate-900">Upload Digital Copies Online</div>
-                                                <div className="text-[11px] text-slate-500">Attach scans or clear photos directly in this form.</div>
-                                            </div>
-                                        </label>
-
-                                        <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                                            data.certificate_submission_mode === 'follow_up_office' ? 'bg-amber-50 border-amber-400 ring-1 ring-amber-400' : 'bg-white border-slate-300'
-                                        }`}>
-                                            <input
-                                                type="radio"
-                                                name="certificate_submission_mode"
-                                                value="follow_up_office"
-                                                checked={data.certificate_submission_mode === 'follow_up_office'}
-                                                onChange={e => setData('certificate_submission_mode', e.target.value)}
-                                                className="mt-0.5 text-amber-600"
-                                            />
-                                            <div>
-                                                <div className="text-xs font-bold text-slate-900">Follow Up Directly at Office</div>
-                                                <div className="text-[11px] text-slate-500">Bring physical certificates to the parish office in person.</div>
-                                            </div>
-                                        </label>
+                            {/* 7. Name of Godmother (Ninang) */}
+                            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+                                <h2 className="font-serif text-base font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
+                                    <Users className="w-4 h-4 text-amber-600" /> Godmother (Ninang)
+                                </h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="sm:col-span-2">
+                                        <label className="text-xs font-bold text-slate-800 mb-1 block">Name of Godmother (Ninang)</label>
+                                        <input
+                                            type="text"
+                                            value={data.specific_data.godmother_name || ''}
+                                            onChange={e => handleSpecificDataChange('godmother_name', e.target.value)}
+                                            placeholder="Full Name of Godmother"
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-800 mb-1 block">Birthplace</label>
+                                        <input
+                                            type="text"
+                                            value={data.specific_data.godmother_pob || ''}
+                                            onChange={e => handleSpecificDataChange('godmother_pob', e.target.value)}
+                                            placeholder="City / Municipality, Province"
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-800 mb-1 block">Present Address</label>
+                                        <input
+                                            type="text"
+                                            value={data.specific_data.godmother_address || ''}
+                                            onChange={e => handleSpecificDataChange('godmother_address', e.target.value)}
+                                            placeholder="Complete Present Residential Address"
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
+                                        />
                                     </div>
                                 </div>
-
-                                {data.certificate_submission_mode === 'follow_up_office' ? (
-                                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-start gap-2">
-                                        <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                                        <div>
-                                            <span className="font-bold">In-Person Document Submission Selected:</span>
-                                            <p className="mt-1">
-                                                You can submit this request now without uploading files. You must present the physical original and photocopies of the following certificates to the parish secretary before the scheduled date:
-                                            </p>
-                                            <ul className="list-disc list-inside mt-2 space-y-1 font-medium text-blue-950">
-                                                <li>Child's PSA Birth Certificate</li>
-                                                <li>Confirmation Certificate of the Witnesses / Godparent(s)</li>
-                                                {data.specific_data.parents_married === 'married' ? (
-                                                    <li>Parents' Marriage Certificate</li>
-                                                ) : (
-                                                    <li>Baptismal Certificates of Both Father and Mother</li>
-                                                )}
-                                                {data.specific_data.resides_within_parish === 'no' && (
-                                                    <li>Baptismal Permit / Endorsement from territorial Parish</li>
-                                                )}
-                                            </ul>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        <p className="text-xs text-slate-500">Upload clear JPG, PNG, or PDF copies (maximum 5MB per file):</p>
-
-                                        {/* PSA Birth Cert */}
-                                        <div className="border border-slate-200 rounded-xl p-3 bg-white">
-                                            <label className="text-xs font-bold text-slate-800 block">1. Child's PSA Birth Certificate</label>
-                                            <input
-                                                type="file"
-                                                accept=".jpg,.jpeg,.png,.pdf"
-                                                onChange={e => setData('psa_birth_cert', e.target.files?.[0] || null)}
-                                                className="mt-1.5 block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100"
-                                            />
-                                        </div>
-
-                                        {/* Confirmation Cert of Witnesses / Godparents */}
-                                        <div className="border border-slate-200 rounded-xl p-3 bg-white">
-                                            <label className="text-xs font-bold text-slate-800 block">
-                                                2. Confirmation Certificate of the Witnesses or Godparents
-                                            </label>
-                                            <p className="text-[11px] text-slate-500 mb-1">Confirmation certificate showing sponsor is fully initiated into Catholic faith.</p>
-                                            <input
-                                                type="file"
-                                                accept=".jpg,.jpeg,.png,.pdf"
-                                                onChange={e => setData('confirmation_cert_godparents', e.target.files?.[0] || null)}
-                                                className="mt-1.5 block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100"
-                                            />
-                                        </div>
-
-                                        {/* Parents Marriage or Both Parents Baptismal */}
-                                        {data.specific_data.parents_married === 'married' ? (
-                                            <div className="border border-slate-200 rounded-xl p-3 bg-white">
-                                                <label className="text-xs font-bold text-slate-800 block">
-                                                    3. Parents' Marriage Certificate (Church or Civil)
-                                                </label>
-                                                <input
-                                                    type="file"
-                                                    accept=".jpg,.jpeg,.png,.pdf"
-                                                    onChange={e => setData('marriage_cert_parents', e.target.files?.[0] || null)}
-                                                    className="mt-1.5 block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100"
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-3">
-                                                <div className="border border-slate-200 rounded-xl p-3 bg-white">
-                                                    <label className="text-xs font-bold text-slate-800 block">
-                                                        3a. Father's Catholic Baptismal Certificate
-                                                    </label>
-                                                    <input
-                                                        type="file"
-                                                        accept=".jpg,.jpeg,.png,.pdf"
-                                                        onChange={e => setData('baptismal_cert_father', e.target.files?.[0] || null)}
-                                                        className="mt-1.5 block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100"
-                                                    />
-                                                </div>
-                                                <div className="border border-slate-200 rounded-xl p-3 bg-white">
-                                                    <label className="text-xs font-bold text-slate-800 block">
-                                                        3b. Mother's Catholic Baptismal Certificate
-                                                    </label>
-                                                    <input
-                                                        type="file"
-                                                        accept=".jpg,.jpeg,.png,.pdf"
-                                                        onChange={e => setData('baptismal_cert_mother', e.target.files?.[0] || null)}
-                                                        className="mt-1.5 block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100"
-                                                    />
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Baptismal Permit if non-resident */}
-                                        {data.specific_data.resides_within_parish === 'no' && (
-                                            <div className="border border-amber-200 bg-amber-50/50 rounded-xl p-3">
-                                                <label className="text-xs font-bold text-amber-900 block">
-                                                    4. Baptismal Permit / Endorsement from Territorial Parish
-                                                </label>
-                                                <p className="text-[11px] text-amber-800 mb-1">Required since your residence is outside this parish's territorial boundaries.</p>
-                                                <input
-                                                    type="file"
-                                                    accept=".jpg,.jpeg,.png,.pdf"
-                                                    onChange={e => setData('baptismal_permit', e.target.files?.[0] || null)}
-                                                    className="mt-1.5 block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-amber-100 file:text-amber-800 hover:file:bg-amber-200"
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
                             </div>
                         </div>
+                    ) : (
+                        <>
+                            {/* Confirmation Canonical Age & Schedule Notice */}
+                            {data.sacrament_type === 'confirmation' && (
+                                <div className="bg-gradient-to-r from-amber-50 via-amber-50/80 to-amber-100/40 border-2 border-amber-300 rounded-2xl p-5 text-xs text-amber-950 space-y-3 shadow-xs">
+                                    <div className="flex items-center gap-2 font-bold text-amber-900 text-sm">
+                                        <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+                                        Canonical Norms for the Sacrament of Confirmation (Kumpil)
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                                        <div className="bg-white/90 p-3.5 rounded-xl border border-amber-200 shadow-2xs space-y-1">
+                                            <strong className="text-amber-900 text-xs font-bold flex items-center gap-1.5">
+                                                <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
+                                                Subject Age: 12 Years Old &amp; Above
+                                            </strong>
+                                            <p className="text-[11px] text-amber-800 leading-relaxed">
+                                                Under Canon 891 and archdiocesan norms, the candidate for Confirmation must have reached the age of reason and discretion (at least 12 years of age).
+                                            </p>
+                                        </div>
+                                        <div className="bg-white/90 p-3.5 rounded-xl border border-amber-200 shadow-2xs space-y-1">
+                                            <strong className="text-amber-900 text-xs font-bold flex items-center gap-1.5">
+                                                <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
+                                                Sponsor / Witness Age: 16 Years &amp; Above
+                                            </strong>
+                                            <p className="text-[11px] text-amber-800 leading-relaxed">
+                                                Under Canon 874 §1 / Canon 893, the godparent or witness must be a confirmed practicing Catholic at least 16 years of age.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="bg-amber-100/60 p-2.5 rounded-xl text-[11px] text-amber-900 leading-relaxed flex items-start gap-2">
+                                        <Info className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                                        <span>
+                                            <strong>Schedule &amp; Minister Assignment:</strong> Confirmation dates are scheduled in communal rites or episcopal pastoral visits. The specific ceremony date and presiding minister are <strong>assigned directly by the parish office</strong> upon evaluating your submitted canonical documents.
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Matrimony / Wedding Canonical Notice & Document Rule */}
+                            {data.sacrament_type === 'matrimony' && (
+                                <div className="bg-gradient-to-r from-purple-50 via-pink-50/70 to-amber-50/50 border-2 border-purple-300 rounded-2xl p-5 text-xs text-purple-950 space-y-3 shadow-xs">
+                                    <div className="flex items-center gap-2 font-bold text-purple-900 text-sm">
+                                        <Heart className="w-5 h-5 text-purple-600 shrink-0" />
+                                        Archdiocesan Canonical Directives for Holy Matrimony (Kasal)
+                                    </div>
+                                    <p className="leading-relaxed text-[11px] text-purple-900">
+                                        Marriage is a sacred covenant and sacrament. In accordance with universal canon law and Archdiocesan norms, couples must complete canonical investigations, marriage banns publication, and pre-nuptial formation before the wedding ceremony can be solemnized.
+                                    </p>
+                                    <div className="bg-white/90 p-3.5 rounded-xl border border-purple-200 shadow-2xs space-y-1">
+                                        <strong className="text-purple-900 text-xs font-bold flex items-center gap-1.5">
+                                            <AlertCircle className="w-3.5 h-3.5 text-purple-600" />
+                                            Mandatory Physical Document Submission at Parish Office
+                                        </strong>
+                                        <p className="text-[11px] text-purple-800 leading-relaxed">
+                                            <strong>All required marriage documents must be submitted physically in original copies to the Parish Secretariat.</strong> Online file uploads are not accepted for Holy Matrimony. You can file your booking request here, and the parish office will track your submitted documents and notify you of any pending requirements.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Phase 1: Requestor Details (Non-Baptism) */}
+                            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-5">
+                                <h2 className="font-serif text-base font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
+                                    <User className="w-4 h-4 text-amber-600" /> 1. Requestor / Applicant Details
+                                </h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-semibold mb-1 text-slate-700">Full Name</label>
+                                        <input
+                                            type="text"
+                                            value={data.requester_name}
+                                            onChange={e => setData('requester_name', e.target.value)}
+                                            required
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
+                                        />
+                                        {errors.requester_name && <p className="text-xs text-rose-500 mt-1">{errors.requester_name}</p>}
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold mb-1 text-slate-700">Contact Number (Landline or Mobile)</label>
+                                        <input
+                                            type="text"
+                                            value={data.requester_contact}
+                                            onChange={e => setData('requester_contact', e.target.value)}
+                                            required
+                                            placeholder="e.g. 7562572 or 09171234567"
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
+                                        />
+                                        {errors.requester_contact && <p className="text-xs text-rose-500 mt-1">{errors.requester_contact}</p>}
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold mb-1 text-slate-700">Email Address</label>
+                                        <input
+                                            type="email"
+                                            value={data.requester_email}
+                                            onChange={e => setData('requester_email', e.target.value)}
+                                            required
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
+                                        />
+                                        {errors.requester_email && <p className="text-xs text-rose-500 mt-1">{errors.requester_email}</p>}
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold mb-1 text-slate-700">Relationship to Candidate / Contracting Party</label>
+                                        <select
+                                            value={data.requester_relationship}
+                                            onChange={e => setData('requester_relationship', e.target.value)}
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs bg-white focus:ring-1 focus:ring-amber-500"
+                                        >
+                                            <option value="Groom">Groom (Husband)</option>
+                                            <option value="Bride">Bride (Wife)</option>
+                                            <option value="Parent">Parent (Father / Mother)</option>
+                                            <option value="Legal Guardian">Legal Guardian</option>
+                                            <option value="Godparent">Godparent (Ninong / Ninang)</option>
+                                            <option value="Self">Self / Candidate</option>
+                                            <option value="Representative">Authorized Representative</option>
+                                        </select>
+                                    </div>
+                                    <div className="sm:col-span-2">
+                                        <label className="block text-xs font-semibold mb-1 text-slate-700">Current Residential Address</label>
+                                        <input
+                                            type="text"
+                                            value={data.requester_address}
+                                            onChange={e => setData('requester_address', e.target.value)}
+                                            required
+                                            placeholder="House/Unit No., Street, Barangay, City/Municipality, Province"
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Phase 2: Schedule & Parish Details (Non-Baptism) */}
+                            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-5">
+                                <h2 className="font-serif text-base font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
+                                    <Calendar className="w-4 h-4 text-amber-600" /> 2. Parish &amp; Liturgical Schedule
+                                </h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-semibold mb-1 text-slate-700">Parish</label>
+                                        <select
+                                            value={data.parish_id}
+                                            onChange={e => setData('parish_id', e.target.value)}
+                                            required
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs bg-white focus:ring-1 focus:ring-amber-500"
+                                        >
+                                            <option value="">-- Select Parish --</option>
+                                            {parishes.map(p => (
+                                                <option key={p.id} value={p.id}>{p.name} ({p.city_municipality})</option>
+                                            ))}
+                                        </select>
+                                        {errors.parish_id && <p className="text-xs text-rose-500 mt-1">{errors.parish_id}</p>}
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold mb-1 text-slate-700">Sacrament / Ceremony</label>
+                                        <select
+                                            value={data.sacrament_type}
+                                            onChange={e => {
+                                                const newType = e.target.value;
+                                                setData({
+                                                    ...data,
+                                                    sacrament_type: newType,
+                                                    certificate_submission_mode: newType === 'matrimony' ? 'follow_up_office' : data.certificate_submission_mode,
+                                                });
+                                            }}
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs bg-white focus:ring-1 focus:ring-amber-500"
+                                        >
+                                            <option value="baptism">Baptism (Binyag)</option>
+                                            <option value="matrimony">Matrimony / Wedding</option>
+                                            <option value="confirmation">Confirmation (Kumpil)</option>
+                                            <option value="anointing">Anointing of the Sick</option>
+                                            <option value="blessing">Blessing</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Confirmation: Parish Office assigns Date & Minister notice */}
+                                    {data.sacrament_type === 'confirmation' ? (
+                                        <div className="sm:col-span-2 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-950 space-y-2">
+                                            <div className="font-bold text-amber-900 flex items-center gap-2">
+                                                <Calendar className="w-4 h-4 text-amber-600" />
+                                                Parish Office Assignment for Schedule &amp; Officiating Minister
+                                            </div>
+                                            <p className="leading-relaxed text-[11px] text-amber-800">
+                                                <strong>Ceremony Date:</strong> The Sacrament of Confirmation (Kumpil) is administered communally or during episcopal pastoral visitations. Confirmation dates cannot be selected in advance by the applicant. Once your application and canonical documents are reviewed and approved, the parish office will assign and notify you of the designated schedule.
+                                            </p>
+                                            <p className="leading-relaxed text-[11px] text-amber-800">
+                                                <strong>Presiding Minister:</strong> In accordance with Canon 882 of the Code of Canon Law, the ordinary minister of Confirmation is the Bishop or a priest endowed with the faculty by universal law or special grant. The celebrant is assigned directly by the parish and archdiocesan authority.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            {/* Allowed Days Notice */}
+                                            {allowedDays && allowedDays.length > 0 && (
+                                                <div className="sm:col-span-2 bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center gap-2.5 text-xs text-slate-700">
+                                                    <Info className="w-4 h-4 text-amber-600 shrink-0" />
+                                                    <span>
+                                                        Available Days for <strong>{data.sacrament_type.toUpperCase()}</strong>:
+                                                        <span className="font-bold text-amber-800 ml-1">
+                                                            {allowedDays.map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(', ')}
+                                                        </span>
+                                                    </span>
+                                                </div>
+                                            )}
+
+                                            <div>
+                                                <label className="block text-xs font-semibold mb-1 text-slate-700">Preferred Date &amp; Time</label>
+                                                <input
+                                                    type="datetime-local"
+                                                    value={data.starts_at}
+                                                    onChange={e => setData('starts_at', e.target.value)}
+                                                    required
+                                                    className={`w-full border rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500 ${
+                                                        isStartInvalid ? 'border-rose-400 bg-rose-50 text-rose-900' : 'border-slate-300 bg-white'
+                                                    }`}
+                                                />
+                                                {data.starts_at && (
+                                                    <p className={`text-[11px] mt-1 ${isStartInvalid ? 'text-rose-600 font-semibold' : 'text-slate-500'}`}>
+                                                        Selected: {getDayName(data.starts_at)} {isStartInvalid && '— Not an available day for this parish!'}
+                                                    </p>
+                                                )}
+                                                {errors.starts_at && <p className="text-xs text-rose-500 mt-1">{errors.starts_at}</p>}
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-xs font-semibold mb-1 text-slate-700">Alternative Date &amp; Time (Optional)</label>
+                                                <input
+                                                    type="datetime-local"
+                                                    value={data.alternative_starts_at}
+                                                    onChange={e => setData('alternative_starts_at', e.target.value)}
+                                                    className={`w-full border rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500 ${
+                                                        isAltInvalid ? 'border-rose-400 bg-rose-50 text-rose-900' : 'border-slate-300 bg-white'
+                                                    }`}
+                                                />
+                                                {data.alternative_starts_at && (
+                                                    <p className={`text-[11px] mt-1 ${isAltInvalid ? 'text-rose-600 font-semibold' : 'text-slate-500'}`}>
+                                                        Selected: {getDayName(data.alternative_starts_at)} {isAltInvalid && '— Not an available day!'}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            {/* Preferred Clergy with disclaimer */}
+                                            <div className="sm:col-span-2">
+                                                <label className="block text-xs font-semibold mb-1 text-slate-700">
+                                                    Request Preferred Officiating Clergy (Optional)
+                                                </label>
+                                                <select
+                                                    value={data.requested_clergy_id}
+                                                    onChange={e => setData('requested_clergy_id', e.target.value)}
+                                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs bg-white focus:ring-1 focus:ring-amber-500"
+                                                >
+                                                    <option value="">-- No Specific Preference (Assigned by Parish) --</option>
+                                                    {clergy.map(c => (
+                                                        <option key={c.id} value={c.id}>{c.titled_name}</option>
+                                                    ))}
+                                                </select>
+                                                <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2 mt-1.5 flex items-start gap-1.5">
+                                                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                                                    <span>
+                                                        <strong>Important Note on Clergy Request:</strong> Indicating a requested clergy is an expression of preference only. Officiating priest assignment is strictly subject to clergy availability, parish liturgical duties, and archdiocesan schedules and <strong>cannot be promised or guaranteed to be granted</strong>.
+                                                    </span>
+                                                </p>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </>
                     )}
 
                     {/* Phase 3 & 4: Confirmation Specific Data & Requirements */}
@@ -1029,141 +1142,47 @@ export default function ScheduleRequestCreate({ auth, parishes, clergy = [], set
                                 </div>
                             </div>
 
-                            {/* Phase 4: Submission Mode & Document Attachments for Confirmation */}
+                            {/* Phase 4: Physical Canonical Documents for Confirmation */}
                             <div className="border-t pt-6 space-y-4">
                                 <h3 className="font-serif text-sm font-bold text-slate-900 flex items-center gap-2">
-                                    <Upload className="w-4 h-4 text-amber-600" /> 4. Required Canonical Certificates
+                                    <FileText className="w-4 h-4 text-amber-600" /> 4. Required Canonical Certificates (Physical Submission Only)
                                 </h3>
 
-                                {/* Submission Mode Selector */}
-                                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
-                                    <label className="block text-xs font-bold text-slate-800">
-                                        How will you submit the required certificates?
-                                    </label>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                                            data.certificate_submission_mode === 'online' ? 'bg-amber-50 border-amber-400 ring-1 ring-amber-400' : 'bg-white border-slate-300'
-                                        }`}>
-                                            <input
-                                                type="radio"
-                                                name="confirmation_cert_submission_mode"
-                                                value="online"
-                                                checked={data.certificate_submission_mode === 'online'}
-                                                onChange={e => setData('certificate_submission_mode', e.target.value)}
-                                                className="mt-0.5 text-amber-600"
-                                            />
-                                            <div>
-                                                <div className="text-xs font-bold text-slate-900">Upload Digital Copies Online</div>
-                                                <div className="text-[11px] text-slate-500">Attach scans or clear photos directly in this form.</div>
-                                            </div>
-                                        </label>
-
-                                        <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                                            data.certificate_submission_mode === 'follow_up_office' ? 'bg-amber-50 border-amber-400 ring-1 ring-amber-400' : 'bg-white border-slate-300'
-                                        }`}>
-                                            <input
-                                                type="radio"
-                                                name="confirmation_cert_submission_mode"
-                                                value="follow_up_office"
-                                                checked={data.certificate_submission_mode === 'follow_up_office'}
-                                                onChange={e => setData('certificate_submission_mode', e.target.value)}
-                                                className="mt-0.5 text-amber-600"
-                                            />
-                                            <div>
-                                                <div className="text-xs font-bold text-slate-900">Follow Up Directly at Office</div>
-                                                <div className="text-[11px] text-slate-500">Bring physical certificates to the parish office in person.</div>
-                                            </div>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                {data.certificate_submission_mode === 'follow_up_office' ? (
-                                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-start gap-2">
-                                        <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                                <div className="p-4 bg-amber-50/70 border border-amber-200 rounded-xl text-xs text-amber-950 space-y-3">
+                                    <div className="flex items-start gap-2">
+                                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                                         <div>
-                                            <span className="font-bold">In-Person Document Submission Selected:</span>
-                                            <p className="mt-1">
-                                                You can submit this Confirmation request now without uploading files. You must present the physical original and photocopies of the following certificates to the parish office for canonical verification prior to the assigned ceremony date:
+                                            <span className="font-bold text-slate-900 text-sm">All Required Documents Must Be Submitted Physically:</span>
+                                            <p className="mt-1 text-slate-700 leading-relaxed">
+                                                No online file uploads are required. All required canonical certificates must be presented physically in original copies to the parish office. You can submit this booking request now, and the parish secretariat will inspect your physical documents during office hours prior to the assigned ceremony date.
                                             </p>
-                                            <ul className="list-disc list-inside mt-2 space-y-1 font-medium text-blue-950">
-                                                <li><strong>Candidate&apos;s Catholic Baptismal Certificate</strong> (issued within the last 6 months with annotation &quot;For Confirmation Purposes&quot;)</li>
-                                                <li><strong>Candidate&apos;s PSA Birth Certificate</strong></li>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white/90 p-3.5 rounded-lg border border-amber-200 space-y-2">
+                                        <div className="font-bold text-slate-900 text-xs">Required Physical Certificates:</div>
+                                        <ul className="list-disc list-inside space-y-1.5 text-slate-800 font-medium">
+                                            <li>
+                                                <strong>Candidate&apos;s Catholic Baptismal Certificate</strong> (Original copy issued within the last 6 months with remark &quot;For Confirmation Purposes&quot;)
+                                            </li>
+                                            <li>
+                                                <strong>Candidate&apos;s PSA Birth Certificate</strong> (Photocopy)
+                                            </li>
+                                            <li>
+                                                <strong>Sponsor&apos;s {data.specific_data.godparent_certificate_type === 'marriage' ? 'Catholic Marriage Certificate' : 'Confirmation Certificate'}</strong> (Proof of godparent/witness canonical eligibility)
+                                            </li>
+                                            {data.specific_data.confirmation_resides_within_parish === 'no' && (
                                                 <li>
-                                                    <strong>Sponsor&apos;s {data.specific_data.godparent_certificate_type === 'marriage' ? 'Catholic Marriage Certificate' : 'Confirmation Certificate'}</strong>
+                                                    <strong>Confirmation Permit / Parish Endorsement</strong> from candidate&apos;s home territorial parish
                                                 </li>
-                                                {data.specific_data.confirmation_resides_within_parish === 'no' && (
-                                                    <li><strong>Confirmation Permit / Endorsement</strong> from candidate&apos;s home territorial parish</li>
-                                                )}
-                                            </ul>
-                                        </div>
+                                            )}
+                                        </ul>
                                     </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        <p className="text-xs text-slate-500">Upload clear JPG, PNG, or PDF copies (maximum 5MB per file):</p>
 
-                                        {/* Candidate's Baptismal Certificate (Mandatory) */}
-                                        <div className="border border-slate-200 rounded-xl p-3 bg-white">
-                                            <label className="text-xs font-bold text-slate-800 block">
-                                                1. Candidate&apos;s Catholic Baptismal Certificate <span className="text-rose-500">*</span>
-                                            </label>
-                                            <p className="text-[11px] text-slate-500 mb-1">
-                                                Original or certified true copy of baptismal certificate from the church of baptism (preferably with &quot;For Confirmation Purposes&quot; remark).
-                                            </p>
-                                            <input
-                                                type="file"
-                                                accept=".jpg,.jpeg,.png,.pdf"
-                                                onChange={e => setData('baptismal_cert_subject', e.target.files?.[0] || null)}
-                                                className="mt-1.5 block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100"
-                                            />
-                                        </div>
-
-                                        {/* Sponsor's Confirmation or Marriage Certificate */}
-                                        <div className="border border-slate-200 rounded-xl p-3 bg-white">
-                                            <label className="text-xs font-bold text-slate-800 block">
-                                                2. Sponsor&apos;s {data.specific_data.godparent_certificate_type === 'marriage' ? 'Catholic Marriage Certificate' : 'Confirmation Certificate'} <span className="text-rose-500">*</span>
-                                            </label>
-                                            <p className="text-[11px] text-slate-500 mb-1">
-                                                Canonical proof that the godparent/witness has received Confirmation and is in full communion with the Catholic Church.
-                                            </p>
-                                            <input
-                                                type="file"
-                                                accept=".jpg,.jpeg,.png,.pdf"
-                                                onChange={e => setData('confirmation_cert_godparents', e.target.files?.[0] || null)}
-                                                className="mt-1.5 block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100"
-                                            />
-                                        </div>
-
-                                        {/* PSA Birth Certificate */}
-                                        <div className="border border-slate-200 rounded-xl p-3 bg-white">
-                                            <label className="text-xs font-bold text-slate-800 block">
-                                                3. Candidate&apos;s PSA Birth Certificate (Optional / Supporting)
-                                            </label>
-                                            <p className="text-[11px] text-slate-500 mb-1">For age and civil name verification.</p>
-                                            <input
-                                                type="file"
-                                                accept=".jpg,.jpeg,.png,.pdf"
-                                                onChange={e => setData('psa_birth_cert', e.target.files?.[0] || null)}
-                                                className="mt-1.5 block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100"
-                                            />
-                                        </div>
-
-                                        {/* Confirmation Permit if non-resident */}
-                                        {data.specific_data.confirmation_resides_within_parish === 'no' && (
-                                            <div className="border border-amber-200 bg-amber-50/50 rounded-xl p-3">
-                                                <label className="text-xs font-bold text-amber-900 block">
-                                                    4. Confirmation Permit / Parish Endorsement
-                                                </label>
-                                                <p className="text-[11px] text-amber-800 mb-1">Required since candidate resides outside this parish&apos;s territorial boundaries.</p>
-                                                <input
-                                                    type="file"
-                                                    accept=".jpg,.jpeg,.png,.pdf"
-                                                    onChange={e => setData('confirmation_permit', e.target.files?.[0] || null)}
-                                                    className="mt-1.5 block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-amber-100 file:text-amber-800 hover:file:bg-amber-200"
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
+                                    <p className="text-[11px] text-amber-900 italic">
+                                        The parish office will assign the solemn Confirmation schedule and presider once your physical documents are verified.
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -1542,7 +1561,11 @@ export default function ScheduleRequestCreate({ auth, parishes, clergy = [], set
                         </div>
                     )}
 
-                    <FormActions submitLabel="Submit Sacrament Request" cancelHref="/portal/dashboard" processing={processing} />
+                    <FormActions
+                        submitLabel={data.sacrament_type === 'baptism' ? 'Submit Baptism Appointment Request' : 'Submit Sacrament Request'}
+                        cancelHref="/portal/dashboard"
+                        processing={processing}
+                    />
                 </form>
             </div>
         </PortalLayout>

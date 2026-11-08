@@ -99,6 +99,9 @@ class SacramentSchedule extends Model
         'needs_register_entry',
         'formatted_time',
         'formatted_date',
+        'baptism_type',
+        'amount',
+        'donation_amount',
     ];
 
     /**
@@ -153,5 +156,22 @@ class SacramentSchedule extends Model
         return $isSacrament
             && $this->status === ScheduleStatusEnum::COMPLETED
             && $this->record_id === null;
+    }
+
+    public function getBaptismTypeAttribute(): ?string
+    {
+        return $this->specific_data['baptism_type'] ?? null;
+    }
+
+    public function getAmountAttribute(): ?float
+    {
+        $val = $this->specific_data['amount'] ?? ($this->specific_data['donation_amount'] ?? null);
+
+        return $val !== null && $val !== '' ? (float) $val : null;
+    }
+
+    public function getDonationAmountAttribute(): ?float
+    {
+        return $this->amount;
     }
 }

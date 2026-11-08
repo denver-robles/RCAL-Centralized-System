@@ -684,6 +684,25 @@ export default function CalendarView({ schedules, parishes, filters, metrics }: 
                             {/* Baptism Details */}
                             {selectedSchedule.sacrament_type === 'baptism' && (
                                 <div className="space-y-3">
+                                    {(selectedSchedule.baptism_type || selectedSchedule.specific_data?.baptism_type || selectedSchedule.amount || selectedSchedule.donation_amount || selectedSchedule.specific_data?.amount) && (
+                                        <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs">
+                                            <div>
+                                                <span className="text-amber-800 font-semibold block text-[10px] uppercase">Baptism Ceremony Type</span>
+                                                <span className="font-bold text-amber-950 capitalize text-sm">
+                                                    {(selectedSchedule.baptism_type || selectedSchedule.specific_data?.baptism_type) === 'solo' ? 'Solo / Special Baptism' : 'Regular Community Baptism'}
+                                                </span>
+                                            </div>
+                                            {(selectedSchedule.amount ?? selectedSchedule.donation_amount ?? selectedSchedule.specific_data?.amount ?? selectedSchedule.specific_data?.donation_amount) && (
+                                                <div className="text-right">
+                                                    <span className="text-amber-800 font-semibold block text-[10px] uppercase">Sacrament Offering (Stipend)</span>
+                                                    <span className="font-bold text-amber-950 text-sm">
+                                                        ₱{Number(selectedSchedule.amount ?? selectedSchedule.donation_amount ?? selectedSchedule.specific_data?.amount ?? selectedSchedule.specific_data?.donation_amount).toLocaleString()}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
                                     <h4 className="font-bold text-slate-900 flex items-center gap-1.5 text-sm">
                                         <Users className="w-4 h-4 text-sky-600" />
                                         Candidate &amp; Parent Details
@@ -692,21 +711,47 @@ export default function CalendarView({ schedules, parishes, filters, metrics }: 
                                         <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
                                             <div><strong>Candidate:</strong> {selectedSchedule.specific_data?.child_name || 'N/A'}</div>
                                             <div><strong>Date of Birth:</strong> {selectedSchedule.specific_data?.dob || 'N/A'}</div>
-                                            <div><strong>Place of Birth:</strong> {selectedSchedule.specific_data?.place_of_birth || 'N/A'}</div>
-                                            <div><strong>Gender:</strong> {selectedSchedule.specific_data?.gender || 'N/A'}</div>
+                                            <div><strong>Birthplace:</strong> {selectedSchedule.specific_data?.place_of_birth || selectedSchedule.specific_data?.birthplace || 'N/A'}</div>
+                                            {selectedSchedule.specific_data?.gender && <div><strong>Gender:</strong> {selectedSchedule.specific_data?.gender}</div>}
+                                            <div><strong>Marital Status:</strong> {selectedSchedule.specific_data?.parents_status || selectedSchedule.specific_data?.parents_marital_status || 'N/A'}</div>
                                         </div>
                                         <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
                                             <div><strong>Father:</strong> {selectedSchedule.specific_data?.father_name || 'N/A'}</div>
-                                            <div><strong>Mother:</strong> {selectedSchedule.specific_data?.mother_name || 'N/A'}</div>
-                                            <div><strong>Marital Status:</strong> {selectedSchedule.specific_data?.parents_status || (selectedSchedule.specific_data?.parents_married === 'married' ? 'Married (Catholic Church)' : 'Not Married')}</div>
-                                            <div><strong>Within Vicinity:</strong> {selectedSchedule.specific_data?.resides_within_parish === 'no' ? 'No (Permit Required)' : 'Yes'}</div>
+                                            {selectedSchedule.specific_data?.father_dob && <div className="text-[11px] text-slate-600">Birthdate: {selectedSchedule.specific_data.father_dob}</div>}
+                                            {selectedSchedule.specific_data?.father_pob && <div className="text-[11px] text-slate-600">Birth Place: {selectedSchedule.specific_data.father_pob}</div>}
+                                            {selectedSchedule.specific_data?.father_address && <div className="text-[11px] text-slate-600">Address: {selectedSchedule.specific_data.father_address}</div>}
+
+                                            <div className="border-t border-slate-200 pt-1 mt-1"><strong>Mother:</strong> {selectedSchedule.specific_data?.mother_name || 'N/A'}</div>
+                                            {selectedSchedule.specific_data?.mother_dob && <div className="text-[11px] text-slate-600">Birthdate: {selectedSchedule.specific_data.mother_dob}</div>}
+                                            {selectedSchedule.specific_data?.mother_pob && <div className="text-[11px] text-slate-600">Birth Place: {selectedSchedule.specific_data.mother_pob}</div>}
+                                            {selectedSchedule.specific_data?.mother_address && <div className="text-[11px] text-slate-600">Address: {selectedSchedule.specific_data.mother_address}</div>}
                                         </div>
                                     </div>
-                                    {selectedSchedule.specific_data?.godparents && (
-                                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                                            <strong className="block text-slate-800 mb-0.5">Godparents / Sponsors:</strong>
-                                            <p className="text-slate-600">{selectedSchedule.specific_data.godparents}</p>
+                                    {(selectedSchedule.specific_data?.godfather_name || selectedSchedule.specific_data?.godmother_name) ? (
+                                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5 text-xs">
+                                            <strong className="block text-slate-800">Godparents / Sponsors (Ninong &amp; Ninang):</strong>
+                                            {selectedSchedule.specific_data?.godfather_name && (
+                                                <div>
+                                                    <span className="font-semibold text-slate-800">Godfather (Ninong):</span> {selectedSchedule.specific_data.godfather_name}
+                                                    {selectedSchedule.specific_data.godfather_pob && <span className="text-[11px] text-slate-500 ml-2">({selectedSchedule.specific_data.godfather_pob})</span>}
+                                                    {selectedSchedule.specific_data.godfather_address && <div className="text-[11px] text-slate-500 pl-2">Address: {selectedSchedule.specific_data.godfather_address}</div>}
+                                                </div>
+                                            )}
+                                            {selectedSchedule.specific_data?.godmother_name && (
+                                                <div>
+                                                    <span className="font-semibold text-slate-800">Godmother (Ninang):</span> {selectedSchedule.specific_data.godmother_name}
+                                                    {selectedSchedule.specific_data.godmother_pob && <span className="text-[11px] text-slate-500 ml-2">({selectedSchedule.specific_data.godmother_pob})</span>}
+                                                    {selectedSchedule.specific_data.godmother_address && <div className="text-[11px] text-slate-500 pl-2">Address: {selectedSchedule.specific_data.godmother_address}</div>}
+                                                </div>
+                                            )}
                                         </div>
+                                    ) : (
+                                        selectedSchedule.specific_data?.godparents && (
+                                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                                                <strong className="block text-slate-800 mb-0.5">Godparents / Sponsors:</strong>
+                                                <p className="text-slate-600">{selectedSchedule.specific_data.godparents}</p>
+                                            </div>
+                                        )
                                     )}
                                 </div>
                             )}
