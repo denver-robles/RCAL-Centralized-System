@@ -90,12 +90,13 @@ export default function Dashboard({ auth, documentRequests, schedules, metrics, 
             marriage_confirmation_cert: 'Original Confirmation Certificate (For Marriage Purposes)',
             marriage_psa_birth: 'PSA Birth Certificate (Photocopy)',
             marriage_cenomar: 'PSA CENOMAR (Certificate of No Marriage)',
+            marriage_interview_form: 'Canonical Pre-Nuptial Interview Form',
             marriage_banns: 'Marriage Banns (Publication in Parish)',
             marriage_permit: 'Marriage Permit (Territorial Endorsement)',
             marriage_license: 'Marriage License (from City / Municipal Civil Registrar)',
             marriage_singleness: 'Certificate of Freedom to Marry / Singleness (OFW / Foreign National)',
             marriage_precana: 'Pre-Cana Seminar Certificate',
-            marriage_couple_pic: '4R Couple Picture (Colored Photo)',
+            marriage_couple_pic: 'Two (2) copies of 4R Couple Picture (Colored Photo)',
         };
         return Object.entries(checklist)
             .filter(([_, needed]) => Boolean(needed))

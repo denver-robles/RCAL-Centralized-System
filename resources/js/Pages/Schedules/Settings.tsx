@@ -8,7 +8,7 @@ interface Props extends PageProps {
     settings: SacramentSetting[];
 }
 
-const DEFAULT_SACRAMENTS = ['baptism', 'matrimony', 'anointing', 'confirmation'];
+const DEFAULT_SACRAMENTS = ['baptism', 'matrimony', 'funeral', 'confirmation'];
 const DEFAULT_SLOTS = ["08:00-09:00", "09:00-10:00", "10:00-11:00", "11:00-12:00"];
 const DAYS_OF_WEEK = [
     { key: 'monday', label: 'Mon' },

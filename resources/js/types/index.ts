@@ -38,8 +38,11 @@ export type ScheduleType =
     | 'baptism'
     | 'confirmation'
     | 'wedding'
+    | 'matrimony'
     | 'funeral'
     | 'blessing'
+    | 'sponsored_mass'
+    | 'bone_transfer'
     | 'eucharist'
     | 'anointing'
     | 'reconciliation'
@@ -105,6 +108,7 @@ export interface Clergy {
     sex: string;
     full_name: string;
     titled_name: string;
+    category?: string;
     ordination_date?: string | null;
     status: string;
     is_active: boolean;

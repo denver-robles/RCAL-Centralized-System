@@ -151,6 +151,7 @@ class MarriageWorkflowTest extends TestCase
                 'marriage_confirmation_cert' => false,
                 'marriage_psa_birth' => false,
                 'marriage_cenomar' => true,
+                'marriage_interview_form' => true,
                 'marriage_banns' => true,
                 'marriage_permit' => true,
                 'marriage_license' => true,
@@ -165,6 +166,7 @@ class MarriageWorkflowTest extends TestCase
         $schedule->refresh();
         $this->assertEquals(ScheduleStatusEnum::PROCESSING, $schedule->status);
         $this->assertTrue($schedule->document_checklist['marriage_cenomar']);
+        $this->assertTrue($schedule->document_checklist['marriage_interview_form']);
         $this->assertTrue($schedule->document_checklist['marriage_banns']);
         $this->assertTrue($schedule->document_checklist['marriage_precana']);
         $this->assertFalse($schedule->document_checklist['marriage_psa_birth']);
@@ -243,5 +245,82 @@ class MarriageWorkflowTest extends TestCase
         $this->assertEquals('1998-09-24', $bride->date_of_birth->format('Y-m-d'));
         $this->assertEquals('Santiago Santos', $bride->father_name);
         $this->assertEquals('Pia Alba', $bride->mother_name);
+    }
+
+    public function test_parishioner_can_submit_streamlined_marriage_with_quotation_and_add_ons(): void
+    {
+        $weddingDate = Carbon::now()->addMonths(4)->next(Carbon::SATURDAY)->setTime(15, 0);
+
+        $response = $this->actingAs($this->parishioner)->post('/portal/schedule-requests', [
+            'parish_id' => $this->parish->id,
+            'sacrament_type' => 'matrimony',
+            'starts_at' => $weddingDate->format('Y-m-d H:i:s'),
+            'requester_contact' => '09171234567',
+            'requester_email' => 'couple@gmail.com',
+            'requested_clergy_id' => $this->clergy->id,
+            'specific_data' => [
+                // Table View - Groom
+                'groom_name' => 'Gabriel Alonzo',
+                'groom_nationality' => 'Filipino',
+                'groom_status' => 'Single',
+                'groom_age' => '29',
+                'groom_pob' => 'Batangas City',
+                'groom_address' => 'Brgy. Kumintang Ilaya, Batangas City',
+                'groom_father_name' => 'Antonio Alonzo',
+                'groom_mother_name' => 'Teresa Mercado',
+
+                // Table View - Bride
+                'bride_name' => 'Isabela Dizon',
+                'bride_nationality' => 'Filipino',
+                'bride_status' => 'Single',
+                'bride_age' => '27',
+                'bride_pob' => 'Lipa City',
+                'bride_address' => 'Brgy. Marawoy, Lipa City',
+                'bride_father_name' => 'Ramon Dizon',
+                'bride_mother_name' => 'Elena Santos',
+
+                // Principal Sponsors (Ninong & Ninang)
+                'godfather_name' => 'Gov. Hermilando Mandanas',
+                'godfather_address' => 'Batangas Provincial Capitol, Batangas City',
+                'godmother_name' => 'Atty. Maria Santos',
+                'godmother_address' => 'Lipa City',
+
+                // Quotation & Add-ons
+                'nuptial_base_fee' => 7210,
+                'nuptial_add_ons' => [
+                    'live_stream' => true, // 500
+                    'carpet' => true,      // 1500
+                    'choir' => true,       // 1000
+                    'flower_stand' => false,
+                    'candle_pair' => false,
+                ],
+                'amount' => 10210, // 7210 + 500 + 1500 + 1000 = 10210
+            ],
+        ]);
+
+        $response->assertRedirect('/portal/dashboard');
+
+        $schedule = SacramentSchedule::where('requester_user_id', $this->parishioner->id)
+            ->where('title', 'Matrimony Request - Gabriel Alonzo & Isabela Dizon')
+            ->firstOrFail();
+
+        $this->assertEquals('Matrimony Request - Gabriel Alonzo & Isabela Dizon', $schedule->title);
+        $this->assertEquals('follow_up_office', $schedule->certificate_submission_mode);
+        $this->assertEquals(10210.0, $schedule->amount);
+        $this->assertEquals(10210.0, $schedule->donation_amount);
+        $this->assertEquals('Gov. Hermilando Mandanas (Ninong), Atty. Maria Santos (Ninang)', $schedule->specific_data['witnesses']);
+
+        // Check auto-derived DOBs
+        $expectedGroomYear = (int) date('Y') - 29;
+        $expectedBrideYear = (int) date('Y') - 27;
+        $this->assertEquals("{$expectedGroomYear}-01-01", $schedule->specific_data['groom_dob']);
+        $this->assertEquals("{$expectedBrideYear}-01-01", $schedule->specific_data['bride_dob']);
+
+        // Check fallback requester fields
+        $this->assertEquals('Gabriel Alonzo', $schedule->requester_name);
+        $this->assertEquals('couple@gmail.com', $schedule->requester_email);
+        $this->assertEquals('09171234567', $schedule->requester_contact);
+        $this->assertEquals('Groom', $schedule->requester_relationship);
+        $this->assertEquals('Brgy. Kumintang Ilaya, Batangas City', $schedule->requester_address);
     }
 }
