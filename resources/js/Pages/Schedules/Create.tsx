@@ -139,9 +139,10 @@ export default function Create({ auth, parishes, venues, clergy }: Props) {
                                     <option value="baptism">Baptism (Baptismus)</option>
                                     <option value="confirmation">Confirmation (Confirmatio)</option>
                                     <option value="wedding">Matrimony / Wedding (Matrimonium)</option>
-                                    <option value="funeral">Funeral Rite / Mass of the Dead</option>
+                                    <option value="funeral">Mass / Blessing for Departed (Funeral)</option>
+                                    <option value="sponsored_mass">Sponsored Mass</option>
+                                    <option value="bone_transfer">Bone / Ash Transfer</option>
                                     <option value="blessing">Solemn Blessing</option>
-                                    <option value="anointing">Anointing of the Sick</option>
                                     <option value="reconciliation">Sacrament of Reconciliation</option>
                                     <option value="meeting">Pastoral Council Meeting</option>
                                     <option value="office_activity">Chancery / Office Activity</option>

@@ -261,7 +261,7 @@ class SchedulesController extends Controller
             'parish_id' => ['required', 'integer', 'exists:parishes,id'],
             'venue_id' => ['nullable', 'integer', 'exists:venues,id'],
             'presiding_clergy_id' => ['nullable', 'integer', 'exists:clergy,id'],
-            'sacrament_type' => ['required', 'string', 'in:baptism,confirmation,wedding,funeral,blessing,eucharist,anointing,reconciliation,meeting,office_activity,other'],
+            'sacrament_type' => ['required', 'string', 'in:baptism,confirmation,wedding,matrimony,funeral,blessing,sponsored_mass,bone_transfer,eucharist,anointing,reconciliation,meeting,office_activity,other'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
             'starts_at' => ['required', 'date', 'after_or_equal:today'],
@@ -294,6 +294,10 @@ class SchedulesController extends Controller
      */
     public function updateStatus(Request $request, SacramentSchedule $schedule): RedirectResponse
     {
+        if ($request->input('presiding_clergy_id') === 'guest' || ($request->has('presiding_clergy_id') && ! is_numeric($request->input('presiding_clergy_id')))) {
+            $request->merge(['presiding_clergy_id' => null]);
+        }
+
         $validated = $request->validate([
             'status' => ['required', 'string', 'in:on_hold,processing,scheduled,confirmed,completed,cancelled'],
             'cancellation_reason' => ['nullable', 'string', 'max:500'],
@@ -303,6 +307,7 @@ class SchedulesController extends Controller
             'ends_at' => ['nullable', 'date', 'after:starts_at'],
             'presiding_clergy_id' => ['nullable', 'integer', 'exists:clergy,id'],
             'guest_priest_name' => ['nullable', 'string', 'max:255'],
+            'add_to_clergy_directory' => ['nullable', 'boolean'],
             'baptism_type' => ['nullable', 'string', 'in:regular,solo'],
             'amount' => ['nullable', 'numeric', 'min:0'],
             'book_number' => ['required_if:status,completed', 'nullable', 'integer', 'min:1'],
@@ -346,9 +351,17 @@ class SchedulesController extends Controller
         $hasSpecificDataUpdates = false;
 
         if ($request->filled('guest_priest_name')) {
-            $specificData['guest_priest_name'] = $validated['guest_priest_name'];
-            $updateData['presiding_clergy_id'] = null; // Unset clergy ID if guest is used
+            $rawGuestName = trim($validated['guest_priest_name']);
+            $specificData['guest_priest_name'] = $rawGuestName;
             $hasSpecificDataUpdates = true;
+
+            // When staff confirms/schedules or requests inclusion, automatically inscribe guest into official Clergy Directory
+            if ($request->boolean('add_to_clergy_directory', true) && ! empty($rawGuestName)) {
+                $newClergy = Clergy::firstOrCreateFromGuestName($rawGuestName, $schedule->parish_id);
+                $updateData['presiding_clergy_id'] = $newClergy->id;
+            } else {
+                $updateData['presiding_clergy_id'] = null; // Unset clergy ID if kept as unregistered guest
+            }
         }
 
         if ($request->has('baptism_type')) {

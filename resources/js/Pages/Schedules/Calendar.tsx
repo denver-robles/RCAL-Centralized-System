@@ -157,10 +157,26 @@ export default function CalendarView({ schedules, parishes, filters, metrics }: 
         }
         if (t === 'funeral') {
             return {
-                label: 'Funeral / Burial',
+                label: 'Mass / Blessing for Departed',
                 badge: 'bg-slate-100 text-slate-800 border-slate-300 ring-slate-300',
                 dot: 'bg-slate-500',
                 card: 'border-l-4 border-l-slate-500 bg-slate-100/70 hover:bg-slate-200/90 text-slate-900',
+            };
+        }
+        if (t === 'sponsored_mass') {
+            return {
+                label: 'Sponsored Mass',
+                badge: 'bg-rose-50 text-rose-800 border-rose-300 ring-rose-300',
+                dot: 'bg-rose-500',
+                card: 'border-l-4 border-l-rose-500 bg-rose-50/70 hover:bg-rose-100/90 text-rose-950',
+            };
+        }
+        if (t === 'bone_transfer' || t === 'transfer_of_bones') {
+            return {
+                label: 'Bone / Ash Transfer',
+                badge: 'bg-zinc-100 text-zinc-800 border-zinc-300 ring-zinc-300',
+                dot: 'bg-zinc-600',
+                card: 'border-l-4 border-l-zinc-600 bg-zinc-100/70 hover:bg-zinc-200/90 text-zinc-900',
             };
         }
         return {
@@ -414,8 +430,9 @@ export default function CalendarView({ schedules, parishes, filters, metrics }: 
                         <option value="matrimony">Matrimony / Wedding</option>
                         <option value="confirmation">Confirmation</option>
                         <option value="blessing">Blessing</option>
-                        <option value="funeral">Funeral / Burial</option>
-                        <option value="anointing">Anointing of the Sick</option>
+                        <option value="sponsored_mass">Sponsored Mass</option>
+                        <option value="bone_transfer">Bone / Ash Transfer</option>
+                        <option value="funeral">Mass / Blessing for Departed</option>
                         <option value="reconciliation">Reconciliation / Confession</option>
                     </select>
 
@@ -626,6 +643,11 @@ export default function CalendarView({ schedules, parishes, filters, metrics }: 
                                         Preferred Clergy Requested: {selectedSchedule.requested_clergy.titled_name}
                                     </div>
                                 )}
+                                {!selectedSchedule.requested_clergy && selectedSchedule.specific_data?.requested_guest_priest_name && (
+                                    <div className="text-[11px] text-purple-700 mt-1">
+                                        Visiting Priest Requested: {selectedSchedule.specific_data.requested_guest_priest_name}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -792,6 +814,123 @@ export default function CalendarView({ schedules, parishes, filters, metrics }: 
                                     {selectedSchedule.specific_data?.onsite_contact_name && (
                                         <div><strong>Contact Person:</strong> {selectedSchedule.specific_data.onsite_contact_name} ({selectedSchedule.specific_data.onsite_contact_number})</div>
                                     )}
+                                    <div className="bg-amber-50 p-2 rounded border border-amber-200 text-[11px] text-amber-900 font-semibold mt-2">
+                                        Quotation Reminder: Php 100 + any amount of donation for the clergy
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Sponsored Mass Details */}
+                            {selectedSchedule.sacrament_type === 'sponsored_mass' && (
+                                <div className="p-3.5 bg-rose-50/70 rounded-xl border border-rose-200 space-y-2 text-xs">
+                                    <h4 className="font-bold text-rose-950 flex items-center gap-1.5 text-sm">
+                                        <Sparkles className="w-4 h-4 text-rose-600" /> Sponsored Mass Specifics
+                                    </h4>
+                                    <div className="space-y-1">
+                                        <div><strong>Mass Location:</strong> {selectedSchedule.specific_data?.mass_location || 'Parish Church'}</div>
+                                        <div><strong>Representative:</strong> {selectedSchedule.requester_name || selectedSchedule.specific_data?.representative_name || 'N/A'}</div>
+                                        <div><strong>Address:</strong> {selectedSchedule.requester_address || selectedSchedule.specific_data?.address || 'N/A'}</div>
+                                        <div><strong>Contact:</strong> {selectedSchedule.requester_contact || 'N/A'}</div>
+                                    </div>
+                                    <div className="bg-white/80 p-2.5 rounded-lg border border-rose-200 space-y-1">
+                                        <div className="font-bold text-rose-900 text-[11px] uppercase">Intentions:</div>
+                                        {selectedSchedule.specific_data?.sponsored_thanksgiving && (
+                                            <div>✓ <strong>Thanksgiving of:</strong> {selectedSchedule.specific_data.sponsored_thanksgiving_of || 'Parishioner'}</div>
+                                        )}
+                                        {selectedSchedule.specific_data?.sponsored_wedding_anniversary && (
+                                            <div>✓ <strong>Wedding Anniversary of:</strong> {selectedSchedule.specific_data.sponsored_wedding_anniversary_of || 'Couple'}</div>
+                                        )}
+                                        {selectedSchedule.specific_data?.sponsored_birthday && (
+                                            <div>✓ <strong>Birthday of:</strong> {selectedSchedule.specific_data.sponsored_birthday_of || 'Celebrant'}</div>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center justify-between text-xs font-bold text-rose-900 border-t border-rose-200 pt-2">
+                                        <span>Quotation Total:</span>
+                                        <span>₱{Number(selectedSchedule.specific_data?.amount || selectedSchedule.amount || 2000).toLocaleString()} (Base ₱2,000 + Add-ons)</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Bone / Ash Transfer Details */}
+                            {(selectedSchedule.sacrament_type === 'bone_transfer' || selectedSchedule.sacrament_type === 'transfer_of_bones') && (
+                                <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200 space-y-2 text-xs">
+                                    <h4 className="font-bold text-zinc-900 flex items-center gap-1.5 text-sm">
+                                        <Heart className="w-4 h-4 text-zinc-600" /> Bone / Ash Transfer Details
+                                    </h4>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <div className="space-y-1">
+                                            <div><strong>Deceased:</strong> {selectedSchedule.specific_data?.deceased_name || 'N/A'}</div>
+                                            <div><strong>Age at Death:</strong> {selectedSchedule.specific_data?.deceased_age || 'N/A'}</div>
+                                            <div><strong>Civil Status:</strong> {selectedSchedule.specific_data?.deceased_civil_status || 'N/A'}</div>
+                                            <div><strong>Children:</strong> {selectedSchedule.specific_data?.children_count || 'N/A'}</div>
+                                            <div><strong>Residency Address:</strong> {selectedSchedule.specific_data?.deceased_address || 'N/A'}</div>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <div><strong>Representative:</strong> {selectedSchedule.requester_name || selectedSchedule.specific_data?.representative_name || 'N/A'}</div>
+                                            <div><strong>Representative Address:</strong> {selectedSchedule.requester_address || selectedSchedule.specific_data?.representative_address || 'N/A'}</div>
+                                            <div><strong>Contact Number:</strong> {selectedSchedule.requester_contact || 'N/A'}</div>
+                                            <div><strong>Destination Cemetery:</strong> {selectedSchedule.specific_data?.target_cemetery || 'N/A'}</div>
+                                            <div><strong>Application Date:</strong> {selectedSchedule.specific_data?.date_today || 'N/A'}</div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white p-2 rounded border border-zinc-200 text-[11px] text-zinc-700 font-semibold">
+                                        Quotation Reminder: Php 100 + any amount of donation for the clergy
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Mass / Blessing for Departed Details */}
+                            {selectedSchedule.sacrament_type === 'funeral' && (
+                                <div className="space-y-3">
+                                    <h4 className="font-bold text-slate-900 flex items-center gap-1.5 text-sm">
+                                        <Heart className="w-4 h-4 text-amber-600" />
+                                        Mass / Blessing for Departed Details
+                                    </h4>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                                            <div><strong>Deceased Name:</strong> {selectedSchedule.specific_data?.deceased_name || 'N/A'}</div>
+                                            <div><strong>Date of Death:</strong> {selectedSchedule.specific_data?.date_of_death || 'N/A'}</div>
+                                            <div><strong>Age:</strong> {selectedSchedule.specific_data?.deceased_age || 'N/A'}</div>
+                                            <div><strong>Civil Status:</strong> {selectedSchedule.specific_data?.deceased_civil_status || 'N/A'}</div>
+                                            <div><strong>Spouse:</strong> {selectedSchedule.specific_data?.spouse_name || 'N/A'}</div>
+                                            <div><strong>Children Count:</strong> {selectedSchedule.specific_data?.children_count || 'N/A'}</div>
+                                            <div><strong>Cause of Death:</strong> {selectedSchedule.specific_data?.cause_of_death || 'N/A'}</div>
+                                        </div>
+                                        <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                                            <div><strong>Service:</strong> {[selectedSchedule.specific_data?.service_mass && 'Misa', selectedSchedule.specific_data?.service_blessing && 'Pagbabasbas'].filter(Boolean).join(' & ') || 'Mass / Blessing'}</div>
+                                            <div><strong>Location:</strong> {selectedSchedule.specific_data?.mass_location || 'Parish Church'}</div>
+                                            <div><strong>Registrant:</strong> {selectedSchedule.specific_data?.informant_name || selectedSchedule.requester_name || 'N/A'}</div>
+                                            <div><strong>Contact Number:</strong> {selectedSchedule.specific_data?.informant_contact || selectedSchedule.requester_contact || 'N/A'}</div>
+                                            {selectedSchedule.specific_data?.received_anointing_before_death && (
+                                                <div>
+                                                    <strong>Pahid ng Langis:</strong>{' '}
+                                                    {selectedSchedule.specific_data.received_anointing_before_death === 'yes'
+                                                        ? 'Oo (Nakatanggap bago pumanaw)'
+                                                        : selectedSchedule.specific_data.received_anointing_before_death === 'no'
+                                                        ? 'Hindi nakatanggap'
+                                                        : 'Hindi sigurado'}
+                                                </div>
+                                            )}
+                                            {selectedSchedule.specific_data?.burial_date && (
+                                                <div><strong>Araw/Oras ng Libing:</strong> {selectedSchedule.specific_data.burial_date}</div>
+                                            )}
+                                            {selectedSchedule.specific_data?.burial_location && (
+                                                <div><strong>Lugar ng Libingan:</strong> {selectedSchedule.specific_data.burial_location}</div>
+                                            )}
+                                            {selectedSchedule.specific_data?.character_traits && (
+                                                <div className="mt-2 pt-2 border-t border-slate-200">
+                                                    <strong>Character Traits (for Homily):</strong>
+                                                    <p className="text-slate-600 text-xs mt-0.5">{selectedSchedule.specific_data.character_traits}</p>
+                                                </div>
+                                            )}
+                                            {selectedSchedule.specific_data?.favorite_family_hobby && (
+                                                <div className="mt-1">
+                                                    <strong>Family Hobby / Memory:</strong>
+                                                    <p className="text-slate-600 text-xs mt-0.5">{selectedSchedule.specific_data.favorite_family_hobby}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             )}
 

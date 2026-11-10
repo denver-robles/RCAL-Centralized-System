@@ -161,6 +161,58 @@ class ConfirmationWorkflowTest extends TestCase
         $this->assertCount(0, $schedule->attachments);
     }
 
+    public function test_parishioner_can_submit_streamlined_confirmation_appointment(): void
+    {
+        $response = $this->actingAs($this->parishioner)->post('/portal/schedule-requests', [
+            'parish_id' => $this->parish->id,
+            'sacrament_type' => 'confirmation',
+            'requester_contact' => '09179876543',
+            'requester_email' => null, // Optional Gmail left blank
+            'starts_at' => null,
+            'certificate_submission_mode' => 'follow_up_office',
+            'specific_data' => [
+                'child_name' => 'Gabriel Mercado',
+                'dob' => '2012-05-10',
+                'place_of_birth' => 'Mary Mediatrix Medical Center, Lipa City',
+                'address' => 'Barangay Sabang, Lipa City, Batangas',
+                'home_parish' => 'San Sebastian Cathedral Parish',
+                'date_baptized' => '2012-08-15',
+                'place_of_baptism' => '4217 / Poblacion / Lipa City',
+                'father_name' => 'Juan Mercado',
+                'mother_name' => 'Maria Santos',
+                'godfather_name' => 'Vicente Gomez',
+                'godfather_pob' => 'Batangas City',
+                'godfather_address' => 'Barangay Kumintang Ibaba, Batangas City',
+                'godmother_name' => 'Lucia Gomez',
+                'godmother_pob' => 'San Jose, Batangas',
+                'godmother_address' => 'Barangay Taysan, San Jose, Batangas',
+            ],
+        ]);
+
+        $response->assertRedirect('/portal/dashboard');
+
+        $this->assertDatabaseHas('sacrament_schedules', [
+            'requester_user_id' => $this->parishioner->id,
+            'parish_id' => $this->parish->id,
+            'sacrament_type' => 'confirmation',
+            'title' => 'Confirmation Request - Gabriel Mercado',
+            'starts_at' => null,
+            'requester_contact' => '09179876543',
+            'certificate_submission_mode' => 'follow_up_office',
+            'status' => ScheduleStatusEnum::REQUESTED->value,
+        ]);
+
+        $schedule = SacramentSchedule::where('requester_user_id', $this->parishioner->id)->latest()->firstOrFail();
+        $this->assertCount(0, $schedule->attachments);
+        $this->assertStringContainsString('Vicente Gomez (Ninong)', $schedule->specific_data['godparents']);
+        $this->assertStringContainsString('Lucia Gomez (Ninang)', $schedule->specific_data['godparents']);
+        $this->assertEquals('Gabriel Mercado', $schedule->specific_data['candidate_name']);
+        $this->assertEquals('2012-05-10', $schedule->specific_data['candidate_dob']);
+        $this->assertEquals('Barangay Sabang, Lipa City, Batangas', $schedule->specific_data['address']);
+        $this->assertEquals('Barangay Sabang, Lipa City, Batangas', $schedule->specific_data['candidate_address']);
+        $this->assertEquals('Barangay Sabang, Lipa City, Batangas', $schedule->requester_address);
+    }
+
     public function test_schedule_attachment_preview_and_download_routes(): void
     {
         Storage::fake('public');

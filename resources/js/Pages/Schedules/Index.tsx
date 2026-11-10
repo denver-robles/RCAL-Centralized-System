@@ -88,6 +88,7 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
         ends_at: '',
         presiding_clergy_id: '',
         guest_priest_name: '',
+        add_to_clergy_directory: true,
         staff_notes: '',
         baptism_type: 'regular',
         amount: '' as string | number,
@@ -149,12 +150,18 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
             initialAmount = getRecommendedBaptismFee(startStr, initialType);
         }
 
+        const requestedGuest = schedule.specific_data?.guest_priest_name || schedule.specific_data?.requested_guest_priest_name || '';
+        const initialClergyId = schedule.presiding_clergy_id
+            ? schedule.presiding_clergy_id.toString()
+            : (schedule.requested_clergy_id ? schedule.requested_clergy_id.toString() : (requestedGuest ? 'guest' : ''));
+
         setProcessForm({
             status: schedule.status === 'requested' ? 'processing' : schedule.status,
             starts_at: startStr,
             ends_at: endStr,
-            presiding_clergy_id: schedule.presiding_clergy_id ? schedule.presiding_clergy_id.toString() : (schedule.requested_clergy_id ? schedule.requested_clergy_id.toString() : ''),
-            guest_priest_name: schedule.specific_data?.guest_priest_name || '',
+            presiding_clergy_id: initialClergyId,
+            guest_priest_name: requestedGuest,
+            add_to_clergy_directory: true,
             staff_notes: schedule.staff_notes || '',
             baptism_type: initialType,
             amount: initialAmount,
@@ -198,6 +205,7 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
             ends_at: processForm.ends_at || null,
             presiding_clergy_id: processForm.presiding_clergy_id === 'guest' ? null : (processForm.presiding_clergy_id ? parseInt(processForm.presiding_clergy_id) : null),
             guest_priest_name: processForm.presiding_clergy_id === 'guest' ? processForm.guest_priest_name : null,
+            add_to_clergy_directory: processForm.presiding_clergy_id === 'guest' ? (processForm.add_to_clergy_directory ?? true) : false,
             staff_notes: processForm.staff_notes,
             document_checklist: processForm.document_checklist,
             baptism_type: processingSchedule.sacrament_type === 'baptism' ? processForm.baptism_type : null,
@@ -348,9 +356,10 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
                         <option value="baptism">Baptism</option>
                         <option value="confirmation">Confirmation</option>
                         <option value="wedding">Wedding / Matrimony</option>
-                        <option value="funeral">Funeral / Burial</option>
+                        <option value="funeral">Mass / Blessing for Departed</option>
                         <option value="blessing">Blessing</option>
-                        <option value="anointing">Anointing of the Sick</option>
+                        <option value="sponsored_mass">Sponsored Mass</option>
+                        <option value="bone_transfer">Bone / Ash Transfer</option>
                         <option value="reconciliation">Reconciliation / Confession</option>
                     </select>
 
@@ -635,6 +644,9 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
                                 {viewingSchedule.requested_clergy && (
                                     <p className="text-amber-800"><strong>Parishioner Request:</strong> {viewingSchedule.requested_clergy.titled_name}</p>
                                 )}
+                                {viewingSchedule.specific_data?.requested_guest_priest_name && (
+                                    <p className="text-amber-800"><strong>Parishioner Request (Visiting Priest):</strong> {viewingSchedule.specific_data.requested_guest_priest_name}</p>
+                                )}
                                 <p>
                                     <strong>Submission Mode:</strong>{' '}
                                     <span className="font-semibold text-slate-800">
@@ -779,6 +791,78 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
                                                 {typeof viewingSchedule.specific_data.godparents === 'string'
                                                     ? viewingSchedule.specific_data.godparents
                                                     : JSON.stringify(viewingSchedule.specific_data.godparents)}
+                                            </div>
+                                        )}
+
+                                        {/* Mass / Blessing for Departed specific keys */}
+                                        {(viewingSchedule.specific_data.deceased_name || viewingSchedule.sacrament_type === 'funeral') && (
+                                            <div className="col-span-2 border-t border-slate-200/80 pt-1.5 mt-1">
+                                                <strong className="text-amber-900 block mb-1">Para sa Yumao (Mass / Blessing for Departed):</strong>
+                                                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-slate-700">
+                                                    {viewingSchedule.specific_data.deceased_name && (
+                                                        <div><strong>Pangalan ng Namatay:</strong> {viewingSchedule.specific_data.deceased_name}</div>
+                                                    )}
+                                                    {viewingSchedule.specific_data.date_of_death && (
+                                                        <div><strong>Petsa ng Kamatayan:</strong> {viewingSchedule.specific_data.date_of_death}</div>
+                                                    )}
+                                                    {viewingSchedule.specific_data.deceased_age && (
+                                                        <div><strong>Edad:</strong> {viewingSchedule.specific_data.deceased_age} yrs old</div>
+                                                    )}
+                                                    {viewingSchedule.specific_data.deceased_civil_status && (
+                                                        <div><strong>Civil Status:</strong> {viewingSchedule.specific_data.deceased_civil_status}</div>
+                                                    )}
+                                                    {viewingSchedule.specific_data.spouse_name && (
+                                                        <div><strong>Pangalan ng Asawa:</strong> {viewingSchedule.specific_data.spouse_name}</div>
+                                                    )}
+                                                    {viewingSchedule.specific_data.children_count && (
+                                                        <div><strong>Bilang ng Anak:</strong> {viewingSchedule.specific_data.children_count}</div>
+                                                    )}
+                                                    {viewingSchedule.specific_data.cause_of_death && (
+                                                        <div><strong>Dahilan ng Pagkamatay:</strong> {viewingSchedule.specific_data.cause_of_death}</div>
+                                                    )}
+                                                    {viewingSchedule.specific_data.deceased_address && (
+                                                        <div><strong>Tirahan:</strong> {viewingSchedule.specific_data.deceased_address}</div>
+                                                    )}
+                                                    <div>
+                                                        <strong>Uri ng Serbisyo:</strong>{' '}
+                                                        {[viewingSchedule.specific_data.service_mass && 'Misa', viewingSchedule.specific_data.service_blessing && 'Pagbabasbas'].filter(Boolean).join(' & ') || 'Misa / Pagbabasbas'}
+                                                    </div>
+                                                    {viewingSchedule.specific_data.mass_location && (
+                                                        <div><strong>Lugar ng Misa:</strong> {viewingSchedule.specific_data.mass_location}</div>
+                                                    )}
+                                                    <div>
+                                                        <strong>Nagpalista:</strong> {viewingSchedule.specific_data.informant_name || viewingSchedule.requester_name}{' '}
+                                                        ({viewingSchedule.specific_data.informant_contact || viewingSchedule.requester_contact})
+                                                    </div>
+                                                    {viewingSchedule.specific_data.received_anointing_before_death && (
+                                                        <div>
+                                                            <strong>Pahid ng Langis:</strong>{' '}
+                                                            {viewingSchedule.specific_data.received_anointing_before_death === 'yes'
+                                                                ? 'Oo (Nakatanggap bago pumanaw)'
+                                                                : viewingSchedule.specific_data.received_anointing_before_death === 'no'
+                                                                ? 'Hindi nakatanggap'
+                                                                : 'Hindi sigurado'}
+                                                        </div>
+                                                    )}
+                                                    {viewingSchedule.specific_data.burial_date && (
+                                                        <div><strong>Araw/Oras ng Libing:</strong> {viewingSchedule.specific_data.burial_date}</div>
+                                                    )}
+                                                    {viewingSchedule.specific_data.burial_location && (
+                                                        <div><strong>Lugar ng Libingan:</strong> {viewingSchedule.specific_data.burial_location}</div>
+                                                    )}
+                                                    {viewingSchedule.specific_data.character_traits && (
+                                                        <div className="col-span-2 mt-1 pt-1 border-t border-slate-200">
+                                                            <strong>Katangian ng Namatay (Homily):</strong>
+                                                            <p className="text-slate-600 mt-0.5">{viewingSchedule.specific_data.character_traits}</p>
+                                                        </div>
+                                                    )}
+                                                    {viewingSchedule.specific_data.favorite_family_hobby && (
+                                                        <div className="col-span-2 mt-1">
+                                                            <strong>Paboritong Libangan kasama ang Pamilya:</strong>
+                                                            <p className="text-slate-600 mt-0.5">{viewingSchedule.specific_data.favorite_family_hobby}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         )}
                                     </div>
@@ -1215,6 +1299,24 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
                                             <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 hover:text-slate-950">
                                                 <input
                                                     type="checkbox"
+                                                    checked={processForm.document_checklist.marriage_interview_form || false}
+                                                    onChange={(e) =>
+                                                        setProcessForm({
+                                                            ...processForm,
+                                                            document_checklist: {
+                                                                ...processForm.document_checklist,
+                                                                marriage_interview_form: e.target.checked,
+                                                            },
+                                                        })
+                                                    }
+                                                    className="rounded text-purple-600 focus:ring-purple-500"
+                                                />
+                                                <span>Canonical Interview Form (Pre-nuptial Investigation)</span>
+                                            </label>
+
+                                            <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 hover:text-slate-950">
+                                                <input
+                                                    type="checkbox"
                                                     checked={processForm.document_checklist.marriage_banns || false}
                                                     onChange={(e) =>
                                                         setProcessForm({
@@ -1317,7 +1419,249 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
                                                     }
                                                     className="rounded text-purple-600 focus:ring-purple-500"
                                                 />
-                                                <span>4R Couple Picture (Colored photo together)</span>
+                                                <span>4R Couple Picture (2 copies - Colored photo together)</span>
+                                            </label>
+                                        </>
+                                    ) : processingSchedule.sacrament_type === 'funeral' ? (
+                                        <>
+                                            <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 hover:text-slate-950">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={processForm.document_checklist.death_certificate || false}
+                                                    onChange={(e) =>
+                                                        setProcessForm({
+                                                            ...processForm,
+                                                            document_checklist: {
+                                                                ...processForm.document_checklist,
+                                                                death_certificate: e.target.checked,
+                                                            },
+                                                        })
+                                                    }
+                                                    className="rounded text-amber-600 focus:ring-amber-500"
+                                                />
+                                                <span>Death Certificate (PSA or Local Civil Registrar photocopy verified)</span>
+                                            </label>
+
+                                            <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 hover:text-slate-950">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={processForm.document_checklist.informant_valid_id || false}
+                                                    onChange={(e) =>
+                                                        setProcessForm({
+                                                            ...processForm,
+                                                            document_checklist: {
+                                                                ...processForm.document_checklist,
+                                                                informant_valid_id: e.target.checked,
+                                                            },
+                                                        })
+                                                    }
+                                                    className="rounded text-amber-600 focus:ring-amber-500"
+                                                />
+                                                <span>Valid ID of Registrant / Family Representative verified</span>
+                                            </label>
+                                        </>
+                                    ) : processingSchedule.sacrament_type === 'sponsored_mass' ? (
+                                        <>
+                                            <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 hover:text-slate-950">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={processForm.document_checklist.sponsored_mass_intention || false}
+                                                    onChange={(e) =>
+                                                        setProcessForm({
+                                                             ...processForm,
+                                                             document_checklist: {
+                                                                 ...processForm.document_checklist,
+                                                                 sponsored_mass_intention: e.target.checked,
+                                                             },
+                                                        })
+                                                    }
+                                                    className="rounded text-rose-600 focus:ring-rose-500"
+                                                />
+                                                <span>Mass Intention Details &amp; Representative Information Verified</span>
+                                            </label>
+
+                                            <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 hover:text-slate-950">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={processForm.document_checklist.sponsored_mass_clergy || false}
+                                                    onChange={(e) =>
+                                                        setProcessForm({
+                                                             ...processForm,
+                                                             document_checklist: {
+                                                                 ...processForm.document_checklist,
+                                                                 sponsored_mass_clergy: e.target.checked,
+                                                             },
+                                                        })
+                                                    }
+                                                    className="rounded text-rose-600 focus:ring-rose-500"
+                                                />
+                                                <span>Officiating Clergy Availability Confirmed</span>
+                                            </label>
+
+                                            <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 hover:text-slate-950">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={processForm.document_checklist.sponsored_mass_stipend || false}
+                                                    onChange={(e) =>
+                                                        setProcessForm({
+                                                             ...processForm,
+                                                             document_checklist: {
+                                                                 ...processForm.document_checklist,
+                                                                 sponsored_mass_stipend: e.target.checked,
+                                                             },
+                                                        })
+                                                    }
+                                                    className="rounded text-rose-600 focus:ring-rose-500"
+                                                />
+                                                <span>Sponsored Mass Stipend Received (Base ₱2,000 + Add-ons)</span>
+                                            </label>
+                                        </>
+                                    ) : (processingSchedule.sacrament_type === 'bone_transfer' || processingSchedule.sacrament_type === 'transfer_of_bones') ? (
+                                        <>
+                                            <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 hover:text-slate-950">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={processForm.document_checklist.exhumation_permit || false}
+                                                    onChange={(e) =>
+                                                        setProcessForm({
+                                                             ...processForm,
+                                                             document_checklist: {
+                                                                 ...processForm.document_checklist,
+                                                                 exhumation_permit: e.target.checked,
+                                                             },
+                                                        })
+                                                    }
+                                                    className="rounded text-zinc-600 focus:ring-zinc-500"
+                                                />
+                                                <span>Exhumation Permit (from City/Municipal Health Office verified)</span>
+                                            </label>
+
+                                            <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 hover:text-slate-950">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={processForm.document_checklist.transfer_permit || false}
+                                                    onChange={(e) =>
+                                                        setProcessForm({
+                                                             ...processForm,
+                                                             document_checklist: {
+                                                                 ...processForm.document_checklist,
+                                                                 transfer_permit: e.target.checked,
+                                                             },
+                                                        })
+                                                    }
+                                                    className="rounded text-zinc-600 focus:ring-zinc-500"
+                                                />
+                                                <span>Transfer / Transit Permit for Bones or Ashes verified</span>
+                                            </label>
+
+                                            <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 hover:text-slate-950">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={processForm.document_checklist.death_certificate || false}
+                                                    onChange={(e) =>
+                                                        setProcessForm({
+                                                             ...processForm,
+                                                             document_checklist: {
+                                                                 ...processForm.document_checklist,
+                                                                 death_certificate: e.target.checked,
+                                                             },
+                                                        })
+                                                    }
+                                                    className="rounded text-zinc-600 focus:ring-zinc-500"
+                                                />
+                                                <span>Death Certificate (PSA or Local Civil Registrar photocopy verified)</span>
+                                            </label>
+
+                                            <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 hover:text-slate-950">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={processForm.document_checklist.bone_transfer_clergy || false}
+                                                    onChange={(e) =>
+                                                        setProcessForm({
+                                                             ...processForm,
+                                                             document_checklist: {
+                                                                 ...processForm.document_checklist,
+                                                                 bone_transfer_clergy: e.target.checked,
+                                                             },
+                                                        })
+                                                    }
+                                                    className="rounded text-zinc-600 focus:ring-zinc-500"
+                                                />
+                                                <span>Presiding Clergy Availability Confirmed</span>
+                                            </label>
+
+                                            <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 hover:text-slate-950">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={processForm.document_checklist.bone_transfer_stipend || false}
+                                                    onChange={(e) =>
+                                                        setProcessForm({
+                                                             ...processForm,
+                                                             document_checklist: {
+                                                                 ...processForm.document_checklist,
+                                                                 bone_transfer_stipend: e.target.checked,
+                                                             },
+                                                        })
+                                                    }
+                                                    className="rounded text-zinc-600 focus:ring-zinc-500"
+                                                />
+                                                <span>Blessing Offering / Donation Received (₱100 + clergy donation)</span>
+                                            </label>
+                                        </>
+                                    ) : processingSchedule.sacrament_type === 'blessing' ? (
+                                        <>
+                                            <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 hover:text-slate-950">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={processForm.document_checklist.blessing_location_verified || false}
+                                                    onChange={(e) =>
+                                                        setProcessForm({
+                                                             ...processForm,
+                                                             document_checklist: {
+                                                                 ...processForm.document_checklist,
+                                                                 blessing_location_verified: e.target.checked,
+                                                             },
+                                                        })
+                                                    }
+                                                    className="rounded text-emerald-600 focus:ring-emerald-500"
+                                                />
+                                                <span>Blessing Venue &amp; Exact Location Details Verified</span>
+                                            </label>
+
+                                            <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 hover:text-slate-950">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={processForm.document_checklist.blessing_clergy_confirmed || false}
+                                                    onChange={(e) =>
+                                                        setProcessForm({
+                                                             ...processForm,
+                                                             document_checklist: {
+                                                                 ...processForm.document_checklist,
+                                                                 blessing_clergy_confirmed: e.target.checked,
+                                                             },
+                                                        })
+                                                    }
+                                                    className="rounded text-emerald-600 focus:ring-emerald-500"
+                                                />
+                                                <span>Presiding Clergy Schedule Confirmed</span>
+                                            </label>
+
+                                            <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 hover:text-slate-950">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={processForm.document_checklist.blessing_stipend || false}
+                                                    onChange={(e) =>
+                                                        setProcessForm({
+                                                             ...processForm,
+                                                             document_checklist: {
+                                                                 ...processForm.document_checklist,
+                                                                 blessing_stipend: e.target.checked,
+                                                             },
+                                                        })
+                                                    }
+                                                    className="rounded text-emerald-600 focus:ring-emerald-500"
+                                                />
+                                                <span>Blessing Offering / Donation Received (₱100 + clergy donation)</span>
                                             </label>
                                         </>
                                     ) : (
@@ -1510,20 +1854,38 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
                                             Parishioner requested: <strong>{processingSchedule.requested_clergy.titled_name}</strong>
                                         </p>
                                     )}
+                                    {processingSchedule.specific_data?.requested_guest_priest_name && (
+                                        <p className="text-[10px] text-purple-900 mt-1 bg-purple-50 border border-purple-200 rounded-lg p-1.5">
+                                            Parishioner requested (Visiting Priest): <strong>{processingSchedule.specific_data.requested_guest_priest_name}</strong>
+                                        </p>
+                                    )}
                                 </div>
 
                                 {processForm.presiding_clergy_id === 'guest' && (
-                                    <div>
-                                        <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                                            Guest Priest Name
+                                    <div className="space-y-2">
+                                        <div>
+                                            <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                                                Guest Priest Name
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={processForm.guest_priest_name}
+                                                onChange={(e) => setProcessForm({ ...processForm, guest_priest_name: e.target.value })}
+                                                placeholder="e.g. Rev. Fr. Juan Santos, SDB"
+                                                className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs"
+                                            />
+                                        </div>
+                                        <label className="flex items-center gap-2 cursor-pointer text-[11px] text-amber-950 bg-amber-50/90 p-2 rounded-lg border border-amber-200">
+                                            <input
+                                                type="checkbox"
+                                                checked={processForm.add_to_clergy_directory ?? true}
+                                                onChange={(e) => setProcessForm({ ...processForm, add_to_clergy_directory: e.target.checked })}
+                                                className="rounded text-amber-600 focus:ring-amber-500"
+                                            />
+                                            <span>
+                                                <strong>Add to Clergy Directory</strong> upon confirming (will be saved for future selection).
+                                            </span>
                                         </label>
-                                        <input
-                                            type="text"
-                                            value={processForm.guest_priest_name}
-                                            onChange={(e) => setProcessForm({ ...processForm, guest_priest_name: e.target.value })}
-                                            placeholder="e.g. Rev. Fr. Juan Santos"
-                                            className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs"
-                                        />
                                     </div>
                                 )}
                             </div>
