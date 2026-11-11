@@ -169,6 +169,7 @@ export interface SacramentalRecord {
     witnesses?: string | null;
     place_of_event?: string | null;
     register_notes?: string | null;
+    book_data?: Record<string, any> | null;
     status: 'registered' | 'annotated' | 'voided';
     created_at: string;
     annotations?: CanonicalAnnotation[];
@@ -314,6 +315,20 @@ export interface AuditLog {
     request_method?: string | null;
     note?: string | null;
     created_at: string;
+}
+
+export interface CertificateTemplate {
+    id: number;
+    name: string;
+    sacrament_type: 'baptism' | 'confirmation';
+    filename: string;
+    placeholders: string[];
+    locked_elements?: string[] | null;
+    paper_size: 'short' | 'a4';
+    parish_id: number;
+    parish?: Parish;
+    created_at: string;
+    updated_at: string;
 }
 
 export type PageProps<T extends Record<string, unknown> = Record<string, unknown>> = T & {
