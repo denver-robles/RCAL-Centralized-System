@@ -8,7 +8,6 @@ use App\Models\Parish;
 use App\Models\User;
 use App\Services\AuditService;
 use App\Services\IdentityVerificationService;
-use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,6 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -31,6 +31,7 @@ class AuthController extends Controller
     {
         if (Auth::check()) {
             $user = Auth::user();
+
             return $user->isParishioner()
                 ? redirect()->route('portal.dashboard')
                 : redirect()->route('dashboard');
@@ -60,7 +61,7 @@ class AuthController extends Controller
             ->orWhere('email', $identifier)
             ->first();
 
-        if (!$user || !Hash::check($password, $user->password)) {
+        if (! $user || ! Hash::check($password, $user->password)) {
             AuditService::log(
                 $request,
                 AuditActionEnum::LOGIN_FAILED,
@@ -74,7 +75,7 @@ class AuthController extends Controller
             ]);
         }
 
-        if (!$user->is_active) {
+        if (! $user->is_active) {
             AuditService::log(
                 $request,
                 AuditActionEnum::LOGIN_FAILED,
@@ -129,7 +130,7 @@ class AuthController extends Controller
             ->orWhere('username', $identifier)
             ->first();
 
-        if (!$user) {
+        if (! $user) {
             AuditService::log(
                 $request,
                 AuditActionEnum::LOGIN_FAILED,
@@ -144,7 +145,7 @@ class AuthController extends Controller
             ]);
         }
 
-        if (!$user->is_active) {
+        if (! $user->is_active) {
             AuditService::log(
                 $request,
                 AuditActionEnum::LOGIN_FAILED,
@@ -158,7 +159,7 @@ class AuthController extends Controller
             ]);
         }
 
-        if (!$user->face_reference_image) {
+        if (! $user->face_reference_image) {
             return back()->withErrors([
                 'captured_image' => 'No enrolled biometric reference photo found for this account. Please sign in with password first.',
             ]);
@@ -178,8 +179,8 @@ class AuthController extends Controller
         $referenceImage = preg_replace('#^data:image/\w+;base64,#i', '', $user->face_reference_image);
 
         // Server-Side Presentation Attack Detection (PAD): Reject screens, mobile phones, and printed photos
-        $padCheck = \App\Services\IdentityVerificationService::verifyLivenessAndQuality($capturedImage);
-        if (!$padCheck['passed']) {
+        $padCheck = IdentityVerificationService::verifyLivenessAndQuality($capturedImage);
+        if (! $padCheck['passed']) {
             AuditService::log(
                 $request,
                 AuditActionEnum::LOGIN_FAILED,
@@ -196,7 +197,7 @@ class AuthController extends Controller
         // Call Face++ Compare Endpoint
         try {
             $client = Http::asForm()->timeout(15);
-            if (!config('services.facepp.verify_ssl', false)) {
+            if (! config('services.facepp.verify_ssl', true)) {
                 $client = $client->withoutVerifying();
             }
 
@@ -210,14 +211,14 @@ class AuthController extends Controller
             $result = $response->json();
         } catch (\Throwable $e) {
             return back()->withErrors([
-                'captured_image' => 'Face recognition network error: ' . $e->getMessage(),
+                'captured_image' => 'Face recognition network error: '.$e->getMessage(),
             ]);
         }
 
         // Handle Face++ API errors (e.g. no face detected in one of the images)
         if (isset($result['error_message'])) {
             return back()->withErrors([
-                'captured_image' => 'Face++ API Error: ' . $result['error_message'],
+                'captured_image' => 'Face++ API Error: '.$result['error_message'],
             ]);
         }
 
@@ -271,7 +272,7 @@ class AuthController extends Controller
         $user = $request->user();
 
         // Biometric face biometrics of registered parishioners are canonical records and permanently sealed
-        if ($user->isParishioner() && !empty($user->face_reference_image)) {
+        if ($user->isParishioner() && ! empty($user->face_reference_image)) {
             abort(403, 'Biometric credentials for registered parishioners are canonical and permanently sealed. Contact the parish chancery for identity re-issuance.');
         }
 
@@ -333,6 +334,7 @@ class AuthController extends Controller
     {
         if (Auth::check()) {
             $user = Auth::user();
+
             return $user->isParishioner()
                 ? redirect()->route('portal.dashboard')
                 : redirect()->route('dashboard');
@@ -371,12 +373,26 @@ class AuthController extends Controller
             $validated['ocr_text'] ?? null
         );
 
-        if (!$result['success']) {
+        if (! $result['success']) {
+            $request->session()->forget('verified_id_registration');
+
             return response()->json([
                 'success' => false,
                 'error' => $result['error'] ?? 'Government ID verification failed. Please ensure the document is clear.',
             ], 422);
         }
+
+        $request->session()->put('verified_id_registration', [
+            'fingerprint' => $this->buildIdVerificationFingerprint(
+                $validated['id_image'],
+                $validated['id_type'],
+                $validated['first_name'],
+                $validated['middle_name'] ?? null,
+                $validated['last_name']
+            ),
+            'result' => $result,
+            'verified_at' => now()->timestamp,
+        ]);
 
         return response()->json($result);
     }
@@ -396,7 +412,7 @@ class AuthController extends Controller
             $validated['live_selfie']
         );
 
-        if (isset($result['error']) || !$result['matched']) {
+        if (isset($result['error']) || ! $result['matched']) {
             return response()->json([
                 'matched' => false,
                 'confidence' => $result['confidence'] ?? 0,
@@ -427,10 +443,10 @@ class AuthController extends Controller
             'id_type' => ['required', 'string', 'max:80'],
             'id_image' => ['required', 'string'],
             'live_selfie' => ['required', 'string'],
+            'ocr_text' => ['nullable', 'string'],
         ]);
 
-        // 1. Verify Government ID
-        $idResult = IdentityVerificationService::verifyAndExtractId(
+        $fingerprint = $this->buildIdVerificationFingerprint(
             $validated['id_image'],
             $validated['id_type'],
             $validated['first_name'],
@@ -438,7 +454,27 @@ class AuthController extends Controller
             $validated['last_name']
         );
 
-        if (!$idResult['success']) {
+        $sessionVerification = $request->session()->get('verified_id_registration');
+        $hasValidSessionVerification = is_array($sessionVerification)
+            && ($sessionVerification['fingerprint'] ?? null) === $fingerprint
+            && isset($sessionVerification['verified_at'])
+            && (now()->timestamp - (int) $sessionVerification['verified_at']) <= 3600
+            && is_array($sessionVerification['result'] ?? null)
+            && ($sessionVerification['result']['success'] ?? false) === true;
+
+        // 1. Verify Government ID (reuse matching Step 2 session verification or run full check)
+        $idResult = $hasValidSessionVerification
+            ? $sessionVerification['result']
+            : IdentityVerificationService::verifyAndExtractId(
+                $validated['id_image'],
+                $validated['id_type'],
+                $validated['first_name'],
+                $validated['middle_name'] ?? null,
+                $validated['last_name'],
+                $validated['ocr_text'] ?? null
+            );
+
+        if (! $idResult['success']) {
             return back()->withErrors([
                 'id_image' => $idResult['error'] ?? 'Government ID document could not be verified.',
             ])->withInput();
@@ -450,18 +486,18 @@ class AuthController extends Controller
             $validated['live_selfie']
         );
 
-        if (!$faceResult['matched']) {
+        if (! $faceResult['matched']) {
             return back()->withErrors([
                 'live_selfie' => $faceResult['error'] ?? ($faceResult['message'] ?? 'Facial biometric verification failed.'),
             ])->withInput();
         }
 
         $firstName = trim($validated['first_name']);
-        $middleName = !empty($validated['middle_name']) ? trim($validated['middle_name']) : null;
+        $middleName = ! empty($validated['middle_name']) ? trim($validated['middle_name']) : null;
         $lastName = trim($validated['last_name']);
-        $suffix = !empty($validated['name_suffix']) ? trim($validated['name_suffix']) : null;
+        $suffix = ! empty($validated['name_suffix']) ? trim($validated['name_suffix']) : null;
 
-        $displayName = trim("{$firstName} " . ($middleName ? "{$middleName} " : '') . "{$lastName}" . ($suffix ? " {$suffix}" : ''));
+        $displayName = trim("{$firstName} ".($middleName ? "{$middleName} " : '')."{$lastName}".($suffix ? " {$suffix}" : ''));
 
         // Generate clean and unique username
         $baseUsername = Str::slug("{$firstName}.{$lastName}", '.');
@@ -473,7 +509,7 @@ class AuthController extends Controller
         $username = $baseUsername;
         $counter = 1;
         while (User::where('username', $username)->exists()) {
-            $username = $baseUsername . $counter;
+            $username = $baseUsername.$counter;
             $counter++;
         }
 
@@ -513,6 +549,7 @@ class AuthController extends Controller
         );
 
         Auth::login($user);
+        $request->session()->forget('verified_id_registration');
         $request->session()->regenerate();
 
         return redirect()->route('portal.dashboard')->with(
@@ -522,12 +559,34 @@ class AuthController extends Controller
     }
 
     /**
+     * Build a SHA-256 fingerprint binding a verified ID image to the applicant details.
+     */
+    private function buildIdVerificationFingerprint(
+        string $idImage,
+        string $idType,
+        string $firstName,
+        ?string $middleName,
+        string $lastName
+    ): string {
+        $cleanImage = IdentityVerificationService::sanitizeBase64($idImage);
+
+        return hash('sha256', implode('|', [
+            hash('sha256', $cleanImage),
+            strtolower(trim($idType)),
+            strtolower(trim($firstName)),
+            strtolower(trim((string) $middleName)),
+            strtolower(trim($lastName)),
+        ]));
+    }
+
+    /**
      * Show the forgot password view.
      */
     public function showForgotPassword(): Response|RedirectResponse
     {
         if (Auth::check()) {
             $user = Auth::user();
+
             return $user->isParishioner()
                 ? redirect()->route('portal.dashboard')
                 : redirect()->route('dashboard');
@@ -553,36 +612,20 @@ class AuthController extends Controller
             ->orWhere('username', $identifier)
             ->first();
 
-        if (!$user) {
-            return back()->with('status', 'If that account exists in our diocesan records, a recovery link has been created.');
+        if ($user) {
+            $token = Password::broker()->createToken($user);
+            $user->sendPasswordResetNotification($token);
+
+            AuditService::log(
+                $request,
+                AuditActionEnum::UPDATE,
+                'user',
+                $user->id,
+                "Password recovery email dispatched for {$user->username} ({$user->email})"
+            );
         }
 
-        $token = Str::random(60);
-
-        DB::table('password_reset_tokens')->updateOrInsert(
-            ['email' => $user->email],
-            [
-                'token' => Hash::make($token),
-                'created_at' => now(),
-            ]
-        );
-
-        $resetUrl = route('password.reset', [
-            'token' => $token,
-            'email' => $user->email,
-        ]);
-
-        AuditService::log(
-            $request,
-            AuditActionEnum::UPDATE,
-            'user',
-            $user->id,
-            "Password recovery token generated for {$user->username} ({$user->email})"
-        );
-
-        return back()
-            ->with('status', 'A password recovery link has been generated. You may now reset your password directly.')
-            ->with('reset_url', $resetUrl);
+        return back()->with('status', 'If that account exists in our diocesan records, a password recovery link has been sent to the registered email address.');
     }
 
     /**
@@ -592,6 +635,7 @@ class AuthController extends Controller
     {
         if (Auth::check()) {
             $user = Auth::user();
+
             return $user->isParishioner()
                 ? redirect()->route('portal.dashboard')
                 : redirect()->route('dashboard');
@@ -614,38 +658,21 @@ class AuthController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
-        $record = DB::table('password_reset_tokens')
-            ->where('email', $validated['email'])
-            ->first();
+        /** @var User|null $user */
+        $user = User::where('email', $validated['email'])->first();
 
-        if (!$record || !Hash::check($validated['token'], $record->token)) {
+        if (! $user || ! Password::broker()->tokenExists($user, $validated['token'])) {
             throw ValidationException::withMessages([
                 'email' => ['This password reset link is invalid or has expired.'],
             ]);
         }
 
-        // Check if token is older than 60 minutes
-        if (Carbon::parse($record->created_at)->addMinutes(60)->isPast()) {
-            DB::table('password_reset_tokens')->where('email', $validated['email'])->delete();
-            throw ValidationException::withMessages([
-                'email' => ['This password reset token has expired. Please request a new link.'],
-            ]);
-        }
-
-        /** @var User|null $user */
-        $user = User::where('email', $validated['email'])->first();
-
-        if (!$user) {
-            throw ValidationException::withMessages([
-                'email' => ['We could not find an account associated with this email address.'],
-            ]);
-        }
-
         $user->forceFill([
             'password' => Hash::make($validated['password']),
+            'must_change_password' => false,
         ])->save();
 
-        DB::table('password_reset_tokens')->where('email', $validated['email'])->delete();
+        Password::broker()->deleteToken($user);
 
         AuditService::log(
             $request,
@@ -658,6 +685,65 @@ class AuthController extends Controller
         return redirect()->route('login')->with(
             'success',
             'Your password has been successfully reset. You may now sign in with your new credentials.'
+        );
+    }
+
+    /**
+     * Show mandatory first-login password change view.
+     */
+    public function showChangePassword(Request $request): Response|RedirectResponse
+    {
+        $user = $request->user();
+
+        if (! $user) {
+            return redirect()->route('login');
+        }
+
+        if (! $user->must_change_password) {
+            return $user->isParishioner()
+                ? redirect()->route('portal.dashboard')
+                : redirect()->route('dashboard');
+        }
+
+        return Inertia::render('Auth/ChangePassword');
+    }
+
+    /**
+     * Handle first-login password change.
+     */
+    public function updateInitialPassword(Request $request): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if (! $user) {
+            return redirect()->route('login');
+        }
+
+        $validated = $request->validate([
+            'password' => ['required', 'string', 'min:8', 'confirmed', 'different:old_password'],
+        ]);
+
+        $user->forceFill([
+            'password' => Hash::make($validated['password']),
+            'must_change_password' => false,
+        ])->save();
+
+        AuditService::log(
+            $request,
+            AuditActionEnum::UPDATE,
+            'user',
+            $user->id,
+            "Initial forced password change successfully completed for user {$user->username}"
+        );
+
+        $target = $user->isParishioner()
+            ? route('portal.dashboard')
+            : route('dashboard');
+
+        return redirect()->to($target)->with(
+            'success',
+            'Your password has been successfully updated. Welcome to the RCAL Centralized System.'
         );
     }
 }

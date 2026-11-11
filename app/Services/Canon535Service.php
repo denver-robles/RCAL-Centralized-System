@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Enums\AnnotationTypeEnum;
 use App\Enums\AuditActionEnum;
-use App\Enums\LegitimacyStatusEnum;
 use App\Enums\SacramentTypeEnum;
 use App\Models\CanonicalAnnotation;
 use App\Models\Person;
@@ -22,7 +21,7 @@ class Canon535Service
     public function transcribeRecord(array $data, User $clerk): SacramentalRecord
     {
         // Guard: Staff may only transcribe into their assigned parish
-        if (!$clerk->isArchdioceseWide() && (int)$data['originating_parish_id'] !== (int)$clerk->home_parish_id) {
+        if (! $clerk->isArchdioceseWide() && (int) $data['originating_parish_id'] !== (int) $clerk->home_parish_id) {
             throw ValidationException::withMessages([
                 'originating_parish_id' => 'Your account may only transcribe into its own parish\'s registers.',
             ]);
@@ -60,7 +59,7 @@ class Canon535Service
             // Inscribe Spouse if Marriage register
             $spouseId = null;
             if ($data['sacrament_type'] === SacramentTypeEnum::MARRIAGE->value || $data['sacrament_type'] === 'marriage') {
-                if (!empty($data['spouse_first_name']) && !empty($data['spouse_last_name'])) {
+                if (! empty($data['spouse_first_name']) && ! empty($data['spouse_last_name'])) {
                     $spouse = Person::create([
                         'first_name' => $data['spouse_first_name'],
                         'last_name' => $data['spouse_last_name'],
@@ -158,7 +157,7 @@ class Canon535Service
      */
     public function voidEntry(SacramentalRecord $record, string $reason, User $clerk): void
     {
-        if (!$clerk->isArchdioceseWide() && $clerk->home_parish_id !== $record->originating_parish_id) {
+        if (! $clerk->isArchdioceseWide() && $clerk->home_parish_id !== $record->originating_parish_id) {
             throw ValidationException::withMessages([
                 'void' => 'Unauthorized to void records from other parishes.',
             ]);

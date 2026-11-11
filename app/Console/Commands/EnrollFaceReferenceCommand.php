@@ -34,19 +34,22 @@ class EnrollFaceReferenceCommand extends Command
             ->orWhere('username', $identifier)
             ->first();
 
-        if (!$user) {
+        if (! $user) {
             $this->error("User not found for identifier: {$identifier}");
+
             return Command::FAILURE;
         }
 
-        if (!file_exists($imagePath)) {
+        if (! file_exists($imagePath)) {
             $this->error("Image file does not exist at: {$imagePath}");
+
             return Command::FAILURE;
         }
 
         $imageContents = file_get_contents($imagePath);
         if ($imageContents === false) {
-            $this->error("Failed to read image file.");
+            $this->error('Failed to read image file.');
+
             return Command::FAILURE;
         }
 
@@ -57,6 +60,7 @@ class EnrollFaceReferenceCommand extends Command
         ]);
 
         $this->info("✓ Face reference photo successfully enrolled for {$user->display_name} ({$user->username} / {$user->email}).");
+
         return Command::SUCCESS;
     }
 }

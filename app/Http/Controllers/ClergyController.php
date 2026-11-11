@@ -28,8 +28,8 @@ class ClergyController extends Controller
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('first_name', 'like', "%{$search}%")
-                  ->orWhere('last_name', 'like', "%{$search}%")
-                  ->orWhere('middle_name', 'like', "%{$search}%");
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('middle_name', 'like', "%{$search}%");
             });
         }
 
@@ -77,9 +77,9 @@ class ClergyController extends Controller
 
         $clergy = Clergy::create([
             'first_name' => trim($validated['first_name']),
-            'middle_name' => !empty($validated['middle_name']) ? trim($validated['middle_name']) : null,
+            'middle_name' => ! empty($validated['middle_name']) ? trim($validated['middle_name']) : null,
             'last_name' => trim($validated['last_name']),
-            'suffix' => !empty($validated['suffix']) ? $validated['suffix'] : null,
+            'suffix' => ! empty($validated['suffix']) ? $validated['suffix'] : null,
             'title' => ClergyTitleEnum::from($validated['title']),
             'ordination_date' => $validated['ordination_date'] ?? null,
             'date_of_birth' => $validated['date_of_birth'] ?? null,
@@ -87,7 +87,7 @@ class ClergyController extends Controller
             'is_active' => true,
         ]);
 
-        if (!empty($validated['parish_id'])) {
+        if (! empty($validated['parish_id'])) {
             ClergyAssignment::create([
                 'clergy_id' => $clergy->id,
                 'parish_id' => $validated['parish_id'],

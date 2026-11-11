@@ -32,22 +32,22 @@ export default function Print({ certificate }: Props) {
             <Head title={`Print Certificate ${certificate.certificate_number} - RCAL PIMS`} />
 
             {/* Print toolbar - hidden during print */}
-            <div className="max-w-4xl mx-auto mb-6 flex items-center justify-between bg-white border border-slate-200 p-4 rounded-xl text-slate-900 print:hidden shadow-sm">
+            <div className="max-w-4xl mx-auto mb-6 flex items-center justify-between bg-white border border-slate-200 p-4.5 rounded-xl text-slate-900 print:hidden shadow-sm">
                 <div>
-                    <span className="font-bold text-sm text-slate-900">Official Archdiocesan Certificate Preview</span>
-                    <p className="text-xs text-slate-500">Ready for Archdiocesan archival stock parchment printing.</p>
+                    <span className="font-bold text-base text-slate-900">Official Archdiocesan Certificate Preview</span>
+                    <p className="text-sm text-slate-600">Ready for Archdiocesan archival stock parchment printing.</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => window.print()}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow-xs transition-all duration-200"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-sm rounded-xl shadow-xs transition-all duration-200"
                     >
                         <Printer className="w-4 h-4" />
                         Print Document (Ctrl+P)
                     </button>
                     <button
                         onClick={() => window.close()}
-                        className="btn-cancel text-xs py-2 px-4 rounded-xl"
+                        className="btn-cancel text-sm py-2.5 px-4 rounded-xl"
                     >
                         Close
                     </button>
@@ -197,13 +197,23 @@ export default function Print({ certificate }: Props) {
                         </div>
                     </div>
 
-                    <div className="text-right space-y-0.5">
-                        <div className="flex items-center justify-end gap-1 text-emerald-800 font-semibold">
-                            <ShieldCheck className="w-3.5 h-3.5" />
-                            Archdiocesan Cryptographic Token
-                        </div>
-                        <div className="font-mono text-[9px] text-slate-500 max-w-xs truncate">
-                            {certificate.verification_token}
+                    <div className="flex items-center gap-3">
+                        <img
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&margin=4&data=${encodeURIComponent(typeof window !== 'undefined' ? `${window.location.origin}/verify/${certificate.verification_token}` : `/verify/${certificate.verification_token}`)}`}
+                            alt="Verification QR Code"
+                            className="w-14 h-14 border border-slate-300 rounded p-0.5 bg-white shrink-0"
+                        />
+                        <div className="text-right space-y-0.5">
+                            <div className="flex items-center justify-end gap-1 text-emerald-800 font-semibold">
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                                Archdiocesan Cryptographic Token
+                            </div>
+                            <div className="font-mono text-[9px] text-slate-500 max-w-xs truncate">
+                                {certificate.verification_token}
+                            </div>
+                            <div className="text-[9px] text-slate-400">
+                                Scan QR code to verify canonical validity
+                            </div>
                         </div>
                     </div>
                 </div>

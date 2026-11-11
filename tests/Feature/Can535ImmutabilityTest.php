@@ -4,9 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\AnnotationTypeEnum;
 use App\Enums\RoleEnum;
-use App\Enums\SacramentTypeEnum;
 use App\Models\Parish;
-use App\Models\SacramentalRecord;
 use App\Models\User;
 use App\Models\Vicariate;
 use App\Services\Canon535Service;
@@ -17,7 +15,9 @@ use Tests\TestCase;
 class Can535ImmutabilityTest extends TestCase
 {
     protected Parish $parish;
+
     protected User $staff;
+
     protected Canon535Service $service;
 
     protected function setUp(): void

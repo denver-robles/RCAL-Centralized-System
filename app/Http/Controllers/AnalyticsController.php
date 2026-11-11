@@ -2,14 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\SacramentTypeEnum;
-use App\Models\CertificateRequest;
 use App\Models\Parish;
 use App\Models\SacramentalRecord;
 use App\Models\Vicariate;
 use App\Services\ParishScopingService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 

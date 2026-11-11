@@ -15,12 +15,19 @@ use Tests\TestCase;
 class ParishIsolationTest extends TestCase
 {
     protected Parish $parishA;
+
     protected Parish $parishB;
+
     protected User $staffA;
+
     protected User $staffB;
+
     protected User $chanceryUser;
+
     protected User $parishioner;
+
     protected SacramentalRecord $recordA;
+
     protected SacramentalRecord $recordB;
 
     protected function setUp(): void

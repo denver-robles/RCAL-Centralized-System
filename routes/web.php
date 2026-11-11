@@ -5,13 +5,15 @@ use App\Http\Controllers\AuditController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CertificatesController;
 use App\Http\Controllers\ClergyController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PortalController;
+use App\Http\Controllers\PrivateStorageController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\RecordsController;
+use App\Http\Controllers\ScheduleAttachmentController;
 use App\Http\Controllers\SchedulesController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\StripeIdentityController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -20,27 +22,27 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 Route::get('/', [PublicController::class, 'index'])->name('public.home');
-Route::get('/track', [PublicController::class, 'track'])->name('public.track');
-Route::get('/verify/{token}', [PublicController::class, 'verifyCertificate'])->name('public.verify');
+Route::get('/track', [PublicController::class, 'track'])->middleware('throttle:30,1')->name('public.track');
+Route::get('/verify/{token}', [PublicController::class, 'verifyCertificate'])->middleware('throttle:30,1')->name('public.verify');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login'])->name('login.post');
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1')->name('login.post');
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-    Route::post('/register', [AuthController::class, 'register'])->name('register.post');
+    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:10,1')->name('register.post');
 
     // Self-Service Password Recovery
     Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
-    Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email');
+    Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->middleware('throttle:5,1')->name('password.email');
     Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword'])->name('password.reset');
-    Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
+    Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1')->name('password.update');
 
     // Parishioner ID Document & Biometric Verification Wizard
-    Route::post('/register/verify-id', [AuthController::class, 'verifyIdDocument'])->name('register.verify-id');
-    Route::post('/register/verify-face', [AuthController::class, 'verifyFaceBiometrics'])->name('register.verify-face');
+    Route::post('/register/verify-id', [AuthController::class, 'verifyIdDocument'])->middleware('throttle:10,1')->name('register.verify-id');
+    Route::post('/register/verify-face', [AuthController::class, 'verifyFaceBiometrics'])->middleware('throttle:10,1')->name('register.verify-face');
 
     // Face++ Biometric Facial Recognition Login
-    Route::post('/login/face', [AuthController::class, 'faceLogin'])->name('login.face');
+    Route::post('/login/face', [AuthController::class, 'faceLogin'])->middleware('throttle:5,1')->name('login.face');
 });
 
 // Webhook endpoint (Must be public, not protected by auth middleware or CSRF)
@@ -48,7 +50,18 @@ Route::post('/stripe/webhook', [StripeIdentityController::class, 'handleWebhook'
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    Route::get('/change-password', [AuthController::class, 'showChangePassword'])->name('password.change');
+    Route::post('/change-password', [AuthController::class, 'updateInitialPassword'])->name('password.change.update');
     Route::post('/user/face-reference', [AuthController::class, 'updateFaceReference'])->name('user.face-reference');
+
+    // Secure Sacrament Schedule Attachment Viewing & Download (Bypasses symlink permission issues)
+    Route::get('/schedule-attachments/{attachment}/view', [ScheduleAttachmentController::class, 'view'])->name('schedule-attachments.view');
+    Route::get('/schedule-attachments/{attachment}/download', [ScheduleAttachmentController::class, 'download'])->name('schedule-attachments.download');
+
+    // Private Protected Document & Receipt Storage Routes
+    Route::get('/documents/{documentRequest}/id-document', [PrivateStorageController::class, 'downloadIdDocument'])->name('documents.id-document');
+    Route::get('/schedules/{schedule}/receipt', [PrivateStorageController::class, 'downloadScheduleReceipt'])->name('schedules.receipt');
+    Route::get('/schedules/attachments/{attachment}', [PrivateStorageController::class, 'downloadScheduleAttachment'])->name('schedules.attachment');
 });
 
 /*
@@ -71,11 +84,11 @@ Route::middleware(['auth'])->prefix('portal')->name('portal.')->group(function (
     Route::get('/dashboard', [PortalController::class, 'dashboard'])->name('dashboard');
     Route::get('/requests/create', [PortalController::class, 'createRequest'])->name('requests.create');
     Route::post('/requests', [PortalController::class, 'storeRequest'])->name('requests.store');
-    
+
     // Sacrament Schedule Requests
     Route::get('/schedule-requests/create', [PortalController::class, 'createScheduleRequest'])->name('schedule-requests.create');
     Route::post('/schedule-requests', [PortalController::class, 'storeScheduleRequest'])->name('schedule-requests.store');
-    
+
     // Sacrament Schedule Payment
     Route::get('/schedule-requests/{schedule}/payment', [PortalController::class, 'paymentForm'])->name('schedule-requests.payment');
     Route::post('/schedule-requests/{schedule}/payment', [PortalController::class, 'submitPayment'])->name('schedule-requests.payment.submit');
@@ -113,12 +126,14 @@ Route::middleware(['auth', 'staff'])->group(function () {
 
     // Sacrament Schedules (Zero Mass Intentions)
     Route::get('/schedules', [SchedulesController::class, 'index'])->name('schedules.index');
+    Route::get('/schedules/calendar', [SchedulesController::class, 'calendar'])->name('schedules.calendar');
     Route::get('/schedules/create', [SchedulesController::class, 'create'])->name('schedules.create');
     Route::get('/schedules/settings', [SchedulesController::class, 'settings'])->name('schedules.settings');
     Route::post('/schedules/settings', [SchedulesController::class, 'storeSettings'])->name('schedules.settings.store');
     Route::get('/schedules/check-conflict', [SchedulesController::class, 'checkConflict'])->name('schedules.check-conflict');
     Route::post('/schedules', [SchedulesController::class, 'store'])->name('schedules.store');
     Route::post('/schedules/{schedule}/status', [SchedulesController::class, 'updateStatus'])->name('schedules.status');
+    Route::post('/schedules/{schedule}/verify-payment', [SchedulesController::class, 'verifyPayment'])->name('schedules.verify-payment');
 
     // Directories: Clergy & Account Directory
     Route::get('/clergy', [ClergyController::class, 'index'])->name('clergy.index');

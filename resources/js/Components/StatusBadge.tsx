@@ -29,6 +29,8 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, className = ''
             case 'pending':
             case 'requested':
                 return 'bg-slate-100 text-slate-700 border-slate-300 font-medium';
+            case 'on_hold':
+                return 'bg-amber-100 text-amber-900 border-amber-300 font-medium';
             case 'rejected':
             case 'cancelled':
             case 'record_not_found':
@@ -45,7 +47,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, className = ''
 
     return (
         <span
-            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium tracking-wide border shadow-sm ${getBadgeStyle(
+            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold tracking-wide border shadow-2xs ${getBadgeStyle(
                 status
             )} ${className}`}
         >

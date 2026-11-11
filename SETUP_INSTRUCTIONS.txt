@@ -99,33 +99,19 @@ TERMINAL 2 (Frontend Hot-Reload):
 
 
 --------------------------------------------------------------------------------
-ORIGINAL SYSTEM LOGIN CREDENTIALS
+ADMINISTRATOR ACCOUNT & ENVIRONMENT CREDENTIALS
 --------------------------------------------------------------------------------
-The database seeder provisions the exact accounts from the original project:
-
 1. ARCHDIOCESE ADMINISTRATOR (Chancery Curia)
    - Username : admin  (or Email: chancery@rcal.local)
-   - Password : adminpw
+   - Password : Set via ADMIN_PASSWORD in your .env file before running seeders.
+   - Note     : If left unconfigured during initial local setup, the system 
+                mandates an immediate password change upon first login.
    - Scope    : Full Curia Administrator, Directories & System Controls
 
-2. PARISH STAFF 1 (St. Sebastian Cathedral)
-   - Username : parish1  (or Email: parish1@example.ph)
-   - Password : parishpw
-   - Scope    : Cathedral Canonical Registers, Certificates & Schedules
-
-3. PARISH STAFF 2 (Our Lady of the Assumption)
-   - Username : parish2  (or Email: parish2@example.ph)
-   - Password : parishpw
-   - Scope    : Assumption Parish Registers & Records
-
-4. PARISH STAFF 3 (San Carlos Borromeo)
-   - Username : parish3  (or Email: parish3@example.ph)
-   - Password : parishpw
-   - Scope    : San Carlos Borromeo Registers & Records
-
-5. PARISHIONER (Self-Service)
-   - Email    : juan@example.ph  (or Username: juan@example.ph)
-   - Password : parishpw
-   - Scope    : Personal Document Claims, Request Tracking & Status
+2. DEMO PARISH & PARISHIONER ACCOUNTS (Local Environment Only)
+   - When seeded in local/testing (APP_ENV=local), baseline demo staff accounts
+     (parish1, parish2, parish3) and demo parishioner (juan@example.ph) are 
+     provisioned for interface evaluation.
+   - In production (APP_ENV=production), demo accounts are excluded entirely.
 
 ================================================================================

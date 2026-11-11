@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AuditActionEnum;
 use App\Models\AccessLog;
 use App\Models\AuditLog;
-use App\Models\User;
+use App\Services\AuditService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -18,7 +20,7 @@ class AuditController extends Controller
     {
         $user = $request->user();
 
-        if (!$user->isArchdioceseWide()) {
+        if (! $user->isArchdioceseWide()) {
             abort(403, 'Archdiocesan Curia audit logs are reserved for Chancery and System Administrators.');
         }
 
@@ -33,9 +35,9 @@ class AuditController extends Controller
         if ($search) {
             $auditQuery->where(function ($q) use ($search) {
                 $q->where('note', 'like', "%{$search}%")
-                  ->orWhere('subject_type', 'like', "%{$search}%")
-                  ->orWhere('actor_username', 'like', "%{$search}%")
-                  ->orWhere('ip_address', 'like', "%{$search}%");
+                    ->orWhere('subject_type', 'like', "%{$search}%")
+                    ->orWhere('actor_username', 'like', "%{$search}%")
+                    ->orWhere('ip_address', 'like', "%{$search}%");
             });
         }
         $auditLogs = $auditQuery->orderByDesc('created_at')->paginate(25, ['*'], 'audit_page')->withQueryString();
@@ -44,7 +46,7 @@ class AuditController extends Controller
         if ($search) {
             $accessQuery->where(function ($q) use ($search) {
                 $q->where('resource_identifier', 'like', "%{$search}%")
-                  ->orWhere('ip_address', 'like', "%{$search}%");
+                    ->orWhere('ip_address', 'like', "%{$search}%");
             });
         }
         $accessLogs = $accessQuery->orderByDesc('accessed_at')->paginate(25, ['*'], 'access_page')->withQueryString();
@@ -61,28 +63,29 @@ class AuditController extends Controller
     }
 
     /**
-     * Manually execute the 30-day retention policy to prune older audit logs.
+     * Manually execute the 1-year (365-day) retention policy to prune older audit logs.
      */
-    public function prune(Request $request): \Illuminate\Http\RedirectResponse
+    public function prune(Request $request): RedirectResponse
     {
         $user = $request->user();
 
-        if (!$user->isArchdioceseWide()) {
+        if (! $user->isArchdioceseWide()) {
             abort(403, 'Unauthorized.');
         }
 
-        $cutoff = now()->subDays(30);
+        $days = (int) $request->input('days', 365);
+        $cutoff = now()->subDays($days);
         $count = AuditLog::where('created_at', '<', $cutoff)->delete();
 
-        \App\Services\AuditService::log(
+        AuditService::log(
             $request,
-            \App\Enums\AuditActionEnum::DELETE,
+            AuditActionEnum::DELETE,
             'audit_logs',
             null,
-            "Chancery Administrator {$user->username} executed 30-day retention purge, removing {$count} audit entries."
+            "Chancery Administrator {$user->username} executed {$days}-day accountability retention purge, removing {$count} audit entries."
         );
 
         return redirect()->route('audit.index')
-            ->with('success', "Retention policy executed: {$count} audit log entries older than 30 days were permanently pruned.");
+            ->with('success', "Accountability retention policy executed: {$count} audit log entries older than {$days} days were pruned.");
     }
 }
