@@ -357,12 +357,14 @@ export default function FaceEnrollmentModal({ isOpen, onClose }: FaceEnrollmentM
                         </div>
                     )}
 
-                    {/* Tip Notice */}
-                    <div className="p-3 rounded-xl bg-amber-50/60 border border-amber-200/80 text-amber-900 text-xs flex items-start gap-2.5">
-                        <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                        <p className="text-[11px] leading-relaxed text-slate-600">
-                            <strong>Biometric Tip:</strong> Use a clear, well-lit portrait looking straight ahead without sunglasses or heavy shadows. Face++ uses facial geometry markers to verify your identity at sign-in.
-                        </p>
+                    {/* Tip & Biometric Consent Notice */}
+                    <div className="p-3.5 rounded-xl bg-amber-50/60 border border-amber-200/80 text-amber-900 text-xs space-y-1.5">
+                        <div className="flex items-start gap-2.5">
+                            <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                            <p className="text-xs leading-relaxed text-slate-700">
+                                <strong>RA 10173 Biometric Notice:</strong> Your facial template is protected under AES-256 encryption at rest on private disks, verified over secure TLS, and used solely for biometric login. By enrolling, you consent to this sensitive processing.
+                            </p>
+                        </div>
                     </div>
                 </div>
 

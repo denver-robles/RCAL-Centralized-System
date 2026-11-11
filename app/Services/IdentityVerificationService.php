@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class IdentityVerificationService
 {
@@ -38,16 +38,16 @@ class IdentityVerificationService
 
         $apiKey = config('services.facepp.key');
         $apiSecret = config('services.facepp.secret');
-        $verifySsl = config('services.facepp.verify_ssl', false);
+        $verifySsl = config('services.facepp.verify_ssl', true);
 
         $faceDetected = false;
         $faceCount = 0;
 
         // Verify that a facial photo exists on the government ID via Face++ Detect
-        if (!empty($apiKey) && !empty($apiSecret) && !str_contains($apiKey, 'your_api_key')) {
+        if (! empty($apiKey) && ! empty($apiSecret) && ! str_contains($apiKey, 'your_api_key')) {
             try {
                 $client = Http::asForm()->timeout(15);
-                if (!$verifySsl) {
+                if (! $verifySsl) {
                     $client = $client->withoutVerifying();
                 }
 
@@ -73,7 +73,7 @@ class IdentityVerificationService
             $faceDetected = true;
         }
 
-        if (!$faceDetected) {
+        if (! $faceDetected) {
             return [
                 'success' => false,
                 'error' => 'No clear facial photo was detected on the submitted government ID. Please ensure the front of the ID is clearly visible without glare or heavy shadows.',
@@ -81,7 +81,7 @@ class IdentityVerificationService
         }
 
         // Expected legal name constructed from canonical fields
-        $expectedFullName = trim("{$firstName} " . ($middleName ? "{$middleName} " : '') . "{$lastName}");
+        $expectedFullName = trim("{$firstName} ".($middleName ? "{$middleName} " : '')."{$lastName}");
 
         // Attempt server-side OCR if client did not supply OCR text
         if (empty($ocrText) || strlen(trim($ocrText)) < 10) {
@@ -90,7 +90,7 @@ class IdentityVerificationService
 
         // In testing environment fallback if no OCR text could be retrieved
         if (empty($ocrText) && app()->environment('testing')) {
-            $ocrText = "REPUBLIC OF THE PHILIPPINES " . strtoupper($expectedFullName) . " ID-DOC-123456";
+            $ocrText = 'REPUBLIC OF THE PHILIPPINES '.strtoupper($expectedFullName).' ID-DOC-123456';
         }
 
         // If no text could be extracted at all from the image
@@ -116,7 +116,7 @@ class IdentityVerificationService
             $lastName
         );
 
-        if (!$matchResult['matched']) {
+        if (! $matchResult['matched']) {
             return [
                 'success' => false,
                 'error' => $matchResult['error'],
@@ -162,32 +162,32 @@ class IdentityVerificationService
             }
 
             // Standard "LASTNAME, FIRSTNAME MIDDLENAME" pattern
-            if (!$extractedName && preg_match('/^([A-Z\s]{2,}),\s*([A-Z\s]{2,})\s+([A-Z\s]{2,})$/', $line)) {
+            if (! $extractedName && preg_match('/^([A-Z\s]{2,}),\s*([A-Z\s]{2,})\s+([A-Z\s]{2,})$/', $line)) {
                 $extractedName = trim($line);
             }
 
             // Driver license number (e.g. D14-22-301521 or N01-12-345678)
-            if (!$extractedIdNumber && preg_match('/\b([A-Z]\d{2}-\d{2}-\d{6})\b/', $line, $m)) {
+            if (! $extractedIdNumber && preg_match('/\b([A-Z]\d{2}-\d{2}-\d{6})\b/', $line, $m)) {
                 $extractedIdNumber = $m[1];
             }
 
             // PhilSys Card Number (PCN) 16 digits
-            if (!$extractedIdNumber && preg_match('/\b(\d{4}-\d{4}-\d{4}-\d{4})\b/', $line, $m)) {
+            if (! $extractedIdNumber && preg_match('/\b(\d{4}-\d{4}-\d{4}-\d{4})\b/', $line, $m)) {
                 $extractedIdNumber = $m[1];
             }
 
             // UMID CRN number
-            if (!$extractedIdNumber && preg_match('/\b(CRN-\d{4}-\d{7}-\d|\d{4}-\d{7}-\d)\b/i', $line, $m)) {
+            if (! $extractedIdNumber && preg_match('/\b(CRN-\d{4}-\d{7}-\d|\d{4}-\d{7}-\d)\b/i', $line, $m)) {
                 $extractedIdNumber = $m[1];
             }
 
             // Passport number
-            if (!$extractedIdNumber && preg_match('/\b(P\d{7,8}[A-Z]|\b[A-Z]\d{7}[A-Z0-9])\b/', $line, $m)) {
+            if (! $extractedIdNumber && preg_match('/\b(P\d{7,8}[A-Z]|\b[A-Z]\d{7}[A-Z0-9])\b/', $line, $m)) {
                 $extractedIdNumber = $m[1];
             }
 
             // DOB (e.g. 2005/03/27 or 1990-05-12)
-            if (!$extractedDob && preg_match('/\b(\d{4}[\/\-]\d{2}[\/\-]\d{2})\b/', $line, $m)) {
+            if (! $extractedDob && preg_match('/\b(\d{4}[\/\-]\d{2}[\/\-]\d{2})\b/', $line, $m)) {
                 $extractedDob = $m[1];
             }
         }
@@ -212,14 +212,14 @@ class IdentityVerificationService
         string $lastName
     ): array {
         $cleanOcr = strtoupper(preg_replace('/[^A-Za-z0-9\s]/', ' ', $rawOcr));
-        $ocrTokens = array_filter(preg_split('/\s+/', $cleanOcr), fn($t) => strlen($t) >= 2);
+        $ocrTokens = array_filter(preg_split('/\s+/', $cleanOcr), fn ($t) => strlen($t) >= 2);
 
         $normFirst = strtoupper(preg_replace('/[^A-Za-z0-9\s]/', ' ', $firstName));
         $normLast = strtoupper(preg_replace('/[^A-Za-z0-9\s]/', ' ', $lastName));
-        $firstTokens = array_values(array_filter(preg_split('/\s+/', $normFirst), fn($t) => strlen($t) >= 2));
-        $lastTokens = array_values(array_filter(preg_split('/\s+/', $normLast), fn($t) => strlen($t) >= 2));
+        $firstTokens = array_values(array_filter(preg_split('/\s+/', $normFirst), fn ($t) => strlen($t) >= 2));
+        $lastTokens = array_values(array_filter(preg_split('/\s+/', $normLast), fn ($t) => strlen($t) >= 2));
 
-        $expectedFullName = trim("{$firstName} " . ($middleName ? "{$middleName} " : '') . "{$lastName}");
+        $expectedFullName = trim("{$firstName} ".($middleName ? "{$middleName} " : '')."{$lastName}");
 
         // 1. Surname verification: Applicant surname must match a token on the ID
         $surnameMatched = false;
@@ -254,8 +254,9 @@ class IdentityVerificationService
 
         $matched = ($surnameMatched && $firstNameMatched);
 
-        if (!$matched) {
-            $foundName = $extractedName ? "'{$extractedName}'" : "a different person";
+        if (! $matched) {
+            $foundName = $extractedName ? "'{$extractedName}'" : 'a different person';
+
             return [
                 'matched' => false,
                 'score' => 20.0,
@@ -281,36 +282,83 @@ class IdentityVerificationService
 
         $prefix = substr($rawNumber, 0, 3);
         $suffix = substr($rawNumber, -2);
-        return $prefix . '-**-****' . $suffix;
+
+        return $prefix.'-**-****'.$suffix;
     }
 
     /**
-     * Attempt server-side OCR via OCR.space API with low timeout.
+     * Attempt server-side OCR via OCR.space API with multi-engine fallback.
      */
     private static function attemptServerOcr(string $cleanImage): ?string
     {
-        try {
-            $apiKey = env('OCR_SPACE_API_KEY', 'helloworld');
-            $response = Http::asForm()
-                ->withoutVerifying()
-                ->timeout(8)
-                ->post('https://api.ocr.space/parse/image', [
+        $normalized = preg_replace('/\s+/', '', $cleanImage) ?? $cleanImage;
+        $binary = base64_decode($normalized, true);
+
+        if ($binary === false || $binary === '') {
+            return null;
+        }
+
+        $extension = 'jpg';
+        if (class_exists(\finfo::class)) {
+            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $detectedMime = $finfo->buffer($binary);
+            if (is_string($detectedMime) && str_starts_with($detectedMime, 'image/')) {
+                $extension = match ($detectedMime) {
+                    'image/png' => 'png',
+                    'image/webp' => 'webp',
+                    'image/gif' => 'gif',
+                    default => 'jpg',
+                };
+            }
+        }
+
+        $apiKey = (string) config('services.ocr.key', 'helloworld');
+        if ($apiKey === '') {
+            $apiKey = 'helloworld';
+        }
+        $verifySsl = (bool) config('services.ocr.verify_ssl', true);
+
+        foreach (['2', '1'] as $engine) {
+            try {
+                $client = Http::timeout(20)->attach('file', $binary, "document.{$extension}");
+                if (! $verifySsl) {
+                    $client = $client->withoutVerifying();
+                }
+
+                $response = $client->post('https://api.ocr.space/parse/image', [
                     'apikey' => $apiKey,
-                    'base64Image' => 'data:image/jpeg;base64,' . $cleanImage,
                     'language' => 'eng',
                     'isOverlayRequired' => 'false',
                     'detectOrientation' => 'true',
                     'scale' => 'true',
+                    'OCREngine' => $engine,
                 ]);
 
-            if ($response->successful()) {
-                $text = $response->json('ParsedResults.0.ParsedText');
-                if (!empty($text)) {
-                    return $text;
+                if ($response->successful()) {
+                    $text = $response->json('ParsedResults.0.ParsedText');
+                    if (is_string($text) && trim($text) !== '') {
+                        return $text;
+                    }
+
+                    $errorMessage = $response->json('ErrorMessage') ?? $response->json('ParsedResults.0.ErrorMessage');
+                    if (! empty($errorMessage)) {
+                        Log::warning('OCR.space processing warning', [
+                            'engine' => $engine,
+                            'error' => $errorMessage,
+                        ]);
+                    }
+                } else {
+                    Log::warning('OCR.space HTTP error', [
+                        'engine' => $engine,
+                        'status' => $response->status(),
+                    ]);
                 }
+            } catch (\Throwable $e) {
+                Log::warning('OCR.space request exception', [
+                    'engine' => $engine,
+                    'message' => $e->getMessage(),
+                ]);
             }
-        } catch (\Throwable $e) {
-            // Graceful fallback if OCR server is unreachable
         }
 
         return null;
@@ -333,7 +381,7 @@ class IdentityVerificationService
 
         $apiKey = config('services.facepp.key');
         $apiSecret = config('services.facepp.secret');
-        $verifySsl = config('services.facepp.verify_ssl', false);
+        $verifySsl = config('services.facepp.verify_ssl', true);
 
         if (empty($apiKey) || empty($apiSecret) || str_contains($apiKey, 'your_api_key')) {
             return ['passed' => true];
@@ -341,7 +389,7 @@ class IdentityVerificationService
 
         try {
             $client = Http::asForm()->timeout(15);
-            if (!$verifySsl) {
+            if (! $verifySsl) {
                 $client = $client->withoutVerifying();
             }
 
@@ -361,7 +409,7 @@ class IdentityVerificationService
         if (isset($result['error_message'])) {
             return [
                 'passed' => false,
-                'error' => 'Face++ Detection Error: ' . $result['error_message'],
+                'error' => 'Face++ Detection Error: '.$result['error_message'],
             ];
         }
 
@@ -467,7 +515,7 @@ class IdentityVerificationService
 
         // Run Server-Side Presentation Attack Detection (PAD)
         $padCheck = self::verifyLivenessAndQuality($cleanSelfie);
-        if (!$padCheck['passed']) {
+        if (! $padCheck['passed']) {
             return [
                 'matched' => false,
                 'confidence' => 0,
@@ -477,7 +525,7 @@ class IdentityVerificationService
 
         $apiKey = config('services.facepp.key');
         $apiSecret = config('services.facepp.secret');
-        $verifySsl = config('services.facepp.verify_ssl', false);
+        $verifySsl = config('services.facepp.verify_ssl', true);
 
         if (empty($apiKey) || empty($apiSecret) || str_contains($apiKey, 'your_api_key')) {
             // Testing fallback if unconfigured
@@ -491,7 +539,7 @@ class IdentityVerificationService
 
         try {
             $client = Http::asForm()->timeout(15);
-            if (!$verifySsl) {
+            if (! $verifySsl) {
                 $client = $client->withoutVerifying();
             }
 
@@ -507,7 +555,7 @@ class IdentityVerificationService
             return [
                 'matched' => false,
                 'confidence' => 0,
-                'error' => 'Face++ Network Error: ' . $e->getMessage(),
+                'error' => 'Face++ Network Error: '.$e->getMessage(),
             ];
         }
 
@@ -515,7 +563,7 @@ class IdentityVerificationService
             return [
                 'matched' => false,
                 'confidence' => 0,
-                'error' => 'Face++ API Error: ' . $result['error_message'],
+                'error' => 'Face++ API Error: '.$result['error_message'],
             ];
         }
 
@@ -548,6 +596,6 @@ class IdentityVerificationService
             default => 'ID-****-****-',
         };
 
-        return $prefix . substr($hash, -4);
+        return $prefix.substr($hash, -4);
     }
 }

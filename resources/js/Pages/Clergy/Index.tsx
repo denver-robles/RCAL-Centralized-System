@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Head, useForm, router } from '@inertiajs/react';
+import { Head, useForm, router, Link } from '@inertiajs/react';
 import PortalLayout from '@/Layouts/PortalLayout';
 import { Clergy, PageProps, Parish } from '@/types';
-import { Users, Plus, Search, Church, Calendar, X, ShieldCheck } from 'lucide-react';
+import { Users, Plus, Search, Church, Calendar, X, ShieldCheck, Award } from 'lucide-react';
 
 interface PaginatedData<T> {
     data: T[];
@@ -77,20 +77,20 @@ export default function Index({ auth, clergy, parishes, filters }: Props) {
                 <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex flex-wrap items-center gap-3">
                         <div className="relative">
-                            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                             <input
                                 type="text"
                                 defaultValue={filters.search}
                                 onKeyDown={handleSearch}
                                 placeholder="Search clergy by name..."
-                                className="pl-9 pr-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs w-64 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                                className="pl-9 pr-3 py-2 bg-white border border-slate-300 rounded-xl text-sm w-64 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
                             />
                         </div>
 
                         <select
                             value={filters.title}
                             onChange={(e) => handleTitleFilter(e.target.value)}
-                            className="bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                            className="bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
                         >
                             <option value="all">All Ecclesiastical Titles</option>
                             <option value="archbishop">Archbishops (Most Rev.)</option>
@@ -101,44 +101,48 @@ export default function Index({ auth, clergy, parishes, filters }: Props) {
                         </select>
                     </div>
 
-                    <button
-                        type="button"
-                        onClick={() => setAddModalOpen(true)}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs shadow-xs transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Inscribe Clergy Member
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={() => setAddModalOpen(true)}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm shadow-xs transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Inscribe Clergy Member
+                        </button>
+                    </div>
                 </div>
 
                 {/* Clergy Listing Table */}
-                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+                <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-2xs">
                     <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
-                        <div className="flex items-center gap-2 text-slate-800 text-xs font-bold uppercase tracking-wider">
+                        <div className="flex items-center gap-2 text-slate-800 text-sm font-bold uppercase tracking-wide">
                             <Church className="w-4 h-4 text-amber-600" />
                             Presbyterate of the Archdiocese of Lipa
                         </div>
-                        <span className="text-xs text-slate-500 font-mono font-medium">
+                        <span className="text-sm text-slate-600 font-mono font-medium">
                             Total: {clergy.total} Ordained Ministers
                         </span>
                     </div>
 
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs">
-                            <thead className="bg-slate-50 text-slate-600 uppercase tracking-wider border-b border-slate-200 font-semibold">
+                        <table className="w-full text-left text-sm">
+                            <thead className="bg-slate-50/90 text-slate-700 uppercase tracking-wide text-xs font-semibold border-b border-slate-200">
                                 <tr>
-                                    <th className="py-3 px-4">Title & Name</th>
-                                    <th className="py-3 px-4">Canonical Dignity</th>
-                                    <th className="py-3 px-4">Current Parish Assignment</th>
-                                    <th className="py-3 px-4">Ordination Date</th>
-                                    <th className="py-3 px-4">Status</th>
+                                    <th className="py-3 px-4 sm:px-5">Title &amp; Name</th>
+                                    <th className="py-3 px-4 sm:px-5">Canonical Dignity</th>
+                                    <th className="py-3 px-4 sm:px-5">Current Parish Assignment</th>
+                                    <th className="py-3 px-4 sm:px-5">Ordination Date</th>
+                                    <th className="py-3 px-4 sm:px-5">Status</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100">
+                            <tbody className="divide-y divide-slate-100 text-slate-700">
                                 {clergy.data.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} className="text-center py-10 text-slate-400">
-                                            No clergy members found matching the specified filter.
+                                        <td colSpan={5} className="text-center py-12 text-slate-600">
+                                            <Users className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                                            <p className="font-medium text-slate-700 text-sm">No clergy members found.</p>
+                                            <p className="text-xs text-slate-500 mt-1">Try adjusting your search query or dignity filter.</p>
                                         </td>
                                     </tr>
                                 ) : (
@@ -146,33 +150,35 @@ export default function Index({ auth, clergy, parishes, filters }: Props) {
                                         const currentAssignment = c.assignments?.find((a: any) => a.is_current);
                                         return (
                                             <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
-                                                <td className="py-3.5 px-4">
+                                                <td className="py-3.5 px-4 sm:px-5">
                                                     <div className="font-serif font-bold text-slate-900 text-sm">
                                                         {c.title ? (c.title === 'archbishop' || c.title === 'bishop' ? 'Most Rev.' : c.title === 'monsignor' ? 'Msgr.' : c.title === 'deacon' ? 'Rev. Mr.' : 'Rev. Fr.') : 'Rev. Fr.'}{' '}
                                                         {c.first_name} {c.middle_name ? `${c.middle_name} ` : ''}{c.last_name} {c.suffix || ''}
                                                     </div>
-                                                    <span className="text-[11px] text-slate-500 font-sans">
-                                                        Clergy Identifier: #CLG-{c.id}
+                                                    <span className="font-mono text-xs text-slate-500">
+                                                        #CLG-{c.id}
                                                     </span>
                                                 </td>
-                                                <td className="py-3.5 px-4 capitalize font-medium text-slate-700">
-                                                    {c.title || 'Priest'}
+                                                <td className="py-3.5 px-4 sm:px-5">
+                                                    <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wide bg-amber-50 text-amber-900 border border-amber-200">
+                                                        {c.title || 'Priest'}
+                                                    </span>
                                                 </td>
-                                                <td className="py-3.5 px-4 text-slate-800">
+                                                <td className="py-3.5 px-4 sm:px-5 text-slate-800">
                                                     {currentAssignment?.parish?.name ? (
                                                         <div>
-                                                            <strong className="block text-slate-900">{currentAssignment.parish.name}</strong>
-                                                            <span className="text-[11px] text-slate-500">{currentAssignment.role}</span>
+                                                            <strong className="block text-slate-900 text-sm">{currentAssignment.parish.name}</strong>
+                                                            <span className="text-xs text-slate-600 capitalize">{currentAssignment.role?.replace(/_/g, ' ')}</span>
                                                         </div>
                                                     ) : (
-                                                        <span className="text-slate-400 italic">Archdiocesan Curia / Unassigned</span>
+                                                        <span className="text-slate-500 italic text-xs">Archdiocesan Curia / Unassigned</span>
                                                     )}
                                                 </td>
-                                                <td className="py-3.5 px-4 text-slate-600 font-mono">
+                                                <td className="py-3.5 px-4 sm:px-5 text-slate-600 font-mono text-xs">
                                                     {c.ordination_date ? c.ordination_date.slice(0, 10) : 'Not recorded'}
                                                 </td>
-                                                <td className="py-3.5 px-4">
-                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                <td className="py-3.5 px-4 sm:px-5">
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                                                         {c.status || 'Active Ministry'}
                                                     </span>
                                                 </td>
@@ -184,6 +190,32 @@ export default function Index({ auth, clergy, parishes, filters }: Props) {
                         </table>
                     </div>
                 </div>
+
+                {/* Pagination Controls */}
+                {clergy.links && clergy.links.length > 3 && (
+                    <div className="flex items-center justify-between mt-6 bg-white border border-slate-200 rounded-xl px-5 py-3 shadow-2xs">
+                        <div className="text-xs text-slate-600 font-medium">
+                            Showing page <span className="font-bold text-slate-900">{clergy.current_page}</span> of{' '}
+                            <span className="font-bold text-slate-900">{clergy.last_page}</span> ({clergy.total} clergy members)
+                        </div>
+                        <div className="flex items-center gap-1">
+                            {clergy.links.map((link, idx) => (
+                                <Link
+                                    key={idx}
+                                    href={link.url || '#'}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                        link.active
+                                            ? 'bg-amber-500 text-slate-950 font-bold shadow-2xs'
+                                            : link.url
+                                            ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                                            : 'text-slate-300 cursor-not-allowed'
+                                    }`}
+                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Modal: Inscribe New Clergy */}
@@ -202,7 +234,7 @@ export default function Index({ auth, clergy, parishes, filters }: Props) {
                                     <Church className="w-5 h-5 text-amber-600" />
                                     Inscribe New Clergy Member
                                 </h3>
-                                <p className="text-xs text-slate-500 mt-0.5">
+                                <p className="text-sm text-slate-600 mt-0.5">
                                     Register ordained presbyter / deacon into the official Archdiocesan directory
                                 </p>
                             </div>
@@ -215,7 +247,7 @@ export default function Index({ auth, clergy, parishes, filters }: Props) {
                             </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+                        <form onSubmit={handleSubmit} className="space-y-4 text-sm">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <div>
                                     <label className="block font-semibold text-slate-700 mb-1">
@@ -225,7 +257,7 @@ export default function Index({ auth, clergy, parishes, filters }: Props) {
                                         required
                                         value={data.title}
                                         onChange={(e) => setData('title', e.target.value)}
-                                        className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                                        className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
                                     >
                                         <option value="father">Rev. Fr. (Priest)</option>
                                         <option value="monsignor">Msgr. (Monsignor)</option>
@@ -246,7 +278,7 @@ export default function Index({ auth, clergy, parishes, filters }: Props) {
                                         value={data.first_name}
                                         onChange={(e) => setData('first_name', e.target.value)}
                                         placeholder="e.g. Juan"
-                                        className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                                        className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
                                     />
                                     {errors.first_name && <p className="text-rose-600 text-xs mt-1 font-medium">{errors.first_name}</p>}
                                 </div>
@@ -260,7 +292,7 @@ export default function Index({ auth, clergy, parishes, filters }: Props) {
                                         value={data.middle_name}
                                         onChange={(e) => setData('middle_name', e.target.value)}
                                         placeholder="e.g. Alcantara"
-                                        className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                                        className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
                                     />
                                 </div>
 
@@ -274,7 +306,7 @@ export default function Index({ auth, clergy, parishes, filters }: Props) {
                                         value={data.last_name}
                                         onChange={(e) => setData('last_name', e.target.value)}
                                         placeholder="e.g. Reyes"
-                                        className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                                        className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
                                     />
                                     {errors.last_name && <p className="text-rose-600 text-xs mt-1 font-medium">{errors.last_name}</p>}
                                 </div>
@@ -284,7 +316,7 @@ export default function Index({ auth, clergy, parishes, filters }: Props) {
                                     <select
                                         value={data.suffix}
                                         onChange={(e) => setData('suffix', e.target.value)}
-                                        className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                                        className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
                                     >
                                         <option value="">None</option>
                                         <option value="Jr.">Jr.</option>
@@ -307,7 +339,7 @@ export default function Index({ auth, clergy, parishes, filters }: Props) {
                                         max={today}
                                         value={data.ordination_date}
                                         onChange={(e) => setData('ordination_date', e.target.value)}
-                                        className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                                        className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
                                     />
                                 </div>
 
@@ -318,7 +350,7 @@ export default function Index({ auth, clergy, parishes, filters }: Props) {
                                         max={today}
                                         value={data.date_of_birth}
                                         onChange={(e) => setData('date_of_birth', e.target.value)}
-                                        className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                                        className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
                                     />
                                 </div>
                             </div>
@@ -329,7 +361,7 @@ export default function Index({ auth, clergy, parishes, filters }: Props) {
                                     <select
                                         value={data.parish_id}
                                         onChange={(e) => setData('parish_id', e.target.value)}
-                                        className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                                        className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
                                     >
                                         <option value="">-- Archdiocesan Curia / Unassigned --</option>
                                         {parishes.map((p) => (
@@ -345,7 +377,7 @@ export default function Index({ auth, clergy, parishes, filters }: Props) {
                                     <select
                                         value={data.assignment_role}
                                         onChange={(e) => setData('assignment_role', e.target.value)}
-                                        className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
+                                        className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 shadow-2xs"
                                     >
                                         <option value="parish_priest">Parish Priest</option>
                                         <option value="parochial_vicar">Parochial Vicar / Assistant Priest</option>

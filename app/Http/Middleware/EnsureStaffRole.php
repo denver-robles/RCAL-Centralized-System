@@ -13,7 +13,7 @@ class EnsureStaffRole
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!$request->user() || !$request->user()->isStaff()) {
+        if (! $request->user() || ! $request->user()->isStaff()) {
             abort(403, 'Access denied. Canonical registers and chancery modules are reserved for authorized parish staff.');
         }
 

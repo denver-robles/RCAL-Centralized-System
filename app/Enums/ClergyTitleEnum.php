@@ -14,9 +14,9 @@ enum ClergyTitleEnum: string
     {
         return match ($this) {
             self::ARCHBISHOP, self::BISHOP => 'Most Rev.',
-            self::MONSIGNOR => 'Msgr.',
+            self::MONSIGNOR => 'Rev. Msgr.',
             self::FATHER => 'Rev. Fr.',
-            self::DEACON => 'Rev. Mr.',
+            self::DEACON => 'Rev.',
         };
     }
 }

@@ -46,7 +46,7 @@ enum RequestStatusEnum: string
 
     public function isClosed(): bool
     {
-        return !$this->isOpen();
+        return ! $this->isOpen();
     }
 
     public function isFulfilled(): bool

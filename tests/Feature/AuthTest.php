@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Enums\AuditActionEnum;
 use App\Enums\RoleEnum;
-use App\Models\AuditLog;
 use App\Models\Parish;
 use App\Models\User;
 use App\Models\Vicariate;
@@ -206,7 +205,7 @@ class AuthTest extends TestCase
             ], 200),
         ]);
 
-        $dummyImage = 'data:image/jpeg;base64,' . base64_encode(str_repeat('A', 600));
+        $dummyImage = 'data:image/jpeg;base64,'.base64_encode(str_repeat('A', 600));
 
         $response = $this->post('/register', [
             'first_name' => 'Maria',

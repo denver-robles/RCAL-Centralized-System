@@ -13,8 +13,23 @@ class ScheduleAttachment extends Model
         'file_path',
     ];
 
+    protected $appends = [
+        'view_url',
+        'download_url',
+    ];
+
     public function schedule(): BelongsTo
     {
         return $this->belongsTo(SacramentSchedule::class, 'sacrament_schedule_id');
+    }
+
+    public function getViewUrlAttribute(): string
+    {
+        return route('schedule-attachments.view', $this->id);
+    }
+
+    public function getDownloadUrlAttribute(): string
+    {
+        return route('schedule-attachments.download', $this->id);
     }
 }

@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\CertificateRequest;
+use App\Models\Clergy;
 use App\Models\DocumentRequest;
 use App\Models\Parish;
+use App\Models\Person;
 use App\Models\SacramentalRecord;
 use App\Models\Vicariate;
 use Illuminate\Http\JsonResponse;
@@ -23,7 +25,7 @@ class PublicController extends Controller
         $recordsCount = SacramentalRecord::query()->where('status', '!=', 'voided')->count();
         $issuedCertificatesCount = CertificateRequest::query()->where('status', 'issued')->count();
         $vicariatesCount = Vicariate::query()->count();
-        $clergyCount = \App\Models\Clergy::query()->where('is_active', true)->count();
+        $clergyCount = Clergy::query()->where('is_active', true)->count();
 
         $stats = [
             'parishes' => $parishesCount ?: 9,
@@ -32,7 +34,7 @@ class PublicController extends Controller
             'clergy' => $clergyCount ?: 8,
             'municipalities' => 34,
             'priests' => $clergyCount ?: 8,
-            'persons' => \App\Models\Person::query()->count() ?: 12,
+            'persons' => Person::query()->count() ?: 12,
         ];
 
         return Inertia::render('Public/Index', [
@@ -47,13 +49,35 @@ class PublicController extends Controller
     }
 
     /**
+     * Mask full name for RA 10173 compliance to prevent brute-force identity enumeration.
+     */
+    private function maskName(?string $name): string
+    {
+        if (! $name) {
+            return '';
+        }
+
+        $parts = preg_split('/\s+/', trim($name));
+        $masked = array_map(function ($part) {
+            $len = mb_strlen($part);
+            if ($len <= 1) {
+                return $part;
+            }
+
+            return mb_substr($part, 0, 1).str_repeat('*', min(4, max(2, $len - 1)));
+        }, $parts);
+
+        return implode(' ', $masked);
+    }
+
+    /**
      * Public tracking query endpoint for parishioners to check claim progress.
      */
     public function track(Request $request): JsonResponse
     {
         $code = trim((string) $request->query('code', ''));
 
-        if (!$code) {
+        if (! $code) {
             return response()->json(['error' => 'Tracking code is required.'], 422);
         }
 
@@ -62,7 +86,7 @@ class PublicController extends Controller
             ->where('tracking_code', $code)
             ->first();
 
-        if (!$documentRequest) {
+        if (! $documentRequest) {
             return response()->json(['error' => 'No request found matching the specified tracking code.'], 404);
         }
 
@@ -70,7 +94,7 @@ class PublicController extends Controller
             'tracking_code' => $documentRequest->tracking_code,
             'status' => $documentRequest->status->value,
             'sacrament_type' => $documentRequest->sacrament_type->value,
-            'name_on_record' => $documentRequest->name_on_record,
+            'name_on_record' => $this->maskName($documentRequest->name_on_record),
             'parish_name' => $documentRequest->targetedParish?->name ?? 'Archdiocesan Curia Chancery',
             'submitted_at' => $documentRequest->created_at->toIso8601String(),
             'issued_at' => $documentRequest->issued_at?->toIso8601String(),
@@ -80,7 +104,7 @@ class PublicController extends Controller
     /**
      * Public cryptographic certificate verification endpoint.
      */
-    public function verifyCertificate(string $token): JsonResponse
+    public function verifyCertificate(Request $request, string $token): JsonResponse|Response
     {
         $cert = CertificateRequest::query()
             ->with(['record.person', 'record.originatingParish'])
@@ -88,22 +112,35 @@ class PublicController extends Controller
             ->where('status', 'issued')
             ->first();
 
-        if (!$cert || !$cert->record) {
-            return response()->json([
-                'valid' => false,
-                'message' => 'Invalid or unrecognized Archdiocesan certificate verification token.',
-            ], 404);
+        $data = null;
+        if ($cert && $cert->record) {
+            $data = [
+                'valid' => true,
+                'certificate_number' => $cert->certificate_number,
+                'sacrament' => ucfirst($cert->record->sacrament_type->value ?? (string) $cert->record->sacrament_type),
+                'recipient_name' => $this->maskName($cert->record->person?->full_name),
+                'parish' => $cert->record->originatingParish?->name,
+                'event_date' => $cert->record->event_date?->format('F j, Y'),
+                'citation' => $cert->record->citation,
+                'issued_at' => $cert->issued_at?->toIso8601String(),
+            ];
         }
 
-        return response()->json([
-            'valid' => true,
-            'certificate_number' => $cert->certificate_number,
-            'sacrament' => ucfirst($cert->record->sacrament_type->value),
-            'recipient_name' => $cert->record->person?->full_name,
-            'parish' => $cert->record->originatingParish?->name,
-            'event_date' => $cert->record->event_date?->format('F j, Y'),
-            'citation' => $cert->record->citation,
-            'issued_at' => $cert->issued_at?->toIso8601String(),
+        if ($request->wantsJson()) {
+            if (! $data) {
+                return response()->json([
+                    'valid' => false,
+                    'message' => 'Invalid or unrecognized Archdiocesan certificate verification token.',
+                ], 404);
+            }
+
+            return response()->json($data);
+        }
+
+        return Inertia::render('Public/Verify', [
+            'valid' => (bool) $data,
+            'certificate' => $data,
+            'token' => $token,
         ]);
     }
 }

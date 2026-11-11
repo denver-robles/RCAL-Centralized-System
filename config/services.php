@@ -44,8 +44,12 @@ return [
     'facepp' => [
         'key' => env('FACEPP_API_KEY'),
         'secret' => env('FACEPP_API_SECRET'),
-        'verify_ssl' => env('FACEPP_VERIFY_SSL', false),
+        'verify_ssl' => env('FACEPP_VERIFY_SSL', true),
+    ],
+
+    'ocr' => [
+        'key' => env('OCR_SPACE_API_KEY', 'helloworld'),
+        'verify_ssl' => env('OCR_VERIFY_SSL', env('FACEPP_VERIFY_SSL', true)),
     ],
 
 ];
-

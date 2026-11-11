@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\AnnotationTypeEnum;
 use App\Enums\RoleEnum;
-use App\Enums\SacramentTypeEnum;
+use App\Enums\ScheduleStatusEnum;
 use App\Models\Clergy;
 use App\Models\Parish;
 use App\Models\SacramentalRecord;
@@ -57,14 +57,14 @@ class RecordsController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->whereHas('person', function ($pq) use ($search) {
                     $pq->where('first_name', 'like', "%{$search}%")
-                       ->orWhere('last_name', 'like', "%{$search}%")
-                       ->orWhere('middle_name', 'like', "%{$search}%");
+                        ->orWhere('last_name', 'like', "%{$search}%")
+                        ->orWhere('middle_name', 'like', "%{$search}%");
                 })->orWhereHas('spouse', function ($sq) use ($search) {
                     $sq->where('first_name', 'like', "%{$search}%")
-                       ->orWhere('last_name', 'like', "%{$search}%");
+                        ->orWhere('last_name', 'like', "%{$search}%");
                 })->orWhere('book_number', 'like', "%{$search}%")
-                  ->orWhere('page_number', 'like', "%{$search}%")
-                  ->orWhere('entry_number', 'like', "%{$search}%");
+                    ->orWhere('page_number', 'like', "%{$search}%")
+                    ->orWhere('entry_number', 'like', "%{$search}%");
             });
         }
 
@@ -183,12 +183,12 @@ class RecordsController extends Controller
 
         $record = $this->canonService->transcribeRecord($validated, $request->user());
 
-        if (!empty($validated['from_schedule_id'])) {
+        if (! empty($validated['from_schedule_id'])) {
             $schedule = SacramentSchedule::find($validated['from_schedule_id']);
             if ($schedule) {
                 $schedule->update([
                     'record_id' => $record->id,
-                    'status' => \App\Enums\ScheduleStatusEnum::COMPLETED,
+                    'status' => ScheduleStatusEnum::COMPLETED,
                 ]);
             }
         }
@@ -204,7 +204,7 @@ class RecordsController extends Controller
     {
         $user = $request->user();
 
-        if (!ParishScopingService::canViewRecord($user, $record)) {
+        if (! ParishScopingService::canViewRecord($user, $record)) {
             abort(403, 'Access denied. You may only view sacramental records inscribed in your parish jurisdiction.');
         }
 
@@ -267,7 +267,7 @@ class RecordsController extends Controller
     {
         $user = $request->user();
 
-        if (!ParishScopingService::canWriteRecord($user, $record)) {
+        if (! ParishScopingService::canWriteRecord($user, $record)) {
             abort(403, 'Access denied. You may only annotate records belonging to your parish.');
         }
 
@@ -302,7 +302,7 @@ class RecordsController extends Controller
     {
         $user = $request->user();
 
-        if (!$user->isArchdioceseWide() && (int) $user->home_parish_id !== (int) $record->originating_parish_id) {
+        if (! $user->isArchdioceseWide() && (int) $user->home_parish_id !== (int) $record->originating_parish_id) {
             abort(403, 'Unauthorized to void record.');
         }
 
