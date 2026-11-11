@@ -6,6 +6,7 @@ use App\Enums\AuditActionEnum;
 use App\Models\Parish;
 use App\Models\User;
 use App\Models\Vicariate;
+use App\Services\IdentityVerificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
@@ -347,5 +348,183 @@ class UnifiedRegistrationTest extends TestCase
 
         $response->assertSessionHasErrors(['live_selfie']);
         $this->assertGuest();
+    }
+
+    public function test_step_2_verified_id_is_reused_on_step_4_registration_submission(): void
+    {
+        Config::set('services.facepp.key', 'mock_valid_key');
+        Config::set('services.facepp.secret', 'mock_valid_secret');
+
+        Http::fake([
+            'https://api-us.faceplusplus.com/facepp/v3/detect' => Http::response([
+                'faces' => [['face_token' => 'mock_token']],
+            ], 200),
+            'https://api-us.faceplusplus.com/facepp/v3/compare' => Http::response([
+                'confidence' => 91.4,
+                'thresholds' => ['1e-5' => 75.3],
+            ], 200),
+            'https://api.ocr.space/parse/image' => Http::response([], 500),
+        ]);
+
+        $dummyId = 'data:image/jpeg;base64,'.base64_encode(str_repeat('I', 800));
+        $dummySelfie = 'data:image/jpeg;base64,'.base64_encode(str_repeat('S', 800));
+
+        // Step 2 verifies ID using client-extracted OCR text and stores session fingerprint
+        $verifyResponse = $this->postJson('/register/verify-id', [
+            'id_image' => $dummyId,
+            'id_type' => 'philsys_national_id',
+            'first_name' => 'Elena',
+            'middle_name' => 'Reyes',
+            'last_name' => 'Bautista',
+            'ocr_text' => 'REPUBLIC OF THE PHILIPPINES PSN 1234-5678-9012-3456 ELENA REYES BAUTISTA',
+        ]);
+
+        $verifyResponse->assertOk()
+            ->assertJsonPath('success', true);
+        $this->assertTrue(session()->has('verified_id_registration'));
+
+        // Step 4 submits without ocr_text; matching session fingerprint must bypass redundant OCR call
+        $registerResponse = $this->post('/register', [
+            'first_name' => 'Elena',
+            'middle_name' => 'Reyes',
+            'last_name' => 'Bautista',
+            'email' => 'elena.bautista@test.ph',
+            'phone' => '09171112222',
+            'home_parish_id' => $this->parish->id,
+            'password' => 'SecurePass123!',
+            'password_confirmation' => 'SecurePass123!',
+            'id_type' => 'philsys_national_id',
+            'id_image' => $dummyId,
+            'live_selfie' => $dummySelfie,
+            'privacy_consent' => true,
+        ]);
+
+        $registerResponse->assertRedirect(route('portal.dashboard'));
+        $this->assertAuthenticated();
+        $this->assertFalse(session()->has('verified_id_registration'));
+
+        // Step 2 invokes Face++ /detect once; Step 4 skips ID/OCR re-check and only invokes selfie liveness + /compare
+        Http::assertSentCount(3);
+        Http::assertNotSent(fn ($request): bool => str_contains($request->url(), 'api.ocr.space'));
+    }
+
+    public function test_step_4_revalidates_and_rejects_when_applicant_name_changes_after_step_2(): void
+    {
+        Config::set('services.facepp.key', 'mock_valid_key');
+        Config::set('services.facepp.secret', 'mock_valid_secret');
+
+        Http::fake([
+            'https://api-us.faceplusplus.com/facepp/v3/detect' => Http::response([
+                'faces' => [['face_token' => 'mock_token']],
+            ], 200),
+            'https://api.ocr.space/parse/image' => Http::response([], 500),
+        ]);
+
+        $dummyId = 'data:image/jpeg;base64,'.base64_encode(str_repeat('I', 800));
+        $dummySelfie = 'data:image/jpeg;base64,'.base64_encode(str_repeat('S', 800));
+
+        $this->postJson('/register/verify-id', [
+            'id_image' => $dummyId,
+            'id_type' => 'philsys_national_id',
+            'first_name' => 'Elena',
+            'last_name' => 'Bautista',
+            'ocr_text' => 'REPUBLIC OF THE PHILIPPINES ELENA BAUTISTA ID-123456',
+        ])->assertOk();
+
+        // Alter last_name in Step 4 while keeping mismatched OCR text: cached fingerprint must NOT match
+        $response = $this->post('/register', [
+            'first_name' => 'Elena',
+            'last_name' => 'Mendoza',
+            'email' => 'tampered@test.ph',
+            'phone' => '09171112222',
+            'home_parish_id' => $this->parish->id,
+            'password' => 'SecurePass123!',
+            'password_confirmation' => 'SecurePass123!',
+            'id_type' => 'philsys_national_id',
+            'id_image' => $dummyId,
+            'ocr_text' => 'REPUBLIC OF THE PHILIPPINES ELENA BAUTISTA ID-123456',
+            'live_selfie' => $dummySelfie,
+            'privacy_consent' => true,
+        ]);
+
+        $response->assertSessionHasErrors(['id_image']);
+        $this->assertGuest();
+    }
+
+    public function test_step_4_accepts_client_ocr_text_directly_without_step_2_session(): void
+    {
+        Config::set('services.facepp.key', null);
+        Config::set('services.facepp.secret', null);
+
+        Http::fake([
+            'https://api.ocr.space/parse/image' => Http::response([], 500),
+        ]);
+
+        $dummyId = 'data:image/jpeg;base64,'.base64_encode(str_repeat('I', 800));
+        $dummySelfie = 'data:image/jpeg;base64,'.base64_encode(str_repeat('S', 800));
+
+        $response = $this->post('/register', [
+            'first_name' => 'Mateo',
+            'last_name' => 'Villanueva',
+            'email' => 'mateo.villanueva@test.ph',
+            'phone' => '09173334444',
+            'home_parish_id' => $this->parish->id,
+            'password' => 'SecurePass123!',
+            'password_confirmation' => 'SecurePass123!',
+            'id_type' => 'umid',
+            'id_image' => $dummyId,
+            'ocr_text' => 'REPUBLIC OF THE PHILIPPINES CRN 0111-2222333-4 MATEO VILLANUEVA',
+            'live_selfie' => $dummySelfie,
+            'privacy_consent' => true,
+        ]);
+
+        $response->assertRedirect(route('portal.dashboard'));
+        $this->assertAuthenticated();
+        Http::assertNothingSent();
+    }
+
+    public function test_server_ocr_detects_png_mime_and_falls_back_from_engine_2_to_engine_1(): void
+    {
+        Config::set('services.facepp.key', null);
+        Config::set('services.facepp.secret', null);
+        Config::set('services.ocr.key', 'test_ocr_key');
+        Config::set('services.ocr.verify_ssl', false);
+
+        Http::fake([
+            'https://api.ocr.space/parse/image' => Http::sequence()
+                ->push(['ParsedResults' => [['ParsedText' => '']]], 200)
+                ->push(['ParsedResults' => [['ParsedText' => "REPUBLIC OF THE PHILIPPINES\nMARIA CLARA REYES\nDL N01-23-456789"]]], 200),
+        ]);
+
+        // Valid 1x1 PNG payload padded past minimum base64 length threshold
+        $pngBinary = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=').str_repeat("\x00", 600);
+        $pngDataUrl = 'data:image/png;base64,'.base64_encode($pngBinary);
+
+        $result = IdentityVerificationService::verifyAndExtractId(
+            $pngDataUrl,
+            'drivers_license',
+            'Maria',
+            'Clara',
+            'Reyes',
+            null
+        );
+
+        $this->assertTrue($result['success']);
+        $this->assertTrue($result['name_match']);
+
+        Http::assertSentCount(2);
+        Http::assertSent(function ($request): bool {
+            if (! str_contains($request->url(), 'api.ocr.space/parse/image') || ! $request->isMultipart()) {
+                return false;
+            }
+
+            $parts = collect($request->data());
+            $hasPngFile = $parts->contains(fn (array $part): bool => ($part['name'] ?? '') === 'file'
+                && ($part['filename'] ?? '') === 'document.png');
+            $hasEngine = $parts->contains(fn (array $part): bool => ($part['name'] ?? '') === 'OCREngine'
+                && in_array($part['contents'] ?? '', ['1', '2'], true));
+
+            return $hasPngFile && $hasEngine;
+        });
     }
 }

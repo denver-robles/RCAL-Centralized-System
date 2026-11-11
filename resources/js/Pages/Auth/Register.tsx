@@ -42,6 +42,65 @@ const PHILIPPINE_IDS = [
     { value: 'prc_id', label: 'PRC Professional Identification Card' },
 ];
 
+const MAX_API_ID_IMAGE_BYTES = 850 * 1024;
+const MAX_API_ID_IMAGE_DIMENSION = 1600;
+
+/**
+ * Downscale oversized or non-JPEG government ID photos via canvas while keeping text crisp
+ * so OCR.space (<1MB limit) and Face++ (<2MB limit) never reject clear high-resolution uploads.
+ */
+async function optimizeIdImageForApi(dataUrl: string): Promise<string> {
+    const estimateBytes = (url: string): number => {
+        const commaIdx = url.indexOf(',');
+        const raw = commaIdx >= 0 ? url.slice(commaIdx + 1) : url;
+        return Math.ceil((raw.length * 3) / 4);
+    };
+
+    try {
+        const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+            const image = new Image();
+            image.onload = () => resolve(image);
+            image.onerror = () => reject(new Error('Failed to decode ID image'));
+            image.src = dataUrl;
+        });
+
+        const isJpeg = /^data:image\/jpe?g;base64,/i.test(dataUrl);
+        const maxSide = Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height);
+
+        if (isJpeg && estimateBytes(dataUrl) <= MAX_API_ID_IMAGE_BYTES && maxSide <= MAX_API_ID_IMAGE_DIMENSION) {
+            return dataUrl;
+        }
+
+        const scale = maxSide > MAX_API_ID_IMAGE_DIMENSION ? MAX_API_ID_IMAGE_DIMENSION / maxSide : 1;
+        const targetWidth = Math.max(1, Math.round((img.naturalWidth || img.width) * scale));
+        const targetHeight = Math.max(1, Math.round((img.naturalHeight || img.height) * scale));
+
+        const canvas = document.createElement('canvas');
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            return dataUrl;
+        }
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, targetWidth, targetHeight);
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+        for (const quality of [0.9, 0.8, 0.7]) {
+            const jpegDataUrl = canvas.toDataURL('image/jpeg', quality);
+            if (estimateBytes(jpegDataUrl) <= MAX_API_ID_IMAGE_BYTES || quality === 0.7) {
+                return jpegDataUrl;
+            }
+        }
+
+        return dataUrl;
+    } catch {
+        return dataUrl;
+    }
+}
+
 export default function Register({ parishes = [] }: RegisterProps) {
     const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
 
@@ -86,6 +145,7 @@ export default function Register({ parishes = [] }: RegisterProps) {
         password_confirmation: '',
         id_type: 'philsys_national_id',
         id_image: '',
+        ocr_text: '',
         live_selfie: '',
         privacy_consent: false,
     });
@@ -111,21 +171,24 @@ export default function Register({ parishes = [] }: RegisterProps) {
         setIdOcrText('');
         setFaceVerified(false);
         setSelfiePreview(null);
+        setData((prev) => ({ ...prev, id_image: '', ocr_text: '' }));
 
         const reader = new FileReader();
         reader.onload = async () => {
-            const base64 = reader.result as string;
-            setIdPreview(base64);
-            setData('id_image', base64);
+            const rawBase64 = reader.result as string;
+            const optimizedBase64 = await optimizeIdImageForApi(rawBase64);
+            setIdPreview(optimizedBase64);
+            setData((prev) => ({ ...prev, id_image: optimizedBase64, ocr_text: '' }));
 
             // Execute local OCR text extraction in background via Tesseract.js
             setIdOcrScanning(true);
             setIdOcrProgress(10);
             try {
                 const { recognize } = await import('tesseract.js');
-                const result = await recognize(base64, 'eng');
+                const result = await recognize(optimizedBase64, 'eng');
                 const text = result?.data?.text || '';
                 setIdOcrText(text);
+                setData((prev) => ({ ...prev, ocr_text: text }));
                 setIdOcrProgress(100);
             } catch (ocrErr) {
                 console.warn('Local OCR notification:', ocrErr);

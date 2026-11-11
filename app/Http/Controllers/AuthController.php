@@ -374,11 +374,25 @@ class AuthController extends Controller
         );
 
         if (! $result['success']) {
+            $request->session()->forget('verified_id_registration');
+
             return response()->json([
                 'success' => false,
                 'error' => $result['error'] ?? 'Government ID verification failed. Please ensure the document is clear.',
             ], 422);
         }
+
+        $request->session()->put('verified_id_registration', [
+            'fingerprint' => $this->buildIdVerificationFingerprint(
+                $validated['id_image'],
+                $validated['id_type'],
+                $validated['first_name'],
+                $validated['middle_name'] ?? null,
+                $validated['last_name']
+            ),
+            'result' => $result,
+            'verified_at' => now()->timestamp,
+        ]);
 
         return response()->json($result);
     }
@@ -429,16 +443,36 @@ class AuthController extends Controller
             'id_type' => ['required', 'string', 'max:80'],
             'id_image' => ['required', 'string'],
             'live_selfie' => ['required', 'string'],
+            'ocr_text' => ['nullable', 'string'],
         ]);
 
-        // 1. Verify Government ID
-        $idResult = IdentityVerificationService::verifyAndExtractId(
+        $fingerprint = $this->buildIdVerificationFingerprint(
             $validated['id_image'],
             $validated['id_type'],
             $validated['first_name'],
             $validated['middle_name'] ?? null,
             $validated['last_name']
         );
+
+        $sessionVerification = $request->session()->get('verified_id_registration');
+        $hasValidSessionVerification = is_array($sessionVerification)
+            && ($sessionVerification['fingerprint'] ?? null) === $fingerprint
+            && isset($sessionVerification['verified_at'])
+            && (now()->timestamp - (int) $sessionVerification['verified_at']) <= 3600
+            && is_array($sessionVerification['result'] ?? null)
+            && ($sessionVerification['result']['success'] ?? false) === true;
+
+        // 1. Verify Government ID (reuse matching Step 2 session verification or run full check)
+        $idResult = $hasValidSessionVerification
+            ? $sessionVerification['result']
+            : IdentityVerificationService::verifyAndExtractId(
+                $validated['id_image'],
+                $validated['id_type'],
+                $validated['first_name'],
+                $validated['middle_name'] ?? null,
+                $validated['last_name'],
+                $validated['ocr_text'] ?? null
+            );
 
         if (! $idResult['success']) {
             return back()->withErrors([
@@ -515,12 +549,34 @@ class AuthController extends Controller
         );
 
         Auth::login($user);
+        $request->session()->forget('verified_id_registration');
         $request->session()->regenerate();
 
         return redirect()->route('portal.dashboard')->with(
             'success',
             'Mabuhay! Your parishioner account has been created and your identity has been verified via Government ID and Face++ biometrics.'
         );
+    }
+
+    /**
+     * Build a SHA-256 fingerprint binding a verified ID image to the applicant details.
+     */
+    private function buildIdVerificationFingerprint(
+        string $idImage,
+        string $idType,
+        string $firstName,
+        ?string $middleName,
+        string $lastName
+    ): string {
+        $cleanImage = IdentityVerificationService::sanitizeBase64($idImage);
+
+        return hash('sha256', implode('|', [
+            hash('sha256', $cleanImage),
+            strtolower(trim($idType)),
+            strtolower(trim($firstName)),
+            strtolower(trim((string) $middleName)),
+            strtolower(trim($lastName)),
+        ]));
     }
 
     /**
