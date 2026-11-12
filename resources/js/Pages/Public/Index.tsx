@@ -156,7 +156,8 @@ export default function Index({ stats }: IndexProps) {
                         <p className="mt-6 text-sm sm:text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed">
                             A modernized canonical records management platform serving 64 parishes across Batangas with Code of Canon Law Can. 535 immutability, tamper-evident certificate issuance, and RA 10173 data privacy governance.
                         </p>
-
+                    </div>
+                </div>
                         {/* CTA Buttons */}
                         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5">
                             <Link
@@ -185,7 +186,7 @@ export default function Index({ stats }: IndexProps) {
                                 </Link>
                             )}
                         </div>
-
+                        
                     {/* Interactive Tracking Quick-Lookup Widget */}
                     <div className="mt-12 max-w-2xl mx-auto">
                         <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-2xl border border-slate-200 text-slate-900 relative">
