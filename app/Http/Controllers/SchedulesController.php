@@ -311,9 +311,9 @@ class SchedulesController extends Controller
             'add_to_clergy_directory' => ['nullable', 'boolean'],
             'baptism_type' => ['nullable', 'string', 'in:regular,solo'],
             'amount' => ['nullable', 'numeric', 'min:0'],
-            'book_number' => ['nullable', 'integer', 'min:1'],
-            'page_number' => ['nullable', 'integer', 'min:1'],
-            'entry_number' => ['nullable', 'integer', 'min:1'],
+            'book_number' => ['required_if:status,completed', 'integer', 'min:1'],
+            'page_number' => ['required_if:status,completed', 'integer', 'min:1'],
+            'entry_number' => ['required_if:status,completed', 'integer', 'min:1'],
         ]);
 
         $user = $request->user();

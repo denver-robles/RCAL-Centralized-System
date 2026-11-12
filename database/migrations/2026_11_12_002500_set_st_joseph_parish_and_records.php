@@ -12,6 +12,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Skip data migration if the database is fresh/empty (e.g., during tests)
+        if (Parish::count() === 0) {
+            return;
+        }
+        
         // 1. Ensure St. Sebastian Cathedral exists as a distinct parish
         $cathedral = Parish::where('name', 'St. Sebastian Cathedral')->first();
         if ($cathedral && $cathedral->id === 1) {
@@ -39,11 +44,18 @@ return new class extends Migration
                 ]
             );
         } else {
+
+        // Ensure we use an existing vicariate instead of hardcoding 1
+            $vicariate = \App\Models\Vicariate::first();
+            if (! $vicariate) {
+                return;
+            }
+
             // If parish 1 is not found or already different, ensure St. Joseph exists
             $stJoseph = Parish::firstOrCreate(
                 ['name' => 'St. Joseph the Worker Parish'],
                 [
-                    'vicariate_id' => 1,
+                    'vicariate_id' => $vicariate->id,
                     'patron_saint' => 'Saint Joseph the Worker',
                     'address' => 'Inosluban, Lipa City, Batangas',
                     'city_municipality' => 'Lipa City',
