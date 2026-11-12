@@ -30,9 +30,16 @@ class SacramentalRecord extends Model
         'witnesses',
         'place_of_event',
         'register_notes',
+        'book_data',
         'status',
         'voided_reason',
     ];
+
+    /**
+     * When true, permits staff to update ledger book citation coordinates
+     * (Book No., Page No., Line No.) and register book details.
+     */
+    public bool $allowCitationUpdate = false;
 
     protected $appends = [
         'citation',
@@ -47,14 +54,20 @@ class SacramentalRecord extends Model
             'book_number' => 'integer',
             'page_number' => 'integer',
             'entry_number' => 'integer',
+            'book_data' => 'array',
         ];
     }
 
     protected static function booted(): void
     {
         // Canon 535 §1: Initial inscription is immutable.
-        // Direct edits to transcribed identity, citation or date are forbidden.
+        // Direct edits to transcribed identity, citation or date are forbidden
+        // unless staff is expressly assigning physical ledger book coordinates ($allowCitationUpdate = true).
         static::updating(function (SacramentalRecord $record) {
+            if ($record->allowCitationUpdate) {
+                return;
+            }
+
             $immutableFields = [
                 'person_id',
                 'spouse_person_id',

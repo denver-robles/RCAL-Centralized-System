@@ -30,7 +30,7 @@ interface PortalLayoutProps {
     children: React.ReactNode;
     title?: string;
     subtitle?: string;
-    activeTab?: 'dashboard' | 'records' | 'certificates' | 'schedules' | 'schedules_calendar' | 'schedules_settings' | 'clergy' | 'users' | 'audit' | 'analytics' | 'portal' | 'portal_request' | 'portal_schedule';
+    activeTab?: 'dashboard' | 'records' | 'certificates' | 'certificate_templates' | 'schedules' | 'schedules_calendar' | 'schedules_settings' | 'clergy' | 'users' | 'audit' | 'analytics' | 'portal' | 'portal_request' | 'portal_schedule';
 }
 
 export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, subtitle, activeTab }) => {
@@ -106,6 +106,15 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
                             >
                                 <FileCheck className="w-4 h-4 shrink-0 text-amber-400" />
                                 <span>Certificate Requests</span>
+                            </Link>
+
+                            <Link
+                                href="/certificate-templates"
+                                onClick={onItemClick}
+                                className={linkClass(activeTab === 'certificate_templates')}
+                            >
+                                <FileText className="w-4 h-4 shrink-0 text-amber-400" />
+                                <span>Certificate Templates</span>
                             </Link>
 
                             <Link

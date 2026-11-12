@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import { PortalLayout } from '@/Layouts/PortalLayout';
-import { SacramentalRecord, Parish } from '@/types';
+import { SacramentalRecord, Parish, Clergy } from '@/types';
 import {
     BookOpen,
     Search,
@@ -18,7 +18,12 @@ import {
     ArrowRight,
     X,
     FileText,
+    List,
+    Edit3,
+    Printer,
 } from 'lucide-react';
+import ChurchLedgerBookView from './ChurchLedgerBookView';
+import ChurchLedgerBookModal from './ChurchLedgerBookModal';
 
 interface PaginatedRecords {
     data: SacramentalRecord[];
@@ -31,7 +36,9 @@ interface PaginatedRecords {
 
 interface RecordsIndexProps {
     records: PaginatedRecords;
+    ledgerRecords?: SacramentalRecord[];
     parishes?: Parish[];
+    clergy?: Clergy[];
     filters: {
         search?: string;
         name?: string;
@@ -68,7 +75,11 @@ const SACRAMENT_CONFIG = {
     },
 };
 
-export default function Index({ records, parishes = [], filters }: RecordsIndexProps) {
+export default function Index({ records, ledgerRecords = [], parishes = [], clergy = [], filters }: RecordsIndexProps) {
+    const [viewMode, setViewMode] = useState<'standard' | 'ledger'>('standard');
+    const [ledgerSacrament, setLedgerSacrament] = useState<'baptism' | 'confirmation'>('baptism');
+    const [editingRecord, setEditingRecord] = useState<SacramentalRecord | null>(null);
+
     const [searchTerm, setSearchTerm] = useState(filters.search || filters.name || '');
     const [sacramentType, setSacramentType] = useState(filters.sacrament_type || '');
     const [parishId, setParishId] = useState(filters.parish_id || '');
@@ -125,20 +136,56 @@ export default function Index({ records, parishes = [], filters }: RecordsIndexP
                     </p>
                 </div>
 
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <span className="text-xs text-slate-500 font-mono font-medium hidden sm:inline-block">
-                        Total Inscriptions: <strong className="text-slate-900">{records.total}</strong>
-                    </span>
+                <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                    {/* View Switcher: Church Ledger Book View vs Standard List */}
+                    <div className="inline-flex items-center p-1 bg-slate-200/80 rounded-xl border border-slate-300">
+                        <button
+                            type="button"
+                            onClick={() => setViewMode('ledger')}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                                viewMode === 'ledger'
+                                    ? 'bg-amber-500 text-slate-950 shadow-xs'
+                                    : 'text-slate-700 hover:text-slate-900'
+                            }`}
+                        >
+                            <BookOpen className="w-3.5 h-3.5" />
+                            <span>Church Ledger (Libro View)</span>
+                        </button>
 
-                    <Link href="/records/create" className="btn-primary flex items-center gap-1.5 whitespace-nowrap">
+                        <button
+                            type="button"
+                            onClick={() => setViewMode('standard')}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                                viewMode === 'standard'
+                                    ? 'bg-white text-slate-900 shadow-xs'
+                                    : 'text-slate-700 hover:text-slate-900'
+                            }`}
+                        >
+                            <List className="w-3.5 h-3.5" />
+                            <span>Standard List</span>
+                        </button>
+                    </div>
+
+                    <Link href="/records/create" className="btn-primary flex items-center gap-1.5 whitespace-nowrap text-sm py-2 px-3.5">
                         <Plus className="w-4 h-4" />
                         <span>Transcribe Entry</span>
                     </Link>
                 </div>
             </div>
 
-            {/* Smart Search & Quick Sacrament Filters */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 mb-6 shadow-xs space-y-4">
+            {viewMode === 'ledger' ? (
+                /* ── Church Ledger Book View (Matching Physical Church Books) ── */
+                <ChurchLedgerBookView
+                    records={ledgerRecords.length > 0 ? ledgerRecords : records.data}
+                    clergy={clergy}
+                    activeSacrament={ledgerSacrament}
+                    onSacramentChange={setLedgerSacrament}
+                />
+            ) : (
+                /* ── Standard Archival List View ── */
+                <>
+                    {/* Smart Search & Quick Sacrament Filters */}
+                    <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 mb-6 shadow-xs space-y-4">
                 {/* Search Bar Row */}
                 <form onSubmit={handleFormSubmit} className="flex flex-col sm:flex-row items-center gap-3">
                     <div className="relative flex-1 w-full">
@@ -386,10 +433,20 @@ export default function Index({ records, parishes = [], filters }: RecordsIndexP
                                                 )}
                                             </td>
 
-                                            <td className="px-5 py-3 text-right whitespace-nowrap">
+                                            <td className="px-5 py-3 text-right whitespace-nowrap space-x-1.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setEditingRecord(record)}
+                                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition shadow-2xs cursor-pointer"
+                                                    title="Record to Physical Book / Edit Coordinates"
+                                                >
+                                                    <Edit3 className="w-3.5 h-3.5" />
+                                                    <span>Record</span>
+                                                </button>
+
                                                 <Link
                                                     href={`/records/${record.id}`}
-                                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-amber-400 hover:text-slate-950 text-slate-800 text-xs font-bold border border-slate-200 hover:border-amber-400 transition shadow-2xs group-hover:bg-amber-400 group-hover:text-slate-950"
+                                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold border border-slate-200 transition shadow-2xs"
                                                 >
                                                     <span>View Folio</span>
                                                     <ChevronRight className="w-3.5 h-3.5" />
@@ -426,6 +483,16 @@ export default function Index({ records, parishes = [], filters }: RecordsIndexP
                     </div>
                 </div>
             )}
+            </>
+            )}
+
+            {/* ── Modal for Editing & Inscribing Book No., Page No., Line No. ── */}
+            <ChurchLedgerBookModal
+                isOpen={Boolean(editingRecord)}
+                record={editingRecord}
+                clergy={clergy || []}
+                onClose={() => setEditingRecord(null)}
+            />
         </PortalLayout>
     );
 }

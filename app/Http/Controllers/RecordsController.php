@@ -51,20 +51,29 @@ class RecordsController extends Controller
             $query->where('status', $request->query('status'));
         }
 
-        // Search by subject name or citation
+        // Search by subject name, spouse, citation, parish, or annotations
         $search = trim((string) ($request->query('search') ?: $request->query('name') ?: ''));
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->whereHas('person', function ($pq) use ($search) {
-                    $pq->where('first_name', 'like', "%{$search}%")
-                        ->orWhere('last_name', 'like', "%{$search}%")
-                        ->orWhere('middle_name', 'like', "%{$search}%");
+                    $pq->where('first_name', 'ilike', "%{$search}%")
+                        ->orWhere('last_name', 'ilike', "%{$search}%")
+                        ->orWhere('middle_name', 'ilike', "%{$search}%")
+                        ->orWhere('father_name', 'ilike', "%{$search}%")
+                        ->orWhere('mother_name', 'ilike', "%{$search}%");
                 })->orWhereHas('spouse', function ($sq) use ($search) {
-                    $sq->where('first_name', 'like', "%{$search}%")
-                        ->orWhere('last_name', 'like', "%{$search}%");
+                    $sq->where('first_name', 'ilike', "%{$search}%")
+                        ->orWhere('last_name', 'ilike', "%{$search}%");
+                })->orWhereHas('originatingParish', function ($opq) use ($search) {
+                    $opq->where('name', 'ilike', "%{$search}%")
+                        ->orWhere('address', 'ilike', "%{$search}%")
+                        ->orWhere('city_municipality', 'ilike', "%{$search}%");
                 })->orWhere('book_number', 'like', "%{$search}%")
                     ->orWhere('page_number', 'like', "%{$search}%")
-                    ->orWhere('entry_number', 'like', "%{$search}%");
+                    ->orWhere('entry_number', 'like', "%{$search}%")
+                    ->orWhere('godparents', 'ilike', "%{$search}%")
+                    ->orWhere('place_of_event', 'ilike', "%{$search}%")
+                    ->orWhere('register_notes', 'ilike', "%{$search}%");
             });
         }
 
@@ -86,15 +95,30 @@ class RecordsController extends Controller
 
         $records = $query->orderByDesc('event_date')->orderByDesc('id')->paginate(20)->withQueryString();
 
+        $ledgerQuery = SacramentalRecord::query()
+            ->with(['person', 'spouse', 'performedByClergy', 'originatingParish']);
+        ParishScopingService::scopeParish($ledgerQuery, $user, 'originating_parish_id');
+        if ($request->filled('parish_id') && $request->query('parish_id') !== 'all') {
+            $ledgerQuery->where('originating_parish_id', (int) $request->query('parish_id'));
+        }
+        $ledgerRecords = $ledgerQuery->orderBy('book_number')->orderBy('entry_number')->get();
+
         $stats = ParishScopingService::sacramentCounts($user);
         $scopedParish = ParishScopingService::visibleParish($user);
         $parishes = $user->isArchdioceseWide()
             ? Parish::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'city_municipality'])
             : ($scopedParish ? collect([$scopedParish]) : collect());
 
+        $clergy = Clergy::query()
+            ->where('is_active', true)
+            ->orderBy('last_name')
+            ->get(['id', 'first_name', 'last_name', 'title']);
+
         return Inertia::render('Records/Index', [
             'records' => $records,
+            'ledgerRecords' => $ledgerRecords,
             'parishes' => $parishes,
+            'clergy' => $clergy,
             'filters' => [
                 'search' => $search,
                 'name' => $search,
@@ -314,5 +338,104 @@ class RecordsController extends Controller
 
         return redirect()->route('records.show', $record->id)
             ->with('warning', 'Register entry marked as VOIDED in accordance with Chancery canonical guidelines.');
+    }
+
+    /**
+     * Update physical ledger book citation (Book No., Page No., Line No.) and canonical book details.
+     */
+    public function updateBook(Request $request, SacramentalRecord $record): RedirectResponse
+    {
+        $user = $request->user();
+
+        if (! ParishScopingService::canWriteRecord($user, $record)) {
+            abort(403, 'Access denied. You may only record or edit entries belonging to your parish.');
+        }
+
+        $validated = $request->validate([
+            'book_number' => ['required', 'integer', 'min:1'],
+            'page_number' => ['required', 'integer', 'min:1'],
+            'entry_number' => ['required', 'integer', 'min:1'],
+
+            // Subject / Person details
+            'first_name' => ['required', 'string', 'max:100'],
+            'last_name' => ['required', 'string', 'max:100'],
+            'middle_name' => ['nullable', 'string', 'max:100'],
+            'date_of_birth' => ['nullable', 'date'],
+            'place_of_birth' => ['nullable', 'string', 'max:255'],
+            'father_name' => ['nullable', 'string', 'max:255'],
+            'mother_name' => ['nullable', 'string', 'max:255'],
+
+            // Canonical & ledger details
+            'event_date' => ['nullable', 'date'],
+            'legitimacy' => ['nullable', 'string'],
+            'godparents' => ['nullable', 'string'],
+            'place_of_event' => ['nullable', 'string', 'max:255'],
+            'performed_by_clergy_id' => ['nullable', 'integer', 'exists:clergy,id'],
+            'register_notes' => ['nullable', 'string'],
+
+            // Physical book attributes (stored in book_data JSON)
+            'book_data' => ['nullable', 'array'],
+        ]);
+
+        // Check if another record already has this citation in the same parish & sacrament type
+        $existing = SacramentalRecord::query()
+            ->where('originating_parish_id', $record->originating_parish_id)
+            ->where('sacrament_type', $record->sacrament_type)
+            ->where('book_number', $validated['book_number'])
+            ->where('page_number', $validated['page_number'])
+            ->where('entry_number', $validated['entry_number'])
+            ->where('id', '!=', $record->id)
+            ->first();
+
+        if ($existing) {
+            return back()->withErrors([
+                'entry_number' => "Book {$validated['book_number']}, Page {$validated['page_number']}, Line {$validated['entry_number']} is already occupied by record #{$existing->id} ({$existing->person?->full_name}).",
+            ]);
+        }
+
+        // Update Person
+        if ($record->person) {
+            $record->person->update([
+                'first_name' => $validated['first_name'],
+                'last_name' => $validated['last_name'],
+                'middle_name' => $validated['middle_name'] ?? $record->person->middle_name,
+                'date_of_birth' => $validated['date_of_birth'] ?? $record->person->date_of_birth,
+                'place_of_birth' => $validated['place_of_birth'] ?? $record->person->place_of_birth,
+                'father_name' => $validated['father_name'] ?? $record->person->father_name,
+                'mother_name' => $validated['mother_name'] ?? $record->person->mother_name,
+            ]);
+        }
+
+        // Merge book_data
+        $currentBookData = is_array($record->book_data) ? $record->book_data : [];
+        $newBookData = array_merge($currentBookData, $validated['book_data'] ?? []);
+        $newBookData['no'] = $validated['entry_number'];
+
+        // Update Sacramental Record citation & fields
+        $record->allowCitationUpdate = true;
+        $record->update([
+            'book_number' => $validated['book_number'],
+            'page_number' => $validated['page_number'],
+            'entry_number' => $validated['entry_number'],
+            'event_date' => $validated['event_date'] ?? $record->event_date,
+            'legitimacy' => $validated['legitimacy'] ?? $record->legitimacy,
+            'godparents' => $validated['godparents'] ?? $record->godparents,
+            'place_of_event' => $validated['place_of_event'] ?? $record->place_of_event,
+            'performed_by_clergy_id' => $validated['performed_by_clergy_id'] ?? $record->performed_by_clergy_id,
+            'register_notes' => $validated['register_notes'] ?? $record->register_notes,
+            'book_data' => $newBookData,
+            'status' => 'registered',
+        ]);
+
+        AuditService::record(
+            AuditActionEnum::UPDATE,
+            $record,
+            ['book' => $record->getOriginal('book_number'), 'page' => $record->getOriginal('page_number'), 'entry' => $record->getOriginal('entry_number')],
+            ['book' => $record->book_number, 'page' => $record->page_number, 'entry' => $record->entry_number],
+            "Ledger book coordinates updated: Book {$record->book_number}, Page {$record->page_number}, Line {$record->entry_number}",
+            $user
+        );
+
+        return back()->with('success', "Record successfully inscribed into Church Book {$record->book_number}, Page {$record->page_number}, Line {$record->entry_number}.");
     }
 }
