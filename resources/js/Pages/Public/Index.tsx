@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage} from '@inertiajs/react';
 import { AppLayout } from '@/Layouts/AppLayout';
 import { FaqAccordion } from '@/Components/FaqAccordion';
 import {
@@ -57,6 +57,11 @@ export default function Index({ stats }: IndexProps) {
         records: 50000,
         persons: 48000,
     };
+
+    const { auth } = usePage<{ auth?: { user?: { role?: string } | null } }>().props;
+    const isLoggedIn = Boolean(auth?.user);
+    const isParishioner = auth?.user?.role === 'parishioner';
+    const portalHref = !isLoggedIn ? '/login' : isParishioner ? '/portal/dashboard' : '/dashboard';
 
     const [trackingCode, setTrackingCode] = useState('');
     const [isSearching, setIsSearching] = useState(false);
@@ -155,30 +160,31 @@ export default function Index({ stats }: IndexProps) {
                         {/* CTA Buttons */}
                         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5">
                             <Link
-                                href="/portal/requests/create"
+                                href={isLoggedIn && !isParishioner ? '/dashboard' : '/portal/requests/create'}
                                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-sm tracking-wide uppercase transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] shadow-lg shadow-amber-400/20"
                             >
                                 <FileText className="w-4 h-4 text-slate-950" />
-                                <span>Request Church Certificate</span>
+                                <span>{isLoggedIn && !isParishioner ? 'Go to Staff Dashboard' : 'Request Church Certificate'}</span>
                                 <ArrowRight className="w-4 h-4 text-slate-950 ml-0.5" />
                             </Link>
 
                             <Link
-                                href="/login"
+                                href={portalHref}
                                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-100 font-semibold text-sm border border-slate-700 hover:border-slate-500 transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] shadow-sm"
                             >
                                 <Church className="w-4 h-4 text-amber-400" />
-                                <span>Sign In to Portal</span>
+                                <span>{isLoggedIn ? 'Open My Portal' : 'Sign In to Portal'}</span>
                             </Link>
 
-                            <Link
-                                href="/register"
-                                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-semibold text-sm border border-amber-500/30 transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]"
-                            >
-                                <span>+ Register as Parishioner</span>
-                            </Link>
+                            {!isLoggedIn && (
+                                <Link
+                                    href="/register"
+                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-semibold text-sm border border-amber-500/30 transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]"
+                                >
+                                    <span>+ Register as Parishioner</span>
+                                </Link>
+                            )}
                         </div>
-                    </div>
 
                     {/* Interactive Tracking Quick-Lookup Widget */}
                     <div className="mt-12 max-w-2xl mx-auto">
