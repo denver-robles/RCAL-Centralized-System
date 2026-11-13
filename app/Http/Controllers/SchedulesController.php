@@ -62,7 +62,7 @@ class SchedulesController extends Controller
 
         $clergy = Clergy::where('is_active', true)->orderBy('last_name')->get();
 
-                $currentYear = now()->year;
+        $currentYear = now()->year;
         $paidCount = SacramentSchedule::query()
             ->when(! $user->isArchdioceseWide(), fn ($q) => $q->where('parish_id', $user->home_parish_id))
             ->whereNotNull('payment_reference')
@@ -674,7 +674,7 @@ class SchedulesController extends Controller
             'payment_status' => ['required', 'string', 'in:paid,rejected,unpaid,pending_verification'],
             'payment_amount' => ['required_if:payment_status,paid', 'nullable', 'numeric', 'min:0'],
             'payment_reference' => ['required_if:payment_status,paid', 'nullable', 'string', 'max:100'],
-            'paid_at'=> ['required_if:payment_status,paid', 'nullable', 'date'],
+            'paid_at' => ['required_if:payment_status,paid', 'nullable', 'date'],
             'payment_notes' => ['nullable', 'string', 'max:500'],
         ]);
 
@@ -704,7 +704,7 @@ class SchedulesController extends Controller
             ],
             "Cash payment recorded for schedule #{schedule->id} (OR #{$schedule->payment_reference}, Amount: ₱{$schedule->payment_amount} by {$user->username})",
             $user
-            );
+        );
 
         return redirect()->back()->with('success', "Payment successfully recorded with OR #{$schedule->payment_reference}.");
     }

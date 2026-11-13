@@ -224,4 +224,37 @@ class CertificateWorkflowTest extends TestCase
         $this->assertEquals('Maria Santos', $portalRequests[0]['name_on_record']);
         $this->assertEquals('Assisted Parishioner', $portalRequests[0]['certificate_request']['requester_name']);
     }
+    public function test_print_route_redirects_to_new_certificate_generator_preview(): void
+    {
+        $cert = CertificateRequest::create([
+            'record_id' => $this->record->id,
+            'requester_name' => 'Maria Santos',
+            'status' => RequestStatusEnum::ISSUED,
+            'certificate_number' => 'RCAL-2026-0001',
+        ]);
+
+        $response = $this->actingAs($this->clerk)->get("/certificates/{$cert->id}/print");
+
+        // Asserts redirect to the new Certificate Template generator preview
+        $response->assertRedirect(route('certificate-templates.preview', [
+            'record_id' => $this->record->id,
+            'certificate_request_id' => $cert->id,
+            'sacrament_type' => 'baptism',
+        ]));
+
+        // Asserts the new generator preview loads cleanly with auto-populated props
+        $previewResponse = $this->actingAs($this->clerk)->get(route('certificate-templates.preview', [
+            'record_id' => $this->record->id,
+            'certificate_request_id' => $cert->id,
+            'sacrament_type' => 'baptism',
+        ]));
+
+        $previewResponse->assertOk();
+        $previewResponse->assertInertia(fn ($page) => $page
+            ->component('CertificateTemplates/Preview')
+            ->has('populatedData')
+            ->where('populatedData.recipient_name', 'MARIA SANTOS')
+            ->where('selectedRecord', $this->record->id)
+        );
+    }
 }
