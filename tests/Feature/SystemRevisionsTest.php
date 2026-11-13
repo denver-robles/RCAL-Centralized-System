@@ -20,6 +20,11 @@ use App\Models\Vicariate;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
+use App\Mail\CashPaymentReceiptMail;
+use App\Mail\CertificateReadyForPickupMail;
+use App\Mail\ScheduleBookingConfirmedMail;
+use App\Models\SacramentSchedule;
+use Illuminate\Support\Facades\Mail;
 
 class SystemRevisionsTest extends TestCase
 {
@@ -458,5 +463,118 @@ class SystemRevisionsTest extends TestCase
             'subject_id' => $schedule->id,
             'user_id' => $this->parishStaff->id,
         ]);
+    }
+
+        public function test_cash_payment_verification_dispatches_receipt_email(): void
+    {
+        Mail::fake();
+
+        $schedule = SacramentSchedule::create([
+            'parish_id' => $this->parish->id,
+            'title' => 'Baptism of Child',
+            'requester_name' => 'Maria Santos',
+            'requester_email' => 'maria@example.com',
+            'sacrament_type' => 'baptism',
+            'starts_at' => now()->addDays(14)->setTime(10, 0),
+            'status' => 'scheduled',
+            'payment_status' => 'pending_verification',
+        ]);
+
+        $response = $this->actingAs($this->parishStaff)->post("/schedules/{$schedule->id}/verify-payment", [
+            'payment_status' => 'paid',
+            'payment_reference' => 'OR-2026-9999',
+            'payment_amount' => 1500.00,
+            'paid_at' => now()->toDateString(),
+            'payment_notes' => 'Official cashier verification',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+
+        Mail::assertQueued(CashPaymentReceiptMail::class, function ($mail) {
+            return $mail->schedule->payment_reference === 'OR-2026-9999'
+                && (float) $mail->schedule->payment_amount === 1500.00;
+        });
+    }
+
+    public function test_confirming_sacrament_schedule_dispatches_confirmation_email(): void
+    {
+        Mail::fake();
+
+        $schedule = SacramentSchedule::create([
+            'parish_id' => $this->parish->id,
+            'title' => 'Baptism of Child',
+            'requester_name' => 'Maria Santos',
+            'requester_email' => 'maria@example.com',
+            'sacrament_type' => 'baptism',
+            'starts_at' => now()->addDays(14)->setTime(10, 0),
+            'status' => 'scheduled',
+            'payment_status' => 'pending_verification',
+        ]);
+
+        $response = $this->actingAs($this->parishStaff)->post("/schedules/{$schedule->id}/status", [
+            'status' => 'confirmed',
+            'staff_notes' => 'Canonical requirements complete',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+
+        Mail::assertQueued(ScheduleBookingConfirmedMail::class, function ($mail) use ($schedule) {
+            return $mail->schedule->id === $schedule->id;
+        });
+    }
+
+    public function test_transitioning_certificate_to_ready_dispatches_pickup_email(): void
+    {
+        Mail::fake();
+
+        $parishioner = User::create([
+            'username' => 'pickup_client',
+            'email' => 'pickup@rcal.ph',
+            'role' => RoleEnum::PARISHIONER,
+            'password' => Hash::make('password'),
+            'is_active' => true,
+        ]);
+
+        $claim = DocumentRequest::create([
+            'tracking_code' => 'RCAL-REQ-TEST-PICKUP',
+            'parishioner_id' => $parishioner->id,
+            'targeted_parish_id' => $this->parish->id,
+            'sacrament_type' => 'baptism',
+            'name_on_record' => 'Maria Santos',
+            'date_of_birth' => '2000-01-01',
+            'status' => DocumentRequestStatusEnum::UNDER_REVIEW,
+            'matched_record_id' => $this->record->id,
+            'consent_given_at' => now(),
+            'consent_version' => '1.0',
+        ]);
+
+        $cert = CertificateRequest::create([
+            'record_id' => $this->record->id,
+            'requester_user_id' => $parishioner->id,
+            'requester_name' => 'Maria Santos',
+            'status' => RequestStatusEnum::PENDING,
+        ]);
+
+        $claim->update(['certificate_request_id' => $cert->id]);
+
+        // Progress lifecycle: pending -> verified -> approved -> ready
+        $this->actingAs($this->parishStaff)->post("/certificates/{$cert->id}/transition", [
+            'target_status' => 'verified',
+            'reason' => 'Ledger matched',
+        ]);
+
+        $this->actingAs($this->chanceryAdmin)->post("/certificates/{$cert->id}/transition", [
+            'target_status' => 'approved',
+            'reason' => 'Curia seal approved',
+        ]);
+
+        $this->actingAs($this->parishStaff)->post("/certificates/{$cert->id}/transition", [
+            'target_status' => 'ready',
+            'reason' => 'Embossed dry seal affixed and ready for release',
+        ]);
+
+        Mail::assertQueued(CertificateReadyForPickupMail::class, function ($mail) use ($claim) {
+            return $mail->documentRequest->tracking_code === $claim->tracking_code;
+        });
     }
 }

@@ -11,6 +11,9 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use App\Mail\CertificateReadyForPickupMail;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class DocumentWorkflowService
 {
@@ -112,6 +115,17 @@ class DocumentWorkflowService
                     $doc->update(['status' => DocumentRequestStatusEnum::PROCESSING]);
                 } elseif ($targetStatus === RequestStatusEnum::READY) {
                     $doc->update(['status' => DocumentRequestStatusEnum::READY]);
+
+                    // Phase 4: Dispatch pickup alert to parishioner
+                    $doc->loadMissing(['parishioner', 'targetedParish']);
+                    $recipientEmail = $doc->parishioner?->email;
+                    if ($recipientEmail) {
+                        try {
+                            Mail::to($recipientEmail)->queue(new CertificateReadyForPickupMail($doc));
+                        } catch (\Throwable $e) {
+                            Log::warning("Could not dispatch CertificateReadyForPickupMail: " . $e->getMessage());
+                        }
+                    }
                 } elseif ($targetStatus === RequestStatusEnum::ISSUED) {
                     $doc->update(['status' => DocumentRequestStatusEnum::COMPLETED, 'issued_at' => $now]);
                 } elseif ($targetStatus === RequestStatusEnum::REJECTED) {

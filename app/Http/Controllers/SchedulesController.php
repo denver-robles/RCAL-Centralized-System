@@ -22,6 +22,10 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Mail\CashPaymentReceiptMail;
+use App\Mail\ScheduleBookingConfirmedMail;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class SchedulesController extends Controller
 {
@@ -612,6 +616,18 @@ class SchedulesController extends Controller
             $user
         );
 
+        // Phase 4: Dispatch booking confirmation email if ceremony is officially confirmed
+        if ($newStatus === ScheduleStatusEnum::CONFIRMED) {
+            $recipientEmail = $schedule->requester_email ?: $schedule->requesterUser?->email;
+            if ($recipientEmail) {
+                try {
+                    Mail::to($recipientEmail)->queue(new ScheduleBookingConfirmedMail($schedule->loadMissing(['parish', 'presidingClergy'])));
+                } catch (\Throwable $e) {
+                    Log::warning("Could not dispatch ScheduleBookingConfirmedMail: " . $e->getMessage());
+                }
+            }
+        }
+
         return redirect()->back()->with('success', "Schedule status updated to {$newStatus->value}.");
     }
 
@@ -705,6 +721,18 @@ class SchedulesController extends Controller
             "Cash payment recorded for schedule #{schedule->id} (OR #{$schedule->payment_reference}, Amount: ₱{$schedule->payment_amount} by {$user->username})",
             $user
         );
+
+        // Phase 4: Dispatch Cash Payment Receipt email
+        if ($validated['payment_status'] === 'paid') {
+            $recipientEmail = $schedule->requester_email ?: $schedule->requesterUser?->email;
+            if ($recipientEmail) {
+                try {
+                    Mail::to($recipientEmail)->queue(new CashPaymentReceiptMail($schedule->loadMissing(['parish', 'paymentRecorder'])));
+                } catch (\Throwable $e) {
+                    Log::warning("Could not dispatch CashPaymentReceiptMail: " . $e->getMessage());
+                }
+            }
+        }
 
         return redirect()->back()->with('success', "Payment successfully recorded with OR #{$schedule->payment_reference}.");
     }
