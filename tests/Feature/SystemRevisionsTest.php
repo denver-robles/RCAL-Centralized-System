@@ -410,4 +410,53 @@ class SystemRevisionsTest extends TestCase
             'id' => $oldLog->id,
         ]);
     }
+        public function test_staff_can_record_cash_payment_with_or_number_and_amount(): void
+    {
+        $schedule = \App\Models\SacramentSchedule::create([
+            'parish_id' => $this->parish->id,
+            'sacrament_type' => 'baptism',
+            'title' => 'Baptism of Mateo',
+            'starts_at' => now()->addDays(5),
+            'ends_at' => now()->addDays(5)->addHour(),
+            'status' => 'scheduled',
+            'payment_status' => 'unpaid',
+            'requester_name' => 'Maria Santos',
+            'requester_contact' => '7562572',
+        ]);
+
+        // 1. Attempting to mark as 'paid' without OR # and Amount should fail validation
+        $failResponse = $this->actingAs($this->parishStaff)->post("/schedules/{$schedule->id}/verify-payment", [
+            'payment_status' => 'paid',
+        ]);
+        $failResponse->assertSessionHasErrors(['payment_reference', 'payment_amount']);
+
+        // 2. Submitting valid cash payment details should succeed
+        $successResponse = $this->actingAs($this->parishStaff)->post("/schedules/{$schedule->id}/verify-payment", [
+            'payment_status' => 'paid',
+            'payment_reference' => 'OR-2026-0042',
+            'payment_amount' => 1500.00,
+            'paid_at' => '2026-11-13',
+            'payment_notes' => 'Paid in full at parish secretariat office',
+        ]);
+
+        $successResponse->assertSessionHasNoErrors();
+        $successResponse->assertSessionHas('success');
+
+        // 3. Verify database updates
+        $this->assertDatabaseHas('sacrament_schedules', [
+            'id' => $schedule->id,
+            'payment_status' => 'paid',
+            'payment_method' => 'cash',
+            'payment_reference' => 'OR-2026-0042',
+            'payment_amount' => 1500.00,
+            'payment_recorded_by' => $this->parishStaff->id,
+            'payment_notes' => 'Paid in full at parish secretariat office',
+        ]);
+
+        // 4. Verify audit trail was created
+        $this->assertDatabaseHas('audit_logs', [
+            'subject_id' => $schedule->id,
+            'user_id' => $this->parishStaff->id,
+        ]);
+    }
 }

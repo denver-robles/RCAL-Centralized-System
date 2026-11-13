@@ -37,7 +37,7 @@ class SchedulesController extends Controller
         $user = $request->user();
 
         $query = SacramentSchedule::query()
-            ->with(['parish', 'venue', 'presidingClergy', 'requestedClergy', 'record', 'attachments', 'requesterUser']);
+            ->with(['parish', 'venue', 'presidingClergy', 'requestedClergy', 'record', 'attachments', 'requesterUser', 'paymentRecorder']);
 
         ParishScopingService::scopeParish($query, $user, 'parish_id');
 
@@ -62,10 +62,19 @@ class SchedulesController extends Controller
 
         $clergy = Clergy::where('is_active', true)->orderBy('last_name')->get();
 
+                $currentYear = now()->year;
+        $paidCount = SacramentSchedule::query()
+            ->when(! $user->isArchdioceseWide(), fn ($q) => $q->where('parish_id', $user->home_parish_id))
+            ->whereNotNull('payment_reference')
+            ->whereYear('paid_at', $currentYear)
+            ->count();
+        $nextOrNumber = sprintf('OR-%s-%04d', $currentYear, $paidCount + 1);
+
         return Inertia::render('Schedules/Index', [
             'schedules' => $schedules,
             'venues' => $venues,
             'clergy' => $clergy,
+            'nextOrNumber' => $nextOrNumber,
             'filters' => $request->only(['status', 'sacrament_type', 'date']),
         ]);
     }
@@ -663,21 +672,40 @@ class SchedulesController extends Controller
 
         $validated = $request->validate([
             'payment_status' => ['required', 'string', 'in:paid,rejected,unpaid,pending_verification'],
+            'payment_amount' => ['required_if:payment_status,paid', 'nullable', 'numeric', 'min:0'],
+            'payment_reference' => ['required_if:payment_status,paid', 'nullable', 'string', 'max:100'],
+            'paid_at'=> ['required_if:payment_status,paid', 'nullable', 'date'],
+            'payment_notes' => ['nullable', 'string', 'max:500'],
         ]);
 
         $oldStatus = $schedule->payment_status;
         $schedule->payment_status = $validated['payment_status'];
+
+        if ($validated['payment_status'] === 'paid') {
+            $schedule->payment_method = 'cash';
+            $schedule->payment_amount = $validated['payment_amount'];
+            $schedule->payment_reference = $validated['payment_reference'];
+            $schedule->paid_at = $validated['paid_at'] ?? now()->toDateString();
+            $schedule->payment_recorded_by = $user->id;
+            $schedule->payment_notes = $validated['payment_notes'] ?? null;
+        } elseif (in_array($validated['payment_status'], ['unpaid', 'rejected'])) {
+            $schedule->payment_notes = $validated['payment_notes'] ?? null;
+        }
         $schedule->save();
 
         AuditService::record(
             AuditActionEnum::UPDATE,
             $schedule,
             ['payment_status' => $oldStatus],
-            ['payment_status' => $schedule->payment_status],
-            "Payment status for schedule #{$schedule->id} verified as {$schedule->payment_status} by {$user->username}",
+            [
+                'payment_status' => $schedule->payment_status,
+                'payment_reference' => $schedule->payment_reference,
+                'payment_amount' => $schedule->payment_amount,
+            ],
+            "Cash payment recorded for schedule #{schedule->id} (OR #{$schedule->payment_reference}, Amount: ₱{$schedule->payment_amount} by {$user->username})",
             $user
-        );
+            );
 
-        return redirect()->back()->with('success', "Payment verification recorded: marked as {$schedule->payment_status}.");
+        return redirect()->back()->with('success', "Payment successfully recorded with OR #{$schedule->payment_reference}.");
     }
 }
