@@ -227,7 +227,7 @@ class AuthController extends Controller
         $threshold = $result['thresholds']['1e-5'] ?? ($result['thresholds']['1e-4'] ?? 80);
 
         if ($confidence >= $threshold) {
-            Auth::login($user); 
+            Auth::login($user);
             $user->update(['last_login_at' => now()]);
             $request->session()->regenerate();
             Inertia::clearHistory();
@@ -256,7 +256,7 @@ class AuthController extends Controller
         );
 
         return back()->withErrors([
-            'captured_image' => "Face verification failed. Please try again with good lighting or sign in with password.",
+            'captured_image' => 'Face verification failed. Please try again with good lighting or sign in with password.',
         ]);
     }
 

@@ -35,6 +35,7 @@ import {
     AlertCircle,
     SquareCheck,
     Check,
+    Receipt,
 } from 'lucide-react';
 
 interface Props extends PageProps {
@@ -322,7 +323,14 @@ export default function CalendarView({ schedules, parishes, filters, metrics }: 
                     className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                 >
                     <FileText className="w-4 h-4 text-slate-500" />
-                    <span>List View</span>
+                    <span>Appointments List</span>
+                </Link>
+                <Link
+                    href="/schedules?tab=payments"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                >
+                    <Receipt className="w-4 h-4 text-emerald-600" />
+                    <span>Payment Records (Cash)</span>
                 </Link>
                 <Link
                     href="/schedules/calendar"

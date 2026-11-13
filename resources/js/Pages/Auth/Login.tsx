@@ -25,7 +25,6 @@ import BiometricLivenessScanner from '@/Components/BiometricLivenessScanner';
 
 export default function Login() {
     const { flash } = usePage<PageProps>().props;
-    const [activeTab, setActiveTab] = useState<'parishioner' | 'staff'>('parishioner');
     const [showPassword, setShowPassword] = useState(false);
     const [forgotModalOpen, setForgotModalOpen] = useState(false);
     const [termsModalOpen, setTermsModalOpen] = useState(false);
@@ -183,34 +182,6 @@ export default function Login() {
                             Secure Authentication
                         </div>
 
-                        {/* Dual-Tab Segmented Switcher */}
-                        <div className="mt-4 w-full bg-slate-100 p-1 rounded-xl flex items-center gap-1 border border-slate-200/60">
-                            <button
-                                type="button"
-                                onClick={() => setActiveTab('parishioner')}
-                                className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 ${
-                                    activeTab === 'parishioner'
-                                        ? 'bg-white text-slate-900 shadow-sm font-bold ring-1 ring-slate-900/5'
-                                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
-                                }`}
-                            >
-                                <User className={`w-4 h-4 transition-colors ${activeTab === 'parishioner' ? 'text-amber-600' : 'text-slate-500'}`} />
-                                <span>Parishioner Portal</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setActiveTab('staff')}
-                                className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 ${
-                                    activeTab === 'staff'
-                                        ? 'bg-white text-slate-900 shadow-sm font-bold ring-1 ring-slate-900/5'
-                                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
-                                }`}
-                            >
-                                <Building2 className={`w-4 h-4 transition-colors ${activeTab === 'staff' ? 'text-amber-600' : 'text-slate-500'}`} />
-                                <span>Staff & Chancery</span>
-                            </button>
-                        </div>
-
                         {/* Flash / Status Alert Banner */}
                         {flash?.success && (
                             <div className="w-full mt-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold text-center shadow-2xs">
@@ -230,16 +201,12 @@ export default function Login() {
                         )}
 
                         {/* Heading & Subtitle - Consistent min-height prevents jitter */}
-                        <div className="text-center mt-4 mb-4 min-h-[56px] flex flex-col justify-center">
-                            <h3 className="font-bold text-slate-900 text-sm sm:text-base tracking-wide uppercase transition-all duration-150">
-                                {activeTab === 'parishioner'
-                                    ? 'Parishioner Portal Sign In'
-                                    : 'Staff & Chancery Sign In'}
+                        <div className="text-center mt-4 mb-4 flex flex-col justify-center">
+                            <h3 className="font-bold text-slate-900 text-sm sm:text-base tracking-wide uppercase">
+                                Sign In to Your Account
                             </h3>
-                            <p className="text-slate-600 text-sm mt-1 max-w-xs leading-relaxed transition-all duration-150">
-                                {activeTab === 'parishioner'
-                                    ? 'Access your sacramental certificates, document claims, and schedule appointments.'
-                                    : 'Enter your canonical credentials to manage parish registers and appointments.'}
+                            <p className="text-slate-600 text-sm mt-1 max-w-xs mx-auto leading-relaxed">
+                                Enter your registered email or username and canonical credentials.
                             </p>
                         </div>
 
@@ -248,9 +215,7 @@ export default function Login() {
                             <form onSubmit={submit} className="w-full space-y-3.5">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 tracking-wide uppercase mb-1.5">
-                                        {activeTab === 'parishioner'
-                                            ? 'Registered Email or Username:'
-                                            : 'Staff / Clergy Identifier:'}
+                                        Email or Username:
                                     </label>
                                     <input
                                         type="text"
@@ -258,9 +223,7 @@ export default function Login() {
                                         value={data.identifier}
                                         onChange={(e) => setData('identifier', e.target.value)}
                                         placeholder={
-                                            activeTab === 'parishioner'
-                                                ? 'e.g. maria.santos@email.ph'
-                                                : 'e.g. fr.reyes or chancery.admin'
+                                            "e.g. username or user@gmail.com"
                                         }
                                         className="w-full px-4 py-2.5 bg-white border border-slate-300 focus:border-amber-500 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all shadow-xs"
                                     />
@@ -360,9 +323,8 @@ export default function Login() {
                                 >
                                     {processing
                                         ? 'Authenticating...'
-                                        : activeTab === 'parishioner'
-                                        ? 'Sign In to Parishioner Portal'
-                                        : 'Sign In as Diocesan Staff'}
+                                        : 'Sign In'
+                                        }
                                 </button>
 
                                 {/* Face++ Biometric Option Divider & Button */}
@@ -386,7 +348,7 @@ export default function Login() {
                                     className="w-full py-2.5 px-4 bg-slate-50 hover:bg-amber-50/60 text-slate-800 hover:text-amber-950 border border-slate-200 hover:border-amber-300 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-150 shadow-2xs group"
                                 >
                                     <ScanFace className="w-4 h-4 text-amber-600 transition-transform duration-200 group-hover:scale-110" />
-                                    <span>Sign In with Face++ Recognition</span>
+                                    <span>Sign In with Face Recognition</span>
                                 </button>
                             </form>
                         ) : (
@@ -412,9 +374,7 @@ export default function Login() {
                                 {/* Email / Username Input */}
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 tracking-wide uppercase mb-1.5">
-                                        {activeTab === 'parishioner'
-                                            ? 'Registered Email or Username:'
-                                            : 'Staff / Clergy Identifier:'}
+                                        Email or Username:
                                     </label>
                                     <input
                                         type="text"
@@ -426,9 +386,7 @@ export default function Login() {
                                             if (cameraError) setCameraError(null);
                                         }}
                                         placeholder={
-                                            activeTab === 'parishioner'
-                                                ? 'e.g. maria.santos@email.ph'
-                                                : 'e.g. fr.reyes or chancery.admin'
+                                            "e.g. username or user@gmail.com"
                                         }
                                         className="w-full px-4 py-2.5 bg-white border border-slate-300 focus:border-amber-500 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all shadow-xs"
                                     />
@@ -481,35 +439,24 @@ export default function Login() {
                         )}
 
                         {/* Bottom Action Callout - Stable Box to Prevent Switcher Layout Shift */}
-                        <div className="w-full mt-4 min-h-[120px] flex flex-col justify-center">
-                            {activeTab === 'parishioner' ? (
-                                <div className="w-full bg-amber-50/50 border border-amber-300/80 rounded-2xl p-4 text-center flex flex-col justify-center space-y-1.5 transition-all duration-200 shadow-2xs">
-                                    <h4 className="font-bold text-amber-950 text-sm sm:text-base">
-                                        Don't have a parishioner account yet?
-                                    </h4>
-                                    <p className="text-slate-700 text-xs leading-normal">
-                                        Register to request certificates and schedule sacraments online.
-                                    </p>
-                                    <Link
-                                        href="/register"
-                                        className="block w-full py-2.5 bg-white border border-amber-400 hover:bg-amber-50 text-slate-900 font-bold rounded-xl text-sm transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] shadow-2xs"
-                                    >
-                                        + Sign Up / Register an Account
-                                    </Link>
-                                </div>
-                            ) : (
-                                <div className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center flex flex-col justify-center space-y-1.5 transition-all duration-200 shadow-2xs">
-                                    <h4 className="font-bold text-slate-900 text-sm sm:text-base">
-                                        Archdiocesan Curia Staff Support
-                                    </h4>
-                                    <p className="text-slate-700 text-xs leading-normal">
-                                        Parish staff and clergy credentials are provisioned by the Chancery.
-                                    </p>
-                                    <div className="py-2 px-3 bg-white border border-slate-200 rounded-xl text-amber-800 font-mono text-xs font-semibold">
-                                        Chancery Hotline: (043) 756-2572
-                                    </div>
-                                </div>
-                            )}
+                        <div className="w-full mt-4 flex flex-col justify-center">
+                            <div className="w-full bg-amber-50/50 border border-amber-300/80 rounded-2xl p-4 text-center flex flex-col justify-center space-y-1.5 shadow-2xs">
+                                <h4 className="font-bold text-amber-950 text-sm sm:text-base">
+                                    Don't have a parishioner account yet?
+                                </h4>
+                                <p className="text-slate-700 text-xs leading-normal">
+                                    Register to request certificates and schedule sacraments online.
+                                </p>
+                                <Link
+                                    href="/register"
+                                    className="block w-full py-2.5 bg-white border border-amber-400 hover:bg-amber-50 text-slate-900 font-bold rounded-xl text-sm transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] shadow-2xs"
+                                >
+                                    + Sign Up / Register an Account
+                                </Link>
+                                <p className="text-[11px] text-slate-500 pt-1">
+                                    Parish staff and clergy credentials are provisioned by the Chancery.
+                                </p>
+                            </div>
                         </div>
                     </div>
 

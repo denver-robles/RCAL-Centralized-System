@@ -286,6 +286,12 @@ export interface SacramentSchedule {
     payment_method?: string | null;
     payment_receipt_path?: string | null;
     payment_status?: string | null;
+    payment_amount?: number | string | null;
+    payment_reference?: string | null;
+    paid_at?: string | null;
+    payment_recorded_by?: number | null;
+    payment_recorder?: User | null;
+    payment_notes?: string | null;
     expected_attendees?: number | null;
     record_id?: number | null;
     record?: SacramentalRecord | null;

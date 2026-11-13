@@ -351,12 +351,25 @@ export default function Index({ certificateRequests, documentRequests, available
                                             </td>
                                             <td className="py-3 px-5 text-right whitespace-nowrap">
                                                 {doc.certificate_request_id ? (
-                                                    <Link
-                                                        href={`/certificates/${doc.certificate_request_id}`}
-                                                        className="inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors border border-slate-200 shadow-2xs"
-                                                    >
-                                                        View Order
-                                                    </Link>
+                                                    <div className="flex items-center gap-2 justify-end">
+                                                        <Link
+                                                            href={`/certificates/${doc.certificate_request_id}`}
+                                                            className="inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors border border-slate-200 shadow-2xs"
+                                                        >
+                                                            View Order
+                                                        </Link>
+                                                        {doc.matched_record_id && (
+                                                            <Link
+                                                                href={`/certificate-templates/preview?record_id=${doc.matched_record_id}&document_request_id=${doc.id}&sacrament_type=${doc.sacrament_type}`}
+                                                                target="_blank"
+                                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-500 text-slate-950 text-xs font-bold transition-colors shadow-2xs"
+                                                                title="Generate official certificate with St. Joseph parish template"
+                                                            >
+                                                                <Award className="w-3.5 h-3.5" />
+                                                                Generate Cert
+                                                            </Link>
+                                                        )}
+                                                    </div>
                                                 ) : (
                                                     <button
                                                         type="button"
