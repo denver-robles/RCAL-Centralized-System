@@ -28,6 +28,7 @@ Thumbs.db
 /database/*.sqlite
 /database/*.sqlite-backup
 /database/*.sqlite-journal
+TODO_SYSTEM_FEATURES.txt
 
 .venv/
 venv/

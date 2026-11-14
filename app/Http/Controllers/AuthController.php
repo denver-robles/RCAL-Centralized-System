@@ -237,7 +237,7 @@ class AuthController extends Controller
                 AuditActionEnum::LOGIN,
                 'user',
                 $user->id,
-                "User {$user->username} authenticated via Face++ biometric match (Confidence: {$confidence}%, Threshold: {$threshold}%)"
+                "User {$user->username} authenticated via biometric match."
             );
 
             if ($user->isParishioner()) {
@@ -252,11 +252,11 @@ class AuthController extends Controller
             AuditActionEnum::LOGIN_FAILED,
             'user',
             $user->id,
-            "Face recognition match rejected for {$user->username}: confidence {$confidence}% is below threshold {$threshold}%"
+            "Face recognition match rejected for {$user->username}: Face ID doesn't match."
         );
 
         return back()->withErrors([
-            'captured_image' => "Face verification failed. Confidence ({$confidence}%) is below required threshold ({$threshold}%). Please try again with good lighting or sign in with password.",
+            'captured_image' => 'Face verification failed. Please try again with good lighting or sign in with password.',
         ]);
     }
 
@@ -544,7 +544,7 @@ class AuthController extends Controller
             AuditActionEnum::CREATE,
             'user',
             $user->id,
-            "New parishioner registered with verified {$validated['id_type']} and Face++ biometric match: {$user->email} ({$user->display_name})",
+            "New parishioner registered with verified {$validated['id_type']} and biometric match: {$user->email} ({$user->display_name})",
             $user
         );
 
@@ -554,7 +554,7 @@ class AuthController extends Controller
 
         return redirect()->route('portal.dashboard')->with(
             'success',
-            'Mabuhay! Your parishioner account has been created and your identity has been verified via Government ID and Face++ biometrics.'
+            'Mabuhay! Your parishioner account has been created and your identity has been verified via Government ID and biometrics.'
         );
     }
 

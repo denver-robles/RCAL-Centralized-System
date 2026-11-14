@@ -75,7 +75,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
                             {auth.user ? (
                                 <Link
-                                    href={auth.user.is_staff ? '/records' : '/portal/dashboard'}
+                                    href={auth.user.is_staff ? '/dashboard' : '/portal/dashboard'}
                                     className="btn-primary"
                                 >
                                     <UserIcon className="w-4 h-4" />
@@ -136,7 +136,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                         <div className="pt-3">
                             {auth.user ? (
                                 <Link
-                                    href={auth.user.is_staff ? '/records' : '/portal/dashboard'}
+                                    href={auth.user.is_staff ? '/dashboard' : '/portal/dashboard'}
                                     className="btn-primary w-full"
                                     onClick={() => setDrawerOpen(false)}
                                 >

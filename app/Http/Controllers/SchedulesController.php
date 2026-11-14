@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\AuditActionEnum;
+use App\Enums\LegitimacyStatusEnum;
 use App\Enums\SacramentTypeEnum;
 use App\Enums\ScheduleStatusEnum;
 use App\Models\Clergy;
@@ -21,6 +22,10 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Mail\CashPaymentReceiptMail;
+use App\Mail\ScheduleBookingConfirmedMail;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class SchedulesController extends Controller
 {
@@ -36,7 +41,7 @@ class SchedulesController extends Controller
         $user = $request->user();
 
         $query = SacramentSchedule::query()
-            ->with(['parish', 'venue', 'presidingClergy', 'requestedClergy', 'record', 'attachments', 'requesterUser']);
+            ->with(['parish', 'venue', 'presidingClergy', 'requestedClergy', 'record', 'attachments', 'requesterUser', 'paymentRecorder']);
 
         ParishScopingService::scopeParish($query, $user, 'parish_id');
 
@@ -61,10 +66,19 @@ class SchedulesController extends Controller
 
         $clergy = Clergy::where('is_active', true)->orderBy('last_name')->get();
 
+        $currentYear = now()->year;
+        $paidCount = SacramentSchedule::query()
+            ->when(! $user->isArchdioceseWide(), fn ($q) => $q->where('parish_id', $user->home_parish_id))
+            ->whereNotNull('payment_reference')
+            ->whereYear('paid_at', $currentYear)
+            ->count();
+        $nextOrNumber = sprintf('OR-%s-%04d', $currentYear, $paidCount + 1);
+
         return Inertia::render('Schedules/Index', [
             'schedules' => $schedules,
             'venues' => $venues,
             'clergy' => $clergy,
+            'nextOrNumber' => $nextOrNumber,
             'filters' => $request->only(['status', 'sacrament_type', 'date']),
         ]);
     }
@@ -310,9 +324,9 @@ class SchedulesController extends Controller
             'add_to_clergy_directory' => ['nullable', 'boolean'],
             'baptism_type' => ['nullable', 'string', 'in:regular,solo'],
             'amount' => ['nullable', 'numeric', 'min:0'],
-            'book_number' => ['required_if:status,completed', 'nullable', 'integer', 'min:1'],
-            'page_number' => ['required_if:status,completed', 'nullable', 'integer', 'min:1'],
-            'entry_number' => ['required_if:status,completed', 'nullable', 'integer', 'min:1'],
+            'book_number' => ['required_if:status,completed', 'integer', 'min:1'],
+            'page_number' => ['required_if:status,completed', 'integer', 'min:1'],
+            'entry_number' => ['required_if:status,completed', 'integer', 'min:1'],
         ]);
 
         $user = $request->user();
@@ -383,9 +397,32 @@ class SchedulesController extends Controller
         $schedule->update($updateData);
 
         if ($newStatus === ScheduleStatusEnum::COMPLETED && $schedule->record_id === null) {
-            $book = (int) ($validated['book_number'] ?? 1);
-            $page = (int) ($validated['page_number'] ?? 1);
-            $entry = (int) ($validated['entry_number'] ?? 1);
+            $sacramentTypeValue = $schedule->sacrament_type instanceof \BackedEnum
+                ? $schedule->sacrament_type->value
+                : (string) $schedule->sacrament_type;
+
+            if (in_array($sacramentTypeValue, ['matrimony', 'wedding', 'marriage'], true)) {
+                $canonicalType = SacramentTypeEnum::MARRIAGE;
+            } else {
+                $canonicalType = SacramentTypeEnum::tryFrom($sacramentTypeValue);
+            }
+
+            $book = (int) ($validated['book_number'] ?? 0);
+            $page = (int) ($validated['page_number'] ?? 0);
+            $entry = (int) ($validated['entry_number'] ?? 0);
+
+            if ($book < 1 || $page < 1 || $entry < 1) {
+                $latest = SacramentalRecord::query()
+                    ->where('originating_parish_id', $schedule->parish_id)
+                    ->where('sacrament_type', $canonicalType)
+                    ->orderByDesc('book_number')
+                    ->orderByDesc('entry_number')
+                    ->first();
+
+                $book = $book >= 1 ? $book : ($latest?->book_number ?: 1);
+                $entry = $entry >= 1 ? $entry : (($latest?->entry_number ?: 0) + 1);
+                $page = $page >= 1 ? $page : (int) ceil($entry / 5);
+            }
 
             $godparentsVal = $schedule->specific_data['godparent_name']
                 ?? ($schedule->specific_data['godparents'] ?? ($schedule->specific_data['witnesses'] ?? null));
@@ -402,15 +439,15 @@ class SchedulesController extends Controller
                 $godparentsVal = implode(', ', array_filter(array_map(fn ($g) => is_array($g) ? ($g['name'] ?? '') : (string) $g, $godparentsVal)));
             }
 
-            $sacramentTypeValue = $schedule->sacrament_type instanceof \BackedEnum
-                ? $schedule->sacrament_type->value
-                : (string) $schedule->sacrament_type;
+            $eventDate = $schedule->starts_at ? $schedule->starts_at->toDateString() : now()->toDateString();
+            $carbonEvent = $schedule->starts_at ? Carbon::parse($schedule->starts_at) : now();
 
-            if (in_array($sacramentTypeValue, ['matrimony', 'wedding', 'marriage'], true)) {
-                $canonicalType = SacramentTypeEnum::MARRIAGE;
-            } else {
-                $canonicalType = SacramentTypeEnum::tryFrom($sacramentTypeValue);
-            }
+            $ministerName = $schedule->presidingClergy?->titled_name
+                ?? ($schedule->presidingClergy?->full_name
+                ?? ($schedule->guest_priest_name ?? ''));
+
+            $stipendPesos = isset($schedule->specific_data['stipend_pesos']) ? (string) $schedule->specific_data['stipend_pesos'] : ($schedule->amount ? (string) floor($schedule->amount) : '0');
+            $stipendCts = isset($schedule->specific_data['stipend_cts']) ? (string) $schedule->specific_data['stipend_cts'] : '00';
 
             if ($canonicalType === SacramentTypeEnum::MARRIAGE) {
                 // Groom Person
@@ -459,7 +496,7 @@ class SchedulesController extends Controller
                     'person_id' => $groomPerson->id,
                     'spouse_person_id' => $bridePerson->id,
                     'sacrament_type' => SacramentTypeEnum::MARRIAGE,
-                    'event_date' => $schedule->starts_at ? $schedule->starts_at->toDateString() : now()->toDateString(),
+                    'event_date' => $eventDate,
                     'originating_parish_id' => $schedule->parish_id,
                     'performed_by_clergy_id' => $schedule->presiding_clergy_id,
                     'book_number' => $book,
@@ -471,12 +508,17 @@ class SchedulesController extends Controller
 
                 $schedule->update(['record_id' => $record->id]);
             } elseif ($canonicalType) {
-                // Baptism, Confirmation, etc.
+                // Baptism or Confirmation
                 $fullName = $schedule->specific_data['candidate_name']
                     ?? ($schedule->specific_data['child_name'] ?? ($schedule->requester_name ?? 'Unknown'));
                 $nameParts = explode(' ', trim($fullName));
                 $firstName = array_shift($nameParts);
                 $lastName = count($nameParts) > 0 ? implode(' ', $nameParts) : 'Unknown';
+
+                $dob = $schedule->specific_data['candidate_dob'] ?? ($schedule->specific_data['dob'] ?? null);
+                $pob = $schedule->specific_data['place_of_birth'] ?? ($schedule->specific_data['birthplace'] ?? null);
+                $mother = $schedule->specific_data['candidate_mother_name'] ?? ($schedule->specific_data['mother_name'] ?? null);
+                $father = $schedule->specific_data['candidate_father_name'] ?? ($schedule->specific_data['father_name'] ?? null);
 
                 $person = Person::firstOrCreate(
                     [
@@ -484,24 +526,80 @@ class SchedulesController extends Controller
                         'last_name' => $lastName,
                     ],
                     [
-                        'sex' => $schedule->specific_data['candidate_gender'] ?? ($schedule->specific_data['gender'] ?? 'Unknown'),
-                        'date_of_birth' => $schedule->specific_data['candidate_dob'] ?? ($schedule->specific_data['dob'] ?? null),
-                        'place_of_birth' => $schedule->specific_data['place_of_birth'] ?? ($schedule->specific_data['birthplace'] ?? null),
-                        'mother_name' => $schedule->specific_data['candidate_mother_name'] ?? ($schedule->specific_data['mother_name'] ?? null),
-                        'father_name' => $schedule->specific_data['candidate_father_name'] ?? ($schedule->specific_data['father_name'] ?? null),
+                        'sex' => $schedule->specific_data['candidate_gender'] ?? ($schedule->specific_data['gender'] ?? 'unknown'),
+                        'date_of_birth' => $dob,
+                        'place_of_birth' => $pob,
+                        'mother_name' => $mother,
+                        'father_name' => $father,
                     ]
                 );
+
+                $legitimacyInput = strtolower((string) ($schedule->specific_data['legitimacy'] ?? ''));
+                $isLegitimate = ! in_array($legitimacyInput, ['illegitimate', 'nat', 'nat.']);
+                $legitimacyEnum = $isLegitimate ? LegitimacyStatusEnum::LEGITIMATE : LegitimacyStatusEnum::ILLEGITIMATE;
+                $legitimacyStr = $isLegitimate ? 'LEG.' : 'NAT.';
+
+                $carbonBirth = $dob ? Carbon::parse($dob) : null;
+
+                // Build church book columns (matching XML schema)
+                if ($canonicalType === SacramentTypeEnum::BAPTISM) {
+                    $bookData = [
+                        'no' => $entry,
+                        'baptismi_annus' => $carbonEvent->format('Y'),
+                        'baptismi_mensis_et_dies' => $carbonEvent->translatedFormat('F j'),
+                        'baptizatorum_nomina_et_cognomina' => $fullName,
+                        'nativitatis_annus' => $carbonBirth ? $carbonBirth->format('Y') : '',
+                        'nativitatis_mensis_et_dies' => $carbonBirth ? $carbonBirth->translatedFormat('F j') : '',
+                        'nativitatis_legitimitas' => $legitimacyStr,
+                        'nativitatis_locus' => (string) ($pob ?? ''),
+                        'parentum_nomina_et_cognomina' => trim("{$father} / {$mother}", ' /'),
+                        'parentum_originis_locus' => (string) ($schedule->specific_data['parents_origin'] ?? ''),
+                        'parentum_habitationis_locus' => (string) ($schedule->specific_data['parents_residence'] ?? ($schedule->specific_data['parents_address'] ?? '')),
+                        'patrinorum_nomina_et_cognomina' => (string) $godparentsVal,
+                        'patrinorum_habitationis_locus' => (string) ($schedule->specific_data['godparents_address'] ?? ''),
+                        'stipendium_pesos' => $stipendPesos,
+                        'stipendium_cts' => $stipendCts,
+                        'nomen_ministri' => $ministerName,
+                        'observanda' => (string) ($schedule->notes ?? ($schedule->specific_data['notes'] ?? '')),
+                    ];
+                } else {
+                    // Confirmation
+                    $age = (string) ($schedule->specific_data['age'] ?? ($schedule->specific_data['aetas'] ?? ''));
+                    if (! $age && $carbonBirth) {
+                        $age = (string) $carbonBirth->diffInYears($carbonEvent);
+                    }
+
+                    $bookData = [
+                        'no' => $entry,
+                        'annus' => $carbonEvent->format('Y'),
+                        'mensis_et_dies' => $carbonEvent->translatedFormat('F j'),
+                        'confirmatorum' => $fullName,
+                        'aetas' => $age,
+                        'parochia' => (string) ($schedule->specific_data['parish_of_baptism'] ?? ($schedule->specific_data['parochia'] ?? '')),
+                        'provincia' => (string) ($schedule->specific_data['province_of_baptism'] ?? ($schedule->specific_data['provincia'] ?? '')),
+                        'locus_baptismi' => (string) ($schedule->specific_data['place_of_baptism'] ?? ($schedule->specific_data['locus_baptismi'] ?? '')),
+                        'parentum' => trim("{$father} / {$mother}", ' /'),
+                        'patrinorum' => (string) $godparentsVal,
+                        'stipendium_pesos' => $stipendPesos,
+                        'stipendium_cts' => $stipendCts,
+                        'nomen_ministri' => $ministerName,
+                        'observanda' => (string) ($schedule->notes ?? ($schedule->specific_data['notes'] ?? '')),
+                    ];
+                }
 
                 $record = SacramentalRecord::create([
                     'person_id' => $person->id,
                     'sacrament_type' => $canonicalType,
-                    'event_date' => $schedule->starts_at ? $schedule->starts_at->toDateString() : now()->toDateString(),
+                    'event_date' => $eventDate,
                     'originating_parish_id' => $schedule->parish_id,
                     'performed_by_clergy_id' => $schedule->presiding_clergy_id,
                     'book_number' => $book,
                     'page_number' => $page,
                     'entry_number' => $entry,
+                    'legitimacy' => $legitimacyEnum,
                     'godparents' => $godparentsVal,
+                    'place_of_event' => $pob,
+                    'book_data' => $bookData,
                     'status' => 'registered',
                 ]);
 
@@ -517,6 +615,18 @@ class SchedulesController extends Controller
             "Schedule #{$schedule->id} updated to {$newStatus->value}",
             $user
         );
+
+        // Phase 4: Dispatch booking confirmation email if ceremony is officially confirmed
+        if ($newStatus === ScheduleStatusEnum::CONFIRMED) {
+            $recipientEmail = $schedule->requester_email ?: $schedule->requesterUser?->email;
+            if ($recipientEmail) {
+                try {
+                    Mail::to($recipientEmail)->queue(new ScheduleBookingConfirmedMail($schedule->loadMissing(['parish', 'presidingClergy'])));
+                } catch (\Throwable $e) {
+                    Log::warning("Could not dispatch ScheduleBookingConfirmedMail: " . $e->getMessage());
+                }
+            }
+        }
 
         return redirect()->back()->with('success', "Schedule status updated to {$newStatus->value}.");
     }
@@ -578,21 +688,52 @@ class SchedulesController extends Controller
 
         $validated = $request->validate([
             'payment_status' => ['required', 'string', 'in:paid,rejected,unpaid,pending_verification'],
+            'payment_amount' => ['required_if:payment_status,paid', 'nullable', 'numeric', 'min:0'],
+            'payment_reference' => ['required_if:payment_status,paid', 'nullable', 'string', 'max:100'],
+            'paid_at' => ['required_if:payment_status,paid', 'nullable', 'date'],
+            'payment_notes' => ['nullable', 'string', 'max:500'],
         ]);
 
         $oldStatus = $schedule->payment_status;
         $schedule->payment_status = $validated['payment_status'];
+
+        if ($validated['payment_status'] === 'paid') {
+            $schedule->payment_method = 'cash';
+            $schedule->payment_amount = $validated['payment_amount'];
+            $schedule->payment_reference = $validated['payment_reference'];
+            $schedule->paid_at = $validated['paid_at'] ?? now()->toDateString();
+            $schedule->payment_recorded_by = $user->id;
+            $schedule->payment_notes = $validated['payment_notes'] ?? null;
+        } elseif (in_array($validated['payment_status'], ['unpaid', 'rejected'])) {
+            $schedule->payment_notes = $validated['payment_notes'] ?? null;
+        }
         $schedule->save();
 
         AuditService::record(
             AuditActionEnum::UPDATE,
             $schedule,
             ['payment_status' => $oldStatus],
-            ['payment_status' => $schedule->payment_status],
-            "Payment status for schedule #{$schedule->id} verified as {$schedule->payment_status} by {$user->username}",
+            [
+                'payment_status' => $schedule->payment_status,
+                'payment_reference' => $schedule->payment_reference,
+                'payment_amount' => $schedule->payment_amount,
+            ],
+            "Cash payment recorded for schedule #{schedule->id} (OR #{$schedule->payment_reference}, Amount: ₱{$schedule->payment_amount} by {$user->username})",
             $user
         );
 
-        return redirect()->back()->with('success', "Payment verification recorded: marked as {$schedule->payment_status}.");
+        // Phase 4: Dispatch Cash Payment Receipt email
+        if ($validated['payment_status'] === 'paid') {
+            $recipientEmail = $schedule->requester_email ?: $schedule->requesterUser?->email;
+            if ($recipientEmail) {
+                try {
+                    Mail::to($recipientEmail)->queue(new CashPaymentReceiptMail($schedule->loadMissing(['parish', 'paymentRecorder'])));
+                } catch (\Throwable $e) {
+                    Log::warning("Could not dispatch CashPaymentReceiptMail: " . $e->getMessage());
+                }
+            }
+        }
+
+        return redirect()->back()->with('success', "Payment successfully recorded with OR #{$schedule->payment_reference}.");
     }
 }

@@ -3,6 +3,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import PortalLayout from '@/Layouts/PortalLayout';
 import StatusBadge from '@/Components/StatusBadge';
 import { Clergy, PageProps, SacramentSchedule, ScheduleStatus, Venue } from '@/types';
+import RecordCashPaymentModal from '@/Components/RecordCashPaymentModal';
 import {
     parseSacramentDate,
     formatSacramentDate,
@@ -34,6 +35,7 @@ import {
     Settings,
     Church,
     CreditCard,
+    Receipt,
 } from 'lucide-react';
 
 interface PaginatedData<T> {
@@ -48,6 +50,7 @@ interface Props extends PageProps {
     schedules: PaginatedData<SacramentSchedule>;
     venues: Venue[];
     clergy: Clergy[];
+    nextOrNumber?: string;
     filters: {
         status?: string;
         sacrament_type?: string;
@@ -55,7 +58,19 @@ interface Props extends PageProps {
     };
 }
 
-export default function Index({ schedules, venues, clergy, filters }: Props) {
+// Helper to extract uppercase initials, e.g. "St. Joseph the Worker Parish" -> "SJWP"
+function getParishInitials(name?: string | null): string {
+    if (!name) return 'RCAL';
+    const ignore = ['the', 'of', 'and', 'de', 'del', 'la'];
+    const words = name.replace(/[^\w\s]/g, '').split(/\s+/);
+    const initials = words
+        .filter((w) => !ignore.includes(w.toLowerCase()))
+        .map((w) => w[0]?.toUpperCase() || '')
+        .join('');
+    return initials || name.substring(0, 3).toUpperCase();
+}
+
+export default function Index({ schedules, venues, clergy, filters, nextOrNumber }: Props) {
     const [cancellingId, setCancellingId] = useState<number | null>(null);
     const [cancelReason, setCancelReason] = useState('');
     const [viewingSchedule, setViewingSchedule] = useState<SacramentSchedule | null>(null);
@@ -271,6 +286,14 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
         }
     };
 
+    // Cash Payment Modal state
+    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const [activeTab, setActiveTab] = useState<'schedules' | 'payments'>(
+        urlParams?.get('tab') === 'payments' ? 'payments' : 'schedules'
+    );
+    const [cashPaymentSchedule, setCashPaymentSchedule] = useState<SacramentSchedule | null>(null);
+    const [selectedPaymentSacrament, setSelectedPaymentSacrament] = useState<string>('all');
+
     return (
         <PortalLayout
             title="Sacrament Schedules & Appointments"
@@ -306,13 +329,30 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
 
             {/* Sub-Navigation Tabs */}
             <div className="flex items-center gap-2 border-b border-slate-200 mb-5 pb-2">
-                <Link
-                    href="/schedules"
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 shadow-xs"
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('schedules')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition ${
+                        activeTab === 'schedules'
+                            ? 'bg-amber-500 text-slate-950 shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    }`}
                 >
                     <FileText className="w-4 h-4" />
-                    <span>List View</span>
-                </Link>
+                    <span>Appointments List</span>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('payments')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition ${
+                        activeTab === 'payments'
+                            ? 'bg-amber-500 text-slate-950 shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    }`}
+                >
+                    <Receipt className="w-4 h-4 text-emerald-600" />
+                    <span>Payment Records (Cash)</span>
+                </button>
                 <Link
                     href="/schedules/calendar"
                     className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
@@ -328,6 +368,107 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
                     <span>Sacrament Settings &amp; Days</span>
                 </Link>
             </div>
+
+                        {activeTab === 'payments' ? (
+                <div className="space-y-5">
+                    {/* Filter by Sacrament & Summary Metric */}
+                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs font-bold text-slate-700 uppercase tracking-wide mr-1">
+                                Filter by Sacrament:
+                            </span>
+                            {['all', 'baptism', 'confirmation', 'marriage', 'funeral', 'blessing'].map((sac) => (
+                                <button
+                                    key={sac}
+                                    type="button"
+                                    onClick={() => setSelectedPaymentSacrament(sac)}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize transition ${
+                                        selectedPaymentSacrament === sac
+                                            ? 'bg-slate-900 text-white shadow-xs'
+                                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                    }`}
+                                >
+                                    {sac}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Quick Total KPI */}
+                        <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-xl">
+                            <span className="text-xs text-emerald-800 font-semibold uppercase">Total Recorded:</span>
+                            <span className="font-serif font-bold text-emerald-900 text-lg">
+                                ₱
+                                {schedules.data
+                                    .filter((s) => s.payment_status === 'paid')
+                                    .filter((s) => selectedPaymentSacrament === 'all' || s.sacrament_type === selectedPaymentSacrament)
+                                    .reduce((acc, curr) => acc + Number(curr.payment_amount || 0), 0)
+                                    .toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Payment Records Ledger Table */}
+                    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
+                        <table className="w-full text-left text-sm">
+                            <thead className="bg-slate-50 text-slate-700 text-xs font-bold uppercase tracking-wide border-b border-slate-200">
+                                <tr>
+                                    <th className="py-3 px-4">OR / Ref No.</th>
+                                    <th className="py-3 px-4">Sacrament</th>
+                                    <th className="py-3 px-4">Requester / Candidate</th>
+                                    <th className="py-3 px-4">Amount Paid</th>
+                                    <th className="py-3 px-4">Payment Date</th>
+                                    <th className="py-3 px-4">Cashier / Staff</th>
+                                    <th className="py-3 px-4 text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 text-slate-800">
+                                {schedules.data
+                                    .filter((s) => selectedPaymentSacrament === 'all' || s.sacrament_type === selectedPaymentSacrament)
+                                    .filter((s) => s.payment_status === 'paid' || s.payment_reference)
+                                    .map((s) => (
+                                        <tr key={s.id} className="hover:bg-slate-50/60 transition">
+                                            <td className="py-3 px-4 font-mono font-bold text-slate-900">
+                                                {s.payment_reference || 'N/A'}
+                                            </td>
+                                            <td className="py-3 px-4 capitalize font-semibold">
+                                                <span className="px-2.5 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-lg text-xs font-bold">
+                                                    {s.sacrament_type}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4 font-medium">{s.requester_name || s.title}</td>
+                                            <td className="py-3 px-4 font-bold text-emerald-700">
+                                                ₱{Number(s.payment_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                            </td>
+                                            <td className="py-3 px-4 text-xs text-slate-600">
+                                                {s.paid_at || new Date(s.created_at).toLocaleDateString()}
+                                            </td>
+                                            <td className="py-3 px-4 text-xs text-slate-700">
+                                                {(() => {
+                                                    // Extract manually entered receiver if present in notes, otherwise use account name
+                                                    const match = s.payment_notes?.match(/Received by: ([^•]+)/);
+                                                    const receiver = match ? match[1].trim() : (s.payment_recorder?.display_name || s.payment_recorder?.username || 'Parish Staff');
+                                                    const initials = getParishInitials(s.parish?.name || auth.user?.home_parish_name);
+                                                    return (
+                                                        <span>
+                                                            <strong className="text-slate-900">{receiver}</strong> -{' '}
+                                                            <span className="font-bold text-amber-800">{initials}</span>
+                                                        </span>
+                                                    );
+                                                })()}
+                                            </td>
+                                                                                        <td className="py-3 px-4 text-center">
+                                                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                                                    Paid (Cash)
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            ) : (
+                <>
 
             {/* Filter Bar */}
             <div className="bg-white border border-slate-200 rounded-xl p-4 mb-6 flex flex-wrap items-center justify-between gap-4 shadow-xs">
@@ -600,6 +741,8 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
                     </table>
                 </div>
             </div>
+            </>
+        )}
 
             {/* Modal 1: View Full Details & Uploaded Files */}
             {viewingSchedule && (
@@ -971,34 +1114,25 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
                                     </div>
                                 )}
 
-                                {viewingSchedule.payment_status === 'pending_verification' && (
-                                    <div className="flex items-center gap-2 pt-2">
+                                {viewingSchedule.payment_status !== 'paid' ? (
+                                    <div className="pt-2">
                                         <button
                                             type="button"
                                             onClick={() => {
-                                                router.post(`/schedules/${viewingSchedule.id}/verify-payment`, {
-                                                    payment_status: 'paid',
-                                                }, {
-                                                    onSuccess: () => setViewingSchedule(null),
-                                                });
+                                                const sch = viewingSchedule;
+                                                setViewingSchedule(null);
+                                                setCashPaymentSchedule(sch);
                                             }}
-                                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition shadow-xs cursor-pointer"
+                                            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
                                         >
-                                            Confirm Receipt as Paid
+                                            <Receipt className="w-3.5 h-3.5" />
+                                            <span>Record Cash Payment (OR #)</span>
                                         </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                router.post(`/schedules/${viewingSchedule.id}/verify-payment`, {
-                                                    payment_status: 'unpaid',
-                                                }, {
-                                                    onSuccess: () => setViewingSchedule(null),
-                                                });
-                                            }}
-                                            className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold transition shadow-xs cursor-pointer"
-                                        >
-                                            Reject Receipt
-                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="pt-2 text-xs text-emerald-800 font-bold flex items-center gap-1.5">
+                                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                        <span>Payment Verified &amp; Recorded</span>
                                     </div>
                                 )}
                             </div>
@@ -2147,6 +2281,15 @@ export default function Index({ schedules, venues, clergy, filters }: Props) {
                     </div>
                 </div>
             )}
+
+            {/* Cash Payment Prompt Modal */}
+            <RecordCashPaymentModal
+                isOpen={!!cashPaymentSchedule}
+                onClose={() => setCashPaymentSchedule(null)}
+                schedule={cashPaymentSchedule}
+                suggestedOrNumber={nextOrNumber}
+            />
+
         </PortalLayout>
     );
 }

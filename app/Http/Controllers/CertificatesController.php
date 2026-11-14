@@ -290,9 +290,9 @@ class CertificatesController extends Controller
     }
 
     /**
-     * Render printable Archdiocesan certificate preview.
+     * Render printable Archdiocesan certificate preview using the new template generator.
      */
-    public function printCertificate(Request $request, CertificateRequest $certificate): Response
+    public function printCertificate(Request $request, CertificateRequest $certificate): RedirectResponse
     {
         $user = $request->user();
 
@@ -309,23 +309,19 @@ class CertificatesController extends Controller
             abort(403, 'Access denied. Cannot print certificate.');
         }
 
-        // Must be issued
-        if ($certificate->status !== RequestStatusEnum::ISSUED) {
-            return redirect()->route('certificates.show', $certificate->id)
-                ->with('error', 'Only officially issued certificates may be printed.');
-        }
-
         // Log print action for RA 10173 compliance
         AuditService::log(
             $request,
             AuditActionEnum::PRINT,
             'certificate_request',
             $certificate->id,
-            "Certificate {$certificate->certificate_number} printed by {$user->username}"
+            "Certificate {$certificate->certificate_number} redirected to Generator Preview by {$user->username}"
         );
 
-        return Inertia::render('Certificates/Print', [
-            'certificate' => $certificate,
+        return redirect()->route('certificate-templates.preview', [
+            'record_id' => $certificate->record_id,
+            'certificate_request_id' => $certificate->id,
+            'sacrament_type' => $certificate->record?->sacrament_type?->value ?? 'baptism',
         ]);
     }
 }

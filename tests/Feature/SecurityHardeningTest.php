@@ -188,9 +188,12 @@ class SecurityHardeningTest extends TestCase
         $this->assertEquals('pending_verification', $schedule->payment_status);
         $this->assertNotNull($schedule->payment_receipt_path);
 
-        // Parish staff verifies and approves payment
+        // Parish staff verifies and approves payment with Official Receipt
         $verifyResponse = $this->actingAs($this->parishStaff)->post("/schedules/{$schedule->id}/verify-payment", [
             'payment_status' => 'paid',
+            'payment_reference' => 'OR-2026-0001',
+            'payment_amount' => 500.00,
+            'paid_at' => now()->toDateString(),
         ]);
 
         $verifyResponse->assertSessionHas('success');

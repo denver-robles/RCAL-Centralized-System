@@ -112,7 +112,7 @@ export default function Detail({ auth, certificate }: Props) {
 
                         {certificate.status === 'issued' && (
                             <Link
-                                href={`/certificates/${certificate.id}/print`}
+                                href={`/certificate-templates/preview?record_id=${certificate.record_id}&certificate_request_id=${certificate.id}&sacrament_type=${certificate.record?.sacrament_type || 'baptism'}`}
                                 target="_blank"
                                 className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold text-sm rounded-xl shadow-xs transition-all duration-200"
                             >

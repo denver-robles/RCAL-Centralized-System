@@ -34,6 +34,11 @@ class SacramentSchedule extends Model
         'payment_method',
         'payment_receipt_path',
         'payment_status',
+        'payment_amount',
+        'payment_reference',
+        'paid_at',
+        'payment_recorded_by',
+        'payment_notes',
         'expected_attendees',
         'record_id',
         'cancellation_reason',
@@ -52,6 +57,8 @@ class SacramentSchedule extends Model
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
             'alternative_starts_at' => 'datetime',
+            'paid_at' => 'date',
+            'payment_amount' => 'decimal:2',
             'specific_data' => 'array',
             'document_checklist' => 'array',
             'expected_attendees' => 'integer',
@@ -173,5 +180,9 @@ class SacramentSchedule extends Model
     public function getDonationAmountAttribute(): ?float
     {
         return $this->amount;
+    }
+    public function paymentRecorder(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'payment_recorded_by');
     }
 }

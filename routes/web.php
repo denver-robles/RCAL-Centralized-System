@@ -4,6 +4,7 @@ use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CertificatesController;
+use App\Http\Controllers\CertificateTemplateController;
 use App\Http\Controllers\ClergyController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PortalController;
@@ -115,6 +116,7 @@ Route::middleware(['auth', 'staff'])->group(function () {
     Route::get('/records/{record}', [RecordsController::class, 'show'])->name('records.show');
     Route::post('/records/{record}/annotate', [RecordsController::class, 'annotate'])->name('records.annotate');
     Route::post('/records/{record}/void', [RecordsController::class, 'voidRecord'])->name('records.void');
+    Route::post('/records/{record}/book', [RecordsController::class, 'updateBook'])->name('records.update-book');
 
     // Certificate Processing & Issuance
     Route::get('/certificates', [CertificatesController::class, 'index'])->name('certificates.index');
