@@ -34,8 +34,8 @@ class SecurityHeaders
                 ."img-src 'self' data: blob: https:{$viteHosts}; "
                 ."connect-src 'self' https://api-us.faceplusplus.com https://cdn.jsdelivr.net https://tessdata.projectnaptha.com https://api.ocr.space https://api.stripe.com{$viteHosts}{$viteWs}; "
                 ."worker-src 'self' blob:; "
-                ."frame-src 'self' https://js.stripe.com; "
-                ."object-src 'none'; "
+                ."frame-src 'self' blob: data: https://js.stripe.com; "
+                ."object-src 'self' blob:; "
                 ."base-uri 'self';",
         ];
 
