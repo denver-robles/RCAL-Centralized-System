@@ -24,8 +24,8 @@ namespace App\Services;
  */
 class CertificateFileParserService
 {
-    /** The regex pattern that matches {{placeholder_name}} tokens. */
-    private const PLACEHOLDER_PATTERN = '/\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/';
+    /** The regex pattern that matches {{placeholder}}, ${placeholder}, or {d.placeholder} tokens. */
+    private const PLACEHOLDER_PATTERN = '/(?:\{\{|\$\{|\{d\.)\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:\}\}|\})/';
 
     /**
      * Parse the given file and extract all {{placeholder}} names.
@@ -168,5 +168,50 @@ class CertificateFileParserService
         sort($placeholders);
 
         return array_values($placeholders);
+    }
+
+    /**
+     * Normalize placeholders in a DOCX file to Carbone syntax: {d.placeholder_name}.
+     * Handles ${var}, {{var}}, ${d.var}, and {{d.var}}.
+     */
+    public function normalizeDocxForCarbone(string $filePath): bool
+    {
+        if (! file_exists($filePath) || ! class_exists(\ZipArchive::class)) {
+            return false;
+        }
+
+        try {
+            $zip = new \ZipArchive;
+            if ($zip->open($filePath) !== true) {
+                return false;
+            }
+
+            $modified = false;
+            $xmlFiles = ['word/document.xml', 'word/header1.xml', 'word/header2.xml', 'word/footer1.xml', 'word/footer2.xml'];
+
+            foreach ($xmlFiles as $xmlFile) {
+                $content = $zip->getFromName($xmlFile);
+                if ($content === false) {
+                    continue;
+                }
+
+                // 1. Replace ${d.something} and {{d.something}} -> {d.something}
+                $newContent = preg_replace('/(?:\$\{|\{\{)d\.([a-zA-Z_][a-zA-Z0-9_]*)(?:\}\}|\})/', '{d.$1}', $content);
+
+                // 2. Replace ${something} and {{something}} (not starting with d.) -> {d.something}
+                $newContent = preg_replace('/(?:\$\{|\{\{)(?!d\.)([a-zA-Z_][a-zA-Z0-9_]*)(?:\}\}|\})/', '{d.$1}', $newContent);
+
+                if ($newContent !== $content) {
+                    $zip->addFromString($xmlFile, $newContent);
+                    $modified = true;
+                }
+            }
+
+            $zip->close();
+
+            return $modified;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 }

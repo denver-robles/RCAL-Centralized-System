@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import PortalLayout from '@/Layouts/PortalLayout';
 import { CertificateTemplate, SacramentalRecord, PageProps } from '@/types';
+import axios from 'axios';
 import {
     Printer,
+    Download,
     ArrowLeft,
     Search,
     RotateCcw,
@@ -36,7 +38,91 @@ export default function Preview({
     const [recordSearch, setRecordSearch] = useState('');
     const [certData, setCertData] = useState<Record<string, string>>(populatedData || {});
     const [isPrinting, setIsPrinting] = useState(false);
+    const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+    const [isRendering, setIsRendering] = useState<boolean>(false);
+    const [renderError, setRenderError] = useState<string | null>(null);
+    const iframeRef = useRef<HTMLIFrameElement>(null);
+    const abortControllerRef = useRef<AbortController | null>(null);
 
+    const loadPdfPreview = async () => {
+        // Abort previous in-flight request if user triggered a new change
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
+        setIsRendering(true);
+        setRenderError(null);
+        try {
+            const response = await axios.post(
+                '/certificate-templates/preview-pdf',
+                {
+                    template_id: template?.id ?? null,
+                    record_id: recordId ? Number(recordId) : null,
+                    sacrament_type: sacrament,
+                    overrides: certData,
+                },
+                {
+                    responseType: 'blob',
+                    signal: controller.signal,
+                }
+            );
+
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            if (pdfUrl) {
+                URL.revokeObjectURL(pdfUrl);
+            }
+            setPdfUrl(URL.createObjectURL(blob));
+        } catch (error: any) {
+            // Ignore cancelled requests
+            if (axios.isCancel(error) || error.name === 'CanceledError' || error.name === 'AbortError') {
+                return;
+            }
+
+            console.error('Failed to load certificate PDF preview', error);
+            let msg = 'Failed to generate PDF preview via Carbone.';
+
+            if (error.response?.data instanceof Blob) {
+                try {
+                    const errText = await error.response.data.text();
+                    try {
+                        const parsed = JSON.parse(errText);
+                        if (parsed.error) {
+                            msg = parsed.error;
+                        }
+                    } catch {
+                        if (errText.includes('Maximum execution time')) {
+                            msg = 'Server timed out while rendering PDF (exceeded PHP execution time). Please try again.';
+                        } else if (errText.includes('cURL error 60')) {
+                            msg = 'SSL connection error to Carbone API. Check CARBONE_VERIFY_SSL in .env.';
+                        } else if (errText.includes('cURL error 28')) {
+                            msg = 'Carbone API timed out. Please check your internet connection.';
+                        } else if (errText.length > 0 && errText.length < 250) {
+                            msg = errText;
+                        }
+                    }
+                } catch {
+                    // Fallback to default message
+                }
+            } else if (error.response?.data?.error) {
+                msg = error.response.data.error;
+            } else if (error.message) {
+                msg = error.message;
+            }
+            setRenderError(msg);
+        } finally {
+            setIsRendering(false);
+        }
+    };
+
+    // Automatically fetch the PDF preview when sacrament, record, or fields change
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            loadPdfPreview();
+        }, 800); // 800ms debounce
+        return () => clearTimeout(timer);
+    }, [sacrament, recordId, certData]);
     // Sync certData when populatedData prop updates
     useEffect(() => {
         setCertData(populatedData || {});
@@ -152,9 +238,27 @@ export default function Preview({
 
                         {/* Print / Action Buttons */}
                         <div className="flex items-center gap-3 justify-end shrink-0">
+                            {pdfUrl && (
+                                <a
+                                    href={pdfUrl}
+                                    download={`${sacrament}_certificate.pdf`}
+                                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl border border-blue-200 transition text-sm"
+                                    title="Download the rendered PDF"
+                                >
+                                    <Download className="w-4 h-4" />
+                                    Download PDF
+                                </a>
+                            )}
+
                             <button
                                 type="button"
-                                onClick={() => window.print()}
+                                onClick={() => {
+                                    if (iframeRef.current?.contentWindow) {
+                                        iframeRef.current.contentWindow.print();
+                                    } else {
+                                        window.print();
+                                    }
+                                }}
                                 className="inline-flex items-center gap-2 px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl transition shadow-sm text-sm"
                             >
                                 <Printer className="w-4 h-4" />
@@ -372,234 +476,57 @@ export default function Preview({
                             </div>
                         </div>
                     </div>
-
-                    {/* ── Right Canvas Column: The Exact Certificate ── */}
-                    <div className="lg:col-span-8 flex justify-center print:col-span-12 print:w-full">
-                        <div
-                            id="certificate-print-canvas"
-                            className="w-[8.5in] min-h-[11in] bg-white text-slate-900 shadow-xl border border-slate-300 p-8 sm:p-12 relative flex flex-col justify-between font-serif selection:bg-amber-200 print:shadow-none print:border-none print:m-0 print:p-8 print:w-full print:min-h-screen"
-                            style={{
-                                fontFamily: "'Times New Roman', Times, Georgia, serif",
-                            }}
-                        >
-                            {/* Watermark in background */}
-                            <div
-                                className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.14] select-none z-0"
-                                style={{
-                                    backgroundImage: 'url(/images/certificate/watermark.png)',
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'center 56%',
-                                    backgroundSize: '580px auto',
-                                }}
-                            />
-
-                            {/* ── Top Header Box with Double Line Border ── */}
-                            <div className="relative z-10 mb-8">
-                                <div
-                                    className={`border-[3px] ${borderColorClass} p-3 rounded-xs flex items-center justify-between gap-4`}
-                                    style={{
-                                        boxShadow: '0 0 0 2px #ffffff, 0 0 0 3px ' + (isBaptism ? '#2d8a4e' : '#d4a017'),
-                                    }}
-                                >
-                                    {/* Left Parish Seal */}
-                                    <div className="w-20 h-20 shrink-0 flex items-center justify-center">
-                                        <img
-                                            src="/images/certificate/seal_parish.jpg"
-                                            alt="Parish Seal"
-                                            className="w-18 h-18 object-contain rounded-full shadow-xs"
-                                            onError={(e) => {
-                                                (e.target as HTMLElement).style.display = 'none';
-                                            }}
-                                        />
-                                    </div>
-
-                                    {/* Center Header Details */}
-                                    <div className="text-center flex-1">
-                                        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-950 font-serif leading-tight">
-                                            {certData['parish_name'] || 'St. Joseph the Worker Parish'}
-                                        </h1>
-                                        <p className="text-xs sm:text-sm font-semibold text-slate-800 tracking-wide mt-0.5">
-                                            Archdiocese of Lipa
-                                        </p>
-                                        <p className="text-xs text-slate-700">
-                                            {certData['parish_address'] || 'Inosluban Lipa City Batangas'}
-                                        </p>
-                                        <p className="text-[11px] text-slate-700 mt-0.5">
-                                            Gmail: {certData['parish_email'] || 'stjosephtheworker.rcal@gmail.com'}
-                                        </p>
-                                        <p className="text-[11px] text-slate-700">
-                                            Contact Nos. {certData['parish_contact'] || '(043)-321-9447/ 0975-897-8022'}
-                                        </p>
-                                    </div>
-
-                                    {/* Right Diocesan Coat of Arms */}
-                                    <div className="w-20 h-20 shrink-0 flex items-center justify-center">
-                                        <img
-                                            src="/images/certificate/seal_diocese.png"
-                                            alt="Diocese Coat of Arms"
-                                            className="w-18 h-18 object-contain rounded-full shadow-xs"
-                                            onError={(e) => {
-                                                (e.target as HTMLElement).style.display = 'none';
-                                            }}
-                                        />
-                                    </div>
-                                </div>
+                    {/* ── Right Column: Carbone Native PDF Viewer ── */}
+                    <div className="lg:col-span-8 flex flex-col items-center print:col-span-12 print:w-full">
+                        {/* Status bar */}
+                        <div className="w-full bg-white border border-slate-200 rounded-t-2xl px-5 py-3 flex items-center justify-between print:hidden shadow-xs">
+                            <div>
+                                <h2 className="text-sm font-bold text-slate-900 leading-none">
+                                    Carbone PDF Preview
+                                </h2>
+                                <span className="text-[11px] font-medium text-slate-400 mt-0.5 block">
+                                    High-fidelity in-browser PDF • Watermark & signatures preserved
+                                </span>
                             </div>
+                            {isRendering && (
+                                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full animate-pulse">
+                                    Rendering PDF via Carbone...
+                                </span>
+                            )}
+                        </div>
 
-                            {/* ── Certificate Body Content ── */}
-                            <div className="relative z-10 text-center space-y-4 my-auto px-4 sm:px-8">
-                                {/* Certificate Title */}
-                                <div>
-                                    <h2 className="text-2xl sm:text-3xl font-black tracking-[0.18em] text-slate-950 uppercase font-serif">
-                                        {isBaptism ? 'CERTIFICATE OF BAPTISM' : 'CERTIFICATE OF CONFIRMATION'}
-                                    </h2>
-                                    <p className="text-xs sm:text-sm italic text-slate-700 tracking-[0.25em] font-serif uppercase mt-1">
-                                        THIS IS TO CERTIFY
-                                    </p>
-                                </div>
-
-                                {/* Recipient Name (Red bold with underline) */}
-                                <div className="py-2">
-                                    <span
-                                        className="text-2xl sm:text-3xl font-black text-[#c02626] font-serif tracking-wider uppercase inline-block pb-1"
-                                        style={{
-                                            borderBottom: '3px solid #c02626',
-                                        }}
+                        {/* Viewer Stage */}
+                        <div className="w-full bg-slate-100 border-x border-b border-slate-200 rounded-b-2xl p-4 sm:p-6 flex flex-col items-center min-h-[820px] relative print:bg-white print:border-none print:p-0">
+                            {renderError ? (
+                                <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center max-w-md my-auto">
+                                    <p className="text-sm font-bold text-red-900 mb-1">Preview Generation Failed</p>
+                                    <p className="text-xs text-red-600 mb-4">{renderError}</p>
+                                    <button
+                                        type="button"
+                                        onClick={loadPdfPreview}
+                                        className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl transition"
                                     >
-                                        {certData['recipient_name'] || (isBaptism ? 'WESLYNN PIERRE P. ARQUINES' : 'JAMAICA J. ROGANDO')}
-                                    </span>
+                                        Try Again
+                                    </button>
                                 </div>
-
-                                {/* Parents */}
-                                <div>
-                                    <p className="text-sm sm:text-base text-slate-900 font-serif">
-                                        {certData['parents'] || 'Child of Parents'}
-                                    </p>
+                            ) : pdfUrl ? (
+                                <object
+                                    data={`${pdfUrl}#toolbar=1&navpanes=0`}
+                                    type="application/pdf"
+                                    className="w-full h-[880px] bg-white rounded-xl border border-slate-300 shadow-xl print:h-screen print:border-none"
+                                >
+                                    <iframe
+                                        ref={iframeRef}
+                                        src={`${pdfUrl}#toolbar=1&navpanes=0`}
+                                        className="w-full h-full rounded-xl border-none"
+                                        title="Certificate PDF Preview"
+                                    />
+                                </object>
+                            ) : (
+                                <div className="w-full h-[600px] border border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center text-slate-400 gap-2 my-auto">
+                                    <span className="text-sm font-semibold">Generating document preview...</span>
                                 </div>
-
-                                {/* Birth info */}
-                                <div className="space-y-0.5">
-                                    <p className="text-sm sm:text-base text-slate-900 font-serif">
-                                        {certData['formatted_birth_date'] || 'Born on the 21st day of October 2024'}
-                                    </p>
-                                    <p className="text-sm sm:text-base text-slate-900 font-serif">
-                                        {certData['place_of_birth'] || 'In Lipa City, Batangas'}
-                                    </p>
-                                </div>
-
-                                {/* Has Received */}
-                                <div className="pt-2">
-                                    <p className="text-sm sm:text-base italic text-slate-800 font-serif">
-                                        Has Received the
-                                    </p>
-                                    <h3 className="text-xl sm:text-2xl font-black text-slate-950 font-serif mt-1">
-                                        {isBaptism ? 'Holy Sacrament of Baptism' : 'Holy Sacrament of Confirmation'}
-                                    </h3>
-                                    <p className="text-xs sm:text-sm text-slate-800 font-serif mt-1">
-                                        According to the Rite of the Roman Catholic Church
-                                    </p>
-                                </div>
-
-                                {/* Event Date & Minister */}
-                                <div className="space-y-1 pt-1">
-                                    <p className="text-sm sm:text-base text-slate-900 font-serif">
-                                        {certData['formatted_event_date'] || 'On the 19th day of October, year of our Lord 2025'}
-                                    </p>
-                                    <p className="text-sm sm:text-base text-slate-900 font-serif">
-                                        By the <span className="font-bold">{certData['minister_name'] || 'Rev. Fr. Aren Bejasa, OSJ'}</span>
-                                    </p>
-                                    <p className="text-sm sm:text-base text-slate-900 font-serif">
-                                        At <span className="font-semibold">{certData['parish_name'] || 'St. Joseph the Worker Parish'}</span>
-                                    </p>
-                                </div>
-
-                                {/* Sponsors */}
-                                <div className="pt-2">
-                                    <p className="text-sm italic text-slate-800 font-serif">
-                                        The Sponsor being are
-                                    </p>
-                                    <p className="text-sm sm:text-base font-bold text-slate-950 font-serif mt-0.5">
-                                        {certData['sponsors'] || 'Red Jenn Lee T. Gasoc and Rosemarie D. Villena'}
-                                    </p>
-                                </div>
-
-                                {/* Book, Page, Line Citation */}
-                                <div className="pt-2 text-xs sm:text-sm text-slate-800 font-serif">
-                                    <p>
-                                        As manifested on The {isBaptism ? 'Baptismal' : 'Confirmation'} Book of this Church,
-                                    </p>
-                                    <p className="mt-0.5 font-semibold">
-                                        Book <span className="font-bold underline">{certData['book_number'] || '1'}</span>{' '}
-                                        Page <span className="font-bold underline">{certData['page_number'] || (isBaptism ? '89' : '50')}</span>{' '}
-                                        Line <span className="font-bold underline">{certData['line_number'] || (isBaptism ? '6' : '7')}</span>
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* ── Signatories & Seals Row ── */}
-                            <div className="relative z-10 pt-8 mt-4">
-                                <div className="grid grid-cols-2 gap-8 items-end mb-8 px-4">
-                                    {/* Left Signatory: Parish Clerk */}
-                                    <div className="text-center">
-                                        <div className="h-10 flex items-center justify-center" />
-                                        <p className="font-bold text-sm text-slate-950 border-t border-slate-900 pt-1 inline-block min-w-[180px]">
-                                            {certData['clerk_name'] || 'Elsie E. Balita'}
-                                        </p>
-                                        <p className="text-xs text-slate-700 block">Parish Clerk</p>
-                                    </div>
-
-                                    {/* Right Signatory: Parish Priest with Signature Image */}
-                                    <div className="text-center">
-                                        <div className="h-10 flex items-center justify-center -mb-2">
-                                            <img
-                                                src="/images/certificate/signature.png"
-                                                alt="Priest Signature"
-                                                className="h-12 object-contain"
-                                                onError={(e) => {
-                                                    (e.target as HTMLElement).style.display = 'none';
-                                                }}
-                                            />
-                                        </div>
-                                        <p className="font-bold text-sm text-slate-950 border-t border-slate-900 pt-1 inline-block min-w-[220px]">
-                                            {certData['priest_name'] || 'Rev. Fr. Dale Anthony Q. Barretto Ko'}
-                                        </p>
-                                        <p className="text-xs text-slate-700 block">Parish Priest</p>
-                                    </div>
-                                </div>
-
-                                {/* Bottom Metadata & Green Rosette Parish Seal */}
-                                <div className="flex items-end justify-between px-2 pt-2 border-t border-slate-200">
-                                    {/* Date & Purpose */}
-                                    <div className="text-xs text-slate-800 space-y-0.5">
-                                        <p>
-                                            <span className="font-semibold">Date Issued:</span> {certData['issue_date'] || 'November 5, 2026'}
-                                        </p>
-                                        <p>
-                                            <span className="font-semibold">Purpose:</span>{' '}
-                                            <span className="font-bold">{certData['purpose'] || 'FOR REFERENCE'}</span>
-                                        </p>
-                                    </div>
-
-                                    {/* Green Rosette Parish Seal Graphic */}
-                                    <div className="relative flex flex-col items-center">
-                                        <svg
-                                            className="w-20 h-20 text-emerald-500"
-                                            viewBox="0 0 100 100"
-                                            fill="currentColor"
-                                        >
-                                            <polygon points="50,0 59,10 72,5 77,18 90,18 90,32 100,38 95,50 100,62 90,68 90,82 77,82 72,95 59,90 50,100 41,90 28,95 23,82 10,82 10,68 0,62 5,50 0,38 10,32 10,18 23,18 28,5 41,10" />
-                                        </svg>
-                                        <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-white uppercase tracking-wider text-center px-2">
-                                            Parish<br />Seal
-                                        </span>
-                                    </div>
-                                </div>
-
-                                {/* Footer Warning Note */}
-                                <div className="mt-4 text-[10px] text-slate-600 text-center font-sans tracking-wide">
-                                    <strong>Note:</strong> Any erasure or alteration and/or without the Parish Seal will invalidate this document.
-                                </div>
-                            </div>
+                            )}
                         </div>
                     </div>
                 </div>

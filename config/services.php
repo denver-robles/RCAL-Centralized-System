@@ -52,4 +52,16 @@ return [
         'verify_ssl' => env('OCR_VERIFY_SSL', env('FACEPP_VERIFY_SSL', true)),
     ],
 
+    'carbone' => [
+        'key' => env('CARBONE_API_KEY'),
+        'url' => env('CARBONE_API_URL', 'https://api.carbone.io'),
+        'version' => env('CARBONE_VERSION', '5'),
+        'verify_ssl' => env('CARBONE_VERIFY_SSL', false),
+        'timeout' => (int) env('CARBONE_TIMEOUT', 180),
+        'templates' => [
+            'baptism' => env('CARBONE_TEMPLATE_BAPTISM', 'd547719481923332bc94b54e13585118a2a9a00d7d96f574c30a4307297d9742'),
+            'confirmation' => env('CARBONE_TEMPLATE_CONFIRMATION'),
+        ],
+    ],
+
 ];

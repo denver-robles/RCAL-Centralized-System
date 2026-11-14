@@ -152,6 +152,7 @@ Route::middleware(['auth', 'staff'])->group(function () {
     Route::get('/certificate-templates', [CertificateTemplateController::class, 'index'])->name('certificate-templates.index');
     Route::get('/certificate-templates/create', [CertificateTemplateController::class, 'create'])->name('certificate-templates.create');
     Route::get('/certificate-templates/preview', [CertificateTemplateController::class, 'preview'])->name('certificate-templates.preview');
+    Route::post('/certificate-templates/preview-pdf', [CertificateTemplateController::class, 'previewPdf'])->name('certificate-templates.preview-pdf');
     Route::post('/certificate-templates', [CertificateTemplateController::class, 'store'])->name('certificate-templates.store');
     Route::get('/certificate-templates/{certificateTemplate}/preview', [CertificateTemplateController::class, 'preview'])->name('certificate-templates.template-preview')->whereNumber('certificateTemplate');
     Route::post('/certificate-templates/{certificateTemplate}/generate', [CertificateTemplateController::class, 'generate'])->name('certificate-templates.generate')->whereNumber('certificateTemplate');
@@ -159,4 +160,5 @@ Route::middleware(['auth', 'staff'])->group(function () {
     Route::put('/certificate-templates/{certificateTemplate}', [CertificateTemplateController::class, 'update'])->name('certificate-templates.update')->whereNumber('certificateTemplate');
     Route::delete('/certificate-templates/{certificateTemplate}', [CertificateTemplateController::class, 'destroy'])->name('certificate-templates.destroy')->whereNumber('certificateTemplate');
     Route::get('/certificate-templates/{certificateTemplate}', [CertificateTemplateController::class, 'show'])->name('certificate-templates.show')->whereNumber('certificateTemplate');
+
 });

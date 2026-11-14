@@ -11,6 +11,8 @@ use App\Services\AuditService;
 use App\Services\CertificateAutoPopulatorService;
 use App\Services\CertificateFileParserService;
 use App\Services\ParishScopingService;
+use App\Services\CarboneCertificateService;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -100,10 +102,12 @@ class CertificateTemplateController extends Controller
             $file = $request->file('file');
             $newFilename = Str::uuid().'.'.$file->getClientOriginalExtension();
             $file->storeAs('templates', $newFilename);
+            $fullFilePath = Storage::path('templates/'.$newFilename);
 
-            $autoPlaceholders = $this->parser->extractPlaceholders(
-                Storage::path('templates/'.$newFilename)
-            );
+            // Normalize placeholders in the uploaded DOCX to Carbone syntax: {d.variable}
+            $this->parser->normalizeDocxForCarbone($fullFilePath);
+
+            $autoPlaceholders = $this->parser->extractPlaceholders($fullFilePath);
 
             $manualPlaceholders = $validated['placeholders'] ?? [];
             $allPlaceholders = array_values(array_unique(
@@ -112,6 +116,14 @@ class CertificateTemplateController extends Controller
             sort($allPlaceholders);
 
             $filename = $newFilename;
+
+            // Deploy the template to Carbone immediately upon upload
+            try {
+                $carbone = app(CarboneCertificateService::class);
+                $carbone->getOrUploadTemplateId($fullFilePath);
+            } catch (\Throwable $e) {
+                report($e);
+            }
         }
 
         if ($template) {
@@ -290,37 +302,7 @@ class CertificateTemplateController extends Controller
 
         // If no record is selected, populate with sample placeholder values matching the church format
         if (empty($populatedData)) {
-            $isBaptism = $selectedSacrament === 'baptism';
-            $populatedData = [
-                'recipient_name' => $isBaptism ? 'WESLYNN PIERRE P. ARQUINES' : 'JAMAICA J. ROGANDO',
-                'parents' => $isBaptism ? 'Child of John Patrick Arquines & Lovely M. Parcon' : 'Child of Agosto M. Rogando & Jessica S. Japitana',
-                'father_name' => $isBaptism ? 'John Patrick Arquines' : 'Agosto M. Rogando',
-                'mother_name' => $isBaptism ? 'Lovely M. Parcon' : 'Jessica S. Japitana',
-                'date_of_birth' => $isBaptism ? 'October 21, 2024' : 'September 2, 2004',
-                'formatted_birth_date' => $isBaptism ? 'Born on the 21st day of October 2024' : 'Born on the 2nd day of September 2004',
-                'place_of_birth' => $isBaptism ? 'In RMD Maternity Clinic Lipa City, Batangas' : 'In Mulawin Naujan, Oriental Mindoro',
-                'sacrament_type' => $selectedSacrament,
-                'sacrament_title' => $isBaptism ? 'Holy Sacrament of Baptism' : 'Holy Sacrament of Confirmation',
-                'certificate_title' => $isBaptism ? 'CERTIFICATE OF BAPTISM' : 'CERTIFICATE OF CONFIRMATION',
-                'event_date' => $isBaptism ? 'October 19, 2025' : 'October 11, 2025',
-                'formatted_event_date' => $isBaptism ? 'On the 19th day of October, year of our Lord 2025' : '11th day of October, year of our Lord 2025',
-                'minister_name' => $isBaptism ? 'Rev. Fr. Aren Bejasa, OSJ' : 'Fr. Dale Anthony Q. Barretto Ko',
-                'parish_name' => 'St. Joseph the Worker Parish',
-                'parish_address' => 'Inosluban Lipa City Batangas',
-                'parish_email' => 'stjosephtheworker.rcal@gmail.com',
-                'parish_contact' => '(043)-321-9447/ 0975-897-8022',
-                'sponsors' => $isBaptism ? 'Red Jenn Lee T. Gasoc and Rosemarie D. Villena' : 'Pedro Manis and Laura Marasigan',
-                'book_number' => '1',
-                'page_number' => $isBaptism ? '89' : '50',
-                'line_number' => $isBaptism ? '6' : '7',
-                'citation' => $isBaptism ? 'Book 1 Page 89 Line 6' : 'Book 1 Page 50 Line 7',
-                'clerk_name' => $isBaptism ? 'Elsie E. Balita' : 'Elsie Balita',
-                'clerk_title' => 'Parish Clerk',
-                'priest_name' => 'Rev. Fr. Dale Anthony Q. Barretto Ko',
-                'priest_title' => 'Parish Priest',
-                'issue_date' => now()->format('F j, Y'),
-                'purpose' => 'FOR REFERENCE',
-            ];
+            $populatedData = $this->sampleData($selectedSacrament);
         }
 
         return Inertia::render('CertificateTemplates/Preview', [
@@ -429,5 +411,133 @@ class CertificateTemplateController extends Controller
             'issue_date',
             'purpose',
         ];
+    }
+    /**
+     * Provide realistic sample data for template preview when no record is selected.
+     *
+     * @return array<string, string>
+     */
+    protected function sampleData(string $sacramentType = 'baptism'): array
+    {
+        $isBaptism = $sacramentType === 'baptism';
+
+        return [
+            'recipient_name' => $isBaptism ? 'WESLYNN PIERRE P. ARQUINES' : 'JAMAICA J. ROGANDO',
+            'parents' => $isBaptism ? 'Child of John Patrick Arquines & Lovely M. Parcon' : 'Child of Agosto M. Rogando & Jessica S. Japitana',
+            'father_name' => $isBaptism ? 'John Patrick Arquines' : 'Agosto M. Rogando',
+            'mother_name' => $isBaptism ? 'Lovely M. Parcon' : 'Jessica S. Japitana',
+            'date_of_birth' => $isBaptism ? 'October 21, 2024' : 'September 2, 2004',
+            'formatted_birth_date' => $isBaptism ? 'Born on the 21st day of October 2024' : 'Born on the 2nd day of September 2004',
+            'place_of_birth' => $isBaptism ? 'In RMD Maternity Clinic Lipa City, Batangas' : 'In Mulawin Naujan, Oriental Mindoro',
+            'sacrament_type' => $sacramentType,
+            'sacrament_title' => $isBaptism ? 'Holy Sacrament of Baptism' : 'Holy Sacrament of Confirmation',
+            'certificate_title' => $isBaptism ? 'CERTIFICATE OF BAPTISM' : 'CERTIFICATE OF CONFIRMATION',
+            'event_date' => $isBaptism ? 'October 19, 2025' : 'October 11, 2025',
+            'formatted_event_date' => $isBaptism ? 'On the 19th day of October, year of our Lord 2025' : '11th day of October, year of our Lord 2025',
+            'minister_name' => $isBaptism ? 'Rev. Fr. Aren Bejasa, OSJ' : 'Fr. Dale Anthony Q. Barretto Ko',
+            'parish_name' => 'St. Joseph the Worker Parish',
+            'parish_address' => 'Inosluban Lipa City Batangas',
+            'parish_email' => 'stjosephtheworker.rcal@gmail.com',
+            'parish_contact' => '(043)-321-9447/ 0975-897-8022',
+            'sponsors' => $isBaptism ? 'Red Jenn Lee T. Gasoc and Rosemarie D. Villena' : 'Pedro Manis and Laura Marasigan',
+            'book_number' => '1',
+            'page_number' => $isBaptism ? '89' : '50',
+            'line_number' => $isBaptism ? '6' : '7',
+            'citation' => $isBaptism ? 'Book 1 Page 89 Line 6' : 'Book 1 Page 50 Line 7',
+            'clerk_name' => $isBaptism ? 'Elsie E. Balita' : 'Elsie Balita',
+            'clerk_title' => 'Parish Clerk',
+            'priest_name' => 'Rev. Fr. Dale Anthony Q. Barretto Ko',
+            'priest_title' => 'Parish Priest',
+            'issue_date' => now()->format('F j, Y'),
+            'purpose' => 'FOR REFERENCE',
+        ];
+    }
+
+    /**
+     * Generate an inline PDF via Carbone for in-browser preview.
+     */
+    public function previewPdf(
+        Request $request,
+        CarboneCertificateService $carbone,
+        CertificateAutoPopulatorService $populator
+    ): mixed {
+        @set_time_limit(240);
+
+        // Release the session lock immediately so concurrent preview requests don't queue
+        if ($request->hasSession()) {
+            $request->session()->save();
+        }
+
+        $recordId = $request->input('record_id');
+        $sacramentType = (string) $request->input('sacrament_type', 'baptism');
+        $overrides = (array) $request->input('overrides', []);
+
+        $record = $recordId ? SacramentalRecord::find($recordId) : null;
+        $data = $record
+            ? $populator->populate($record, [], $overrides)
+            : array_merge($this->sampleData($sacramentType), array_filter($overrides, fn ($v) => $v !== null && $v !== ''));
+
+        $deployedTemplateName = config("services.carbone.templates.{$sacramentType}");
+
+        try {
+            if (! empty($deployedTemplateName)) {
+                $pdfBinary = $carbone->renderDeployed($deployedTemplateName, $data, 'pdf');
+            } else {
+                $templateId = $request->input('template_id');
+                $template = null;
+
+                if ($templateId) {
+                    $template = CertificateTemplate::find($templateId);
+                }
+
+                if (! $template) {
+                    $user = $request->user();
+                    $parishId = $user?->home_parish_id ?? Parish::first()?->id ?? 1;
+
+                    $template = CertificateTemplate::where('parish_id', $parishId)
+                        ->where('sacrament_type', $sacramentType)
+                        ->latest()
+                        ->first()
+                        ?? CertificateTemplate::where('sacrament_type', $sacramentType)->latest()->first();
+                }
+
+                $templatePath = null;
+                if ($template && ! empty($template->filename)) {
+                    $candidatePath = Storage::path('templates/'.$template->filename);
+                    if (file_exists($candidatePath)) {
+                        $templatePath = $candidatePath;
+                    }
+                }
+
+                if (! $templatePath) {
+                    $defaultCandidate = storage_path('app/templates/CERTIFICATE-OF-'.strtoupper($sacramentType).'.docx');
+                    if (file_exists($defaultCandidate)) {
+                        $templatePath = $defaultCandidate;
+                    }
+                }
+
+                if (! $templatePath || ! file_exists($templatePath)) {
+                    return response()->json([
+                        'error' => "Template file not found for [{$sacramentType}]",
+                    ], 404);
+                }
+
+                $pdfBinary = $carbone->render($templatePath, $data, 'pdf');
+            }
+
+            return response()->stream(function () use ($pdfBinary) {
+                echo $pdfBinary;
+            }, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="certificate_preview.pdf"',
+                'Cache-Control' => 'no-cache, private',
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'error' => 'Carbone PDF generation failed: '.$e->getMessage(),
+            ], 500);
+        }
     }
 }
