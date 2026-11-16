@@ -14,6 +14,7 @@ use App\Http\Controllers\RecordsController;
 use App\Http\Controllers\ScheduleAttachmentController;
 use App\Http\Controllers\SchedulesController;
 use App\Http\Controllers\StripeIdentityController;
+use App\Http\Controllers\TransactionsController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -161,4 +162,8 @@ Route::middleware(['auth', 'staff'])->group(function () {
     Route::delete('/certificate-templates/{certificateTemplate}', [CertificateTemplateController::class, 'destroy'])->name('certificate-templates.destroy')->whereNumber('certificateTemplate');
     Route::get('/certificate-templates/{certificateTemplate}', [CertificateTemplateController::class, 'show'])->name('certificate-templates.show')->whereNumber('certificateTemplate');
 
+    // Group for the Parish Ledger
+    Route::get('/ledger', [TransactionsController::class, 'index'])->name('ledger.index');
+    Route::post('/ledger/transactions', [TransactionsController::class, 'store'])->name('transactions.store');
+    Route::post('/transactions', [TransactionsController::class, 'store']); // Friendly alias
 });
