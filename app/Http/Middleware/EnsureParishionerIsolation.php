@@ -18,6 +18,8 @@ class EnsureParishionerIsolation
         'admin',
         'directory',
         'analytics',
+        'ledger',
+        'transactions',
     ];
 
     /**

@@ -337,6 +337,55 @@ export interface CertificateTemplate {
     updated_at: string;
 }
 
+export type AccountType = 'asset' | 'liability' | 'equity' | 'revenue' | 'expense';
+export type TransactionType = 'receipt' | 'check' | 'deposit';
+export type TransactionStatus = 'draft' | 'pending_approval' | 'posted';
+
+export interface ChartOfAccount {
+    id: number;
+    code: string;
+    title: string;
+    type: AccountType;
+    default_amount?: number | string | null;
+    is_active: boolean;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface TransactionLine {
+    id: number;
+    transaction_id: number;
+    chart_of_account_id: number;
+    debit_amount: number | string;
+    credit_amount: number | string;
+    notes?: string | null;
+    account?: ChartOfAccount;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface Transaction {
+    id: number;
+    parish_id?: number | null;
+    reference_no: string;
+    transaction_date: string;
+    type: TransactionType;
+    contact_name?: string | null;
+    description?: string | null;
+    status: TransactionStatus;
+    total_amount?: number | string | null;
+    prepared_by?: number | null;
+    checked_by?: number | null;
+    approved_by?: number | null;
+    preparer?: User;
+    checker?: User;
+    approver?: User;
+    parish?: Parish;
+    lines?: TransactionLine[];
+    created_at?: string;
+    updated_at?: string;
+}
+
 export type PageProps<T extends Record<string, unknown> = Record<string, unknown>> = T & {
     auth: {
         user: User | null;

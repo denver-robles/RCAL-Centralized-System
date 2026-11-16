@@ -93,6 +93,11 @@ class User extends Authenticatable
         return $this->hasMany(AccessLog::class, 'user_id');
     }
 
+    public function preparedTransactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class, 'prepared_by');
+    }
+
     public function isStaff(): bool
     {
         return $this->role?->isStaff() ?? false;

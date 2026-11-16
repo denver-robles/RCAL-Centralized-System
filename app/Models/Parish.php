@@ -64,4 +64,9 @@ class Parish extends Model
     {
         return $this->hasMany(User::class, 'home_parish_id');
     }
+
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class);
+    }
 }
