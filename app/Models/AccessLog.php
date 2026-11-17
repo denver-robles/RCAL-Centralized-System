@@ -19,6 +19,13 @@ class AccessLog extends Model
         'created_at',
     ];
 
+    protected $appends = [
+        'accessed_at',
+        'resource_type',
+        'resource_id',
+        'resource_identifier',
+    ];
+
     protected function casts(): array
     {
         return [
@@ -34,5 +41,25 @@ class AccessLog extends Model
     public function record(): BelongsTo
     {
         return $this->belongsTo(SacramentalRecord::class, 'record_id');
+    }
+
+    public function getAccessedAtAttribute(): ?string
+    {
+        return $this->created_at?->toIso8601String();
+    }
+
+    public function getResourceTypeAttribute(): string
+    {
+        return 'sacramental_record';
+    }
+
+    public function getResourceIdAttribute(): ?int
+    {
+        return $this->record_id;
+    }
+
+    public function getResourceIdentifierAttribute(): string
+    {
+        return $this->record?->citation ?? "Record #{$this->record_id}";
     }
 }

@@ -307,16 +307,16 @@ export default function Index({ auditLogs, accessLogs, filters, auth }: Props) {
                                         accessLogs.data.map((log) => (
                                             <tr key={log.id} className="hover:bg-slate-50 transition-colors">
                                                 <td className="py-3.5 px-5 text-slate-600 font-mono text-xs">
-                                                    {log.accessed_at.slice(0, 19).replace('T', ' ')}
+                                                    {(log.accessed_at || (log as any).created_at || '').slice(0, 19).replace('T', ' ')}
                                                 </td>
                                                 <td className="py-3.5 px-5 text-slate-900 font-semibold">
                                                     {log.user?.display_name || log.user?.username || `User #${log.user_id}`}
                                                 </td>
                                                 <td className="py-3.5 px-5 text-slate-700 capitalize">
-                                                    {log.resource_type.replace('_', ' ')} #{log.resource_id}
+                                                    {(log.resource_type || (log as any).action || 'sacramental_record').replace('_', ' ')} #{log.resource_id || (log as any).record_id}
                                                 </td>
                                                 <td className="py-3.5 px-5 font-mono font-medium text-amber-800">
-                                                    {log.resource_identifier || '—'}
+                                                    {log.resource_identifier || (log as any).record?.citation || `Record #${(log as any).record_id || ''}`}
                                                 </td>
                                                 <td className="py-3.5 px-5 text-slate-600 font-mono text-xs">
                                                     {log.ip_address || '—'}

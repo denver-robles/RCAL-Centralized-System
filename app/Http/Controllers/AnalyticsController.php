@@ -3,53 +3,43 @@
 namespace App\Http\Controllers;
 
 use App\Models\Parish;
-use App\Models\SacramentalRecord;
-use App\Models\Vicariate;
-use App\Services\ParishScopingService;
+use App\Services\AnalyticsService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class AnalyticsController extends Controller
 {
-    /**
-     * Display Curia analytics and Archdiocesan overview dashboard.
-     */
+    public function __construct(
+        private readonly AnalyticsService $analyticsService
+    ) {}
+
     public function index(Request $request): Response
     {
         $user = $request->user();
 
-        $archdioceseCounts = ParishScopingService::archdioceseCounts();
-        $sacramentCounts = ParishScopingService::sacramentCounts($user);
-        $requestStats = ParishScopingService::combinedRequestStats($user);
+        // Chancery/Admin can select any parish or view archdiocese-wide; parish staff is restricted to their home parish
+        $parishId = $user->isArchdioceseWide()
+            ? ($request->filled('parish_id') ? $request->integer('parish_id') : null)
+            : $user->home_parish_id;
 
-        // Vicariate breakdown
-        $vicariatesData = Vicariate::withCount(['parishes'])->get()->map(function ($vicariate) {
-            $recordCount = SacramentalRecord::whereHas('originatingParish', function ($q) use ($vicariate) {
-                $q->where('vicariate_id', $vicariate->id);
-            })->count();
+        $analytics = $this->analyticsService->getFullAnalytics($parishId);
 
-            return [
-                'id' => $vicariate->id,
-                'name' => $vicariate->name,
-                'parishes_count' => $vicariate->parishes_count,
-                'records_count' => $recordCount,
-            ];
-        });
+        $parishes = $user->isArchdioceseWide()
+            ? Parish::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'municipality', 'city_municipality'])
+            : ($user->homeParish ? collect([$user->homeParish]) : collect());
 
-        // Top Parishes by recorded sacramental entries
-        $topParishes = Parish::query()
-            ->withCount('sacramentalRecords')
-            ->orderByDesc('sacramental_records_count')
-            ->take(8)
-            ->get(['id', 'name', 'city_municipality', 'sacramental_records_count']);
+        $scopedParish = $parishId ? Parish::find($parishId) : null;
 
         return Inertia::render('Analytics/Index', [
-            'archdioceseCounts' => $archdioceseCounts,
-            'sacramentCounts' => $sacramentCounts,
-            'requestStats' => $requestStats,
-            'vicariatesData' => $vicariatesData,
-            'topParishes' => $topParishes,
+            'descriptive' => $analytics['descriptive'],
+            'predictive' => $analytics['predictive'],
+            'prescriptive' => $analytics['prescriptive'],
+            'parishes' => $parishes,
+            'scopedParish' => $scopedParish,
+            'filters' => [
+                'parish_id' => $parishId ? (string) $parishId : '',
+            ],
         ]);
     }
 }

@@ -42,14 +42,17 @@ class AuditController extends Controller
         }
         $auditLogs = $auditQuery->orderByDesc('created_at')->paginate(25, ['*'], 'audit_page')->withQueryString();
 
-        $accessQuery = AccessLog::query()->with('user');
+        $accessQuery = AccessLog::query()->with(['user', 'record']);
         if ($search) {
             $accessQuery->where(function ($q) use ($search) {
-                $q->where('resource_identifier', 'like', "%{$search}%")
-                    ->orWhere('ip_address', 'like', "%{$search}%");
+                $q->where('action', 'like', "%{$search}%")
+                    ->orWhereHas('user', function ($uq) use ($search) {
+                        $uq->where('username', 'like', "%{$search}%")
+                            ->orWhere('display_name', 'like', "%{$search}%");
+                    });
             });
         }
-        $accessLogs = $accessQuery->orderByDesc('accessed_at')->paginate(25, ['*'], 'access_page')->withQueryString();
+        $accessLogs = $accessQuery->orderByDesc('created_at')->paginate(25, ['*'], 'access_page')->withQueryString();
 
         return Inertia::render('Audit/Index', [
             'auditLogs' => $auditLogs,
