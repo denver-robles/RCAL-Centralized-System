@@ -56,6 +56,7 @@ return [
         'key' => env('CARBONE_API_KEY'),
         'url' => env('CARBONE_API_URL', 'https://api.carbone.io'),
         'version' => env('CARBONE_VERSION', '5'),
+        'converter' => env('CARBONE_CONVERTER', 'O'),
         'verify_ssl' => env('CARBONE_VERIFY_SSL', false),
         'timeout' => (int) env('CARBONE_TIMEOUT', 180),
         'templates' => [

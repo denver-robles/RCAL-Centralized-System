@@ -230,6 +230,7 @@ class CarboneCertificateService
         $renderResponse = $this->client()->post("{$this->apiUrl}/render/{$templateId}", [
             'data' => $data,
             'convertTo' => $format,
+            'converter' => config('services.carbone.converter', 'O'),
         ]);
 
         if (! $renderResponse->successful() || ! isset($renderResponse['data']['renderId'])) {
