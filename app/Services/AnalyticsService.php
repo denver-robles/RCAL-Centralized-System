@@ -11,10 +11,17 @@ use Illuminate\Support\Facades\DB;
 
 class AnalyticsService
 {
-    public function getFullAnalytics(?int $parishId = null): array
+    public function getFullAnalytics(?int $parishId = null, array $filters = []): array
     {
-        $descriptive = $this->getDescriptiveMetrics($parishId);
-        $predictive = $this->getPredictiveForecast($descriptive['monthly_trends'], 3);
+        $descriptive = $this->getDescriptiveMetrics($parishId, $filters);
+
+        // Predictive linear regression forecasting requires a multi-month historical baseline.
+        // If descriptive metrics are filtered to a single day or month, preserve the rolling 12-month baseline for forecasting.
+        $forecastingSeries = (($filters['period'] ?? 'all') === 'year')
+            ? $descriptive['monthly_trends']
+            : $this->getMonthlySeries($parishId, 12);
+
+        $predictive = $this->getPredictiveForecast($forecastingSeries, 3);
         $prescriptive = $this->getPrescriptiveRecommendations($descriptive, $predictive, $parishId);
 
         return [
@@ -24,23 +31,39 @@ class AnalyticsService
         ];
     }
 
-    public function getDescriptiveMetrics(?int $parishId = null): array
+    public function getDescriptiveMetrics(?int $parishId = null, array $filters = []): array
     {
-        $recordsByType = SacramentalRecord::query()
-            ->when($parishId, fn ($q) => $q->where('originating_parish_id', $parishId))
+        $period = $filters['period'] ?? 'all';
+        $year = isset($filters['year']) && is_numeric($filters['year']) ? (int) $filters['year'] : (int) date('Y');
+        $month = ! empty($filters['month']) ? $filters['month'] : date('Y-m');
+        $date = ! empty($filters['date']) ? $filters['date'] : date('Y-m-d');
+
+        // Canonical Records Query with parish and date filters
+        $recordsQuery = SacramentalRecord::query()
+            ->when($parishId, fn ($q) => $q->where('originating_parish_id', $parishId));
+
+        $this->applyDateFilter($recordsQuery, $period, $year, $month, $date, 'event_date');
+
+        $recordsByType = (clone $recordsQuery)
             ->select('sacrament_type', DB::raw('COUNT(*) as total'))
             ->groupBy('sacrament_type')
             ->pluck('total', 'sacrament_type')
             ->toArray();
 
-        $scheduleStats = SacramentSchedule::query()
-            ->when($parishId, fn ($q) => $q->where('parish_id', $parishId))
+        // Sacrament Schedules Query with parish and date filters
+        $scheduleQuery = SacramentSchedule::query()
+            ->when($parishId, fn ($q) => $q->where('parish_id', $parishId));
+
+        $this->applyDateFilter($scheduleQuery, $period, $year, $month, $date, 'starts_at');
+
+        $scheduleStats = (clone $scheduleQuery)
             ->select('status', DB::raw('COUNT(*) as total'))
             ->groupBy('status')
             ->pluck('total', 'status')
             ->toArray();
 
-        $monthlyTrends = $this->getMonthlySeries($parishId, 12);
+        // Historical / Time-series Trends
+        $monthlyTrends = $this->getMonthlySeries($parishId, 12, $filters);
 
         $counts = array_column($monthlyTrends, 'count');
         $n = count($counts);
@@ -49,10 +72,21 @@ class AnalyticsService
             ? array_sum(array_map(fn ($x) => pow($x - $mean, 2), $counts)) / $n
             : 0;
 
-        $pendingCertificates = CertificateRequest::query()
+        // Pending Certificate Requests
+        $certQuery = CertificateRequest::query()
             ->when($parishId, fn ($q) => $q->whereHas('record', fn ($r) => $r->where('originating_parish_id', $parishId)))
-            ->where('status', 'pending')
-            ->count();
+            ->where('status', 'pending');
+
+        $this->applyDateFilter($certQuery, $period, $year, $month, $date, 'created_at');
+        $pendingCertificates = $certQuery->count();
+
+        // Human-readable descriptive filter label
+        $filterLabel = match ($period) {
+            'year' => "Calendar Year {$year}",
+            'month' => Carbon::hasFormat($month, 'Y-m') ? Carbon::createFromFormat('Y-m', $month)->format('F Y') : $month,
+            'day' => Carbon::hasFormat($date, 'Y-m-d') ? Carbon::createFromFormat('Y-m-d', $date)->format('F d, Y') : $date,
+            default => 'All Time',
+        };
 
         return [
             'records_by_type' => $recordsByType,
@@ -63,6 +97,8 @@ class AnalyticsService
                 'monthly_average' => round($mean, 2),
                 'monthly_std_dev' => round(sqrt($variance), 2),
                 'pending_certificates' => $pendingCertificates,
+                'active_filter_label' => $filterLabel,
+                'filter_period' => $period,
             ],
         ];
     }
@@ -146,6 +182,29 @@ class AnalyticsService
                 'insight' => "Forecasted volume peaks up to {$increasePct}% above the monthly average ({$monthlyAvg}) across: {$monthList}.",
                 'action' => 'Open additional weekend sacrament time slots and pre-assign assisting clergy for these upcoming months.',
             ];
+        } else {
+            // Active scheduling capacity guidance when not in a critical surge
+            $totalSchedules = array_sum($descriptive['schedule_stats']);
+            $scheduledCount = $descriptive['schedule_stats']['scheduled'] ?? ($descriptive['schedule_stats']['confirmed'] ?? 0);
+            $requestedCount = $descriptive['schedule_stats']['requested'] ?? ($descriptive['schedule_stats']['pending'] ?? 0);
+
+            if ($requestedCount > 0 || $scheduledCount > 0) {
+                $recommendations[] = [
+                    'category' => 'Scheduling & Capacity',
+                    'priority' => 'medium',
+                    'title' => 'Active Sacrament Booking Management',
+                    'insight' => "Parish booking capacity: {$scheduledCount} confirmed booking(s) and {$requestedCount} pending request(s) awaiting action.",
+                    'action' => 'Review pending ceremony reservations, confirm presiding clergy availability, and ensure liturgy prep guidelines are sent to parishioners.',
+                ];
+            } else {
+                $recommendations[] = [
+                    'category' => 'Scheduling & Capacity',
+                    'priority' => 'low',
+                    'title' => 'Optimal Scheduling Windows',
+                    'insight' => 'Sacrament booking volume is operating within normal parish capacity with no projected overload.',
+                    'action' => 'Maintain standard 45-minute sacrament intervals and standard weekend liturgy rotation.',
+                ];
+            }
         }
 
         // Rule 2: Dominant Sacrament Resource Allocation (Identifies which specific sacrament drives the load)
@@ -183,13 +242,13 @@ class AnalyticsService
         // Rule 4: High Cancellation Rate Mitigation
         $totalSchedules = array_sum($descriptive['schedule_stats']);
         $cancelled = $descriptive['schedule_stats']['cancelled'] ?? 0;
-        if ($totalSchedules > 10 && ($cancelled / $totalSchedules) > 0.15) {
+        if ($totalSchedules > 0 && ($cancelled / $totalSchedules) > 0.15) {
             $cancelRate = round(($cancelled / $totalSchedules) * 100, 1);
             $recommendations[] = [
                 'category' => 'Schedule Reliability',
                 'priority' => 'medium',
                 'title' => "Elevated Cancellation Rate ({$cancelRate}%)",
-                'insight' => 'More than 15% of scheduled sacraments are ending in cancellation.',
+                'insight' => "{$cancelled} out of {$totalSchedules} scheduled sacraments ({$cancelRate}%) ended in cancellation.",
                 'action' => 'Enforce earlier canonical document verification and trigger automated 48-hour email reminders.',
             ];
         }
@@ -223,9 +282,10 @@ class AnalyticsService
         return $recommendations;
     }
 
-    private function getMonthlySeries(?int $parishId, int $months): array
+    private function getMonthlySeries(?int $parishId, int $months, array $filters = []): array
     {
-        $startDate = Carbon::now()->subMonths($months - 1)->startOfMonth();
+        $period = $filters['period'] ?? 'all';
+        $year = isset($filters['year']) && is_numeric($filters['year']) ? (int) $filters['year'] : (int) date('Y');
 
         // PostgreSQL uses TO_CHAR, SQLite uses strftime, MySQL uses DATE_FORMAT
         $dateFormat = match (DB::getDriverName()) {
@@ -233,6 +293,32 @@ class AnalyticsService
             'sqlite' => "strftime('%Y-%m', created_at)",
             default => "DATE_FORMAT(created_at, '%Y-%m')",
         };
+
+        if ($period === 'year') {
+            // Display all 12 calendar months for the specified year
+            $raw = SacramentalRecord::query()
+                ->when($parishId, fn ($q) => $q->where('originating_parish_id', $parishId))
+                ->whereYear('created_at', $year)
+                ->select(DB::raw("$dateFormat as month"), DB::raw('COUNT(*) as count'))
+                ->groupBy('month')
+                ->pluck('count', 'month')
+                ->toArray();
+
+            $series = [];
+            for ($m = 1; $m <= 12; $m++) {
+                $monthKey = sprintf('%04d-%02d', $year, $m);
+                $series[] = [
+                    'month' => $monthKey,
+                    'count' => (int) ($raw[$monthKey] ?? 0),
+                    'is_forecast' => false,
+                ];
+            }
+
+            return $series;
+        }
+
+        // Default: rolling $months window (e.g. past 12 months)
+        $startDate = Carbon::now()->subMonths($months - 1)->startOfMonth();
 
         $raw = SacramentalRecord::query()
             ->when($parishId, fn ($q) => $q->where('originating_parish_id', $parishId))
@@ -253,5 +339,57 @@ class AnalyticsService
         }
 
         return $series;
+    }
+
+    private function applyDateFilter(
+        $query,
+        string $period,
+        int $year,
+        string $monthStr,
+        string $dateStr,
+        string $primaryColumn = 'event_date'
+    ): void {
+        if ($period === 'all') {
+            return;
+        }
+
+        if ($period === 'year') {
+            $query->where(function ($q) use ($primaryColumn, $year) {
+                $q->whereYear($primaryColumn, $year);
+                if ($primaryColumn === 'event_date') {
+                    $q->orWhereYear('created_at', $year);
+                }
+            });
+
+            return;
+        }
+
+        if ($period === 'month') {
+            $parts = explode('-', $monthStr);
+            $mYear = isset($parts[0]) && is_numeric($parts[0]) ? (int) $parts[0] : $year;
+            $mMonth = isset($parts[1]) && is_numeric($parts[1]) ? (int) $parts[1] : (int) date('m');
+
+            $query->where(function ($q) use ($primaryColumn, $mYear, $mMonth) {
+                $q->where(function ($sub) use ($primaryColumn, $mYear, $mMonth) {
+                    $sub->whereYear($primaryColumn, $mYear)->whereMonth($primaryColumn, $mMonth);
+                });
+                if ($primaryColumn === 'event_date') {
+                    $q->orWhere(function ($sub) use ($mYear, $mMonth) {
+                        $sub->whereYear('created_at', $mYear)->whereMonth('created_at', $mMonth);
+                    });
+                }
+            });
+
+            return;
+        }
+
+        if ($period === 'day') {
+            $query->where(function ($q) use ($primaryColumn, $dateStr) {
+                $q->whereDate($primaryColumn, $dateStr);
+                if ($primaryColumn === 'event_date') {
+                    $q->orWhereDate('created_at', $dateStr);
+                }
+            });
+        }
     }
 }

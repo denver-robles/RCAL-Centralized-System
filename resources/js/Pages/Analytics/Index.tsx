@@ -47,6 +47,8 @@ interface AnalyticsProps extends PageProps {
             monthly_average: number;
             monthly_std_dev: number;
             pending_certificates: number;
+            active_filter_label?: string;
+            filter_period?: string;
         };
     };
     predictive: {
@@ -63,8 +65,13 @@ interface AnalyticsProps extends PageProps {
     }[];
     parishes?: Parish[];
     scopedParish?: Parish | null;
+    availableYears?: number[];
     filters?: {
         parish_id?: string;
+        period?: 'all' | 'year' | 'month' | 'day';
+        year?: string | number;
+        month?: string;
+        date?: string;
     };
 }
 
@@ -74,6 +81,7 @@ export default function AnalyticsIndex({
     prescriptive,
     parishes = [],
     scopedParish = null,
+    availableYears = [2026, 2025, 2024, 2023, 2022],
     filters = {},
 }: AnalyticsProps) {
     const { auth } = usePage<PageProps>().props;
@@ -169,25 +177,137 @@ export default function AnalyticsIndex({
         }
     }, [predictive?.trend_direction]);
 
-    const handleParishChange = (newParishId: string) => {
-        router.get(
-            '/analytics',
-            { parish_id: newParishId || undefined },
-            { preserveState: true, replace: true }
-        );
+    const activePeriod = filters.period || 'all';
+
+    const handlePeriodChange = (newPeriod: 'all' | 'year' | 'month' | 'day') => {
+        const query: Record<string, any> = {
+            ...filters,
+            period: newPeriod,
+        };
+
+        if (newPeriod === 'all') {
+            delete query.year;
+            delete query.month;
+            delete query.date;
+        } else if (newPeriod === 'year' && !query.year) {
+            query.year = new Date().getFullYear();
+        } else if (newPeriod === 'month' && !query.month) {
+            const now = new Date();
+            query.month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        } else if (newPeriod === 'day' && !query.date) {
+            query.date = new Date().toISOString().split('T')[0];
+        }
+
+        Object.keys(query).forEach((key) => {
+            if (!query[key]) delete query[key];
+        });
+
+        router.get('/analytics', query, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
     };
+
+    const handleValueChange = (field: 'year' | 'month' | 'date', val: string) => {
+        const query: Record<string, any> = {
+            ...filters,
+            [field]: val,
+        };
+
+        Object.keys(query).forEach((key) => {
+            if (!query[key]) delete query[key];
+        });
+
+        router.get('/analytics', query, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
+    };
+
+    const handleParishChange = (newParishId: string) => {
+        const query: Record<string, any> = {
+            ...filters,
+            parish_id: newParishId || undefined,
+        };
+
+        Object.keys(query).forEach((key) => {
+            if (!query[key]) delete query[key];
+        });
+
+        router.get('/analytics', query, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
+    };
+
+    const isArchdioceseWide = user?.is_archdiocese_wide ?? false;
 
     return (
         <PortalLayout
-            title="Curia Decision Support & Analytics"
-            subtitle="Descriptive canonical metrics, predictive sacrament forecasting, and prescriptive administrative guidance"
+            title={isArchdioceseWide ? 'Curia Decision Support & Analytics' : 'Parish Analytics & Capacity Intelligence'}
+            subtitle={
+                isArchdioceseWide
+                    ? 'Descriptive canonical metrics, predictive sacrament forecasting, and prescriptive administrative guidance'
+                    : `Descriptive canonical folios, sacrament demand modeling, and operational capacity metrics for ${scopedParish?.name || 'your parish'}`
+            }
             activeTab="analytics"
         >
-            <Head title="Curia Analytics — RCAL PIMS" />
+            <Head title={isArchdioceseWide ? 'Curia Analytics — RCAL PIMS' : 'Parish Analytics — RCAL PIMS'} />
 
             <div className="space-y-6">
-                {/* ── PARISH JURISDICTION FILTER (ARCHDIOCESE-WIDE OR SCOPED) ── */}
-                {user?.is_archdiocese_wide && parishes.length > 0 && (
+                {/* ── PARISH JURISDICTION SCOPE (ARCHDIOCESE-WIDE OR PARISH-SCOPED) ── */}
+                {isArchdioceseWide ? (
+                    parishes.length > 0 && (
+                        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                                    <Church className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                                        Jurisdiction Filter
+                                    </div>
+                                    <div className="text-sm font-serif font-bold text-slate-900">
+                                        {filters.parish_id && scopedParish
+                                            ? scopedParish.name
+                                            : 'Archdiocese of Lipa — All Vicariates & Parishes'}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <label className="text-xs font-bold text-slate-600 uppercase tracking-wide shrink-0">
+                                    Filter by Parish:
+                                </label>
+                                <select
+                                    value={filters.parish_id || ''}
+                                    onChange={(e) => handleParishChange(e.target.value)}
+                                    className="px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 min-w-[240px]"
+                                >
+                                    <option value="">— Entire Archdiocese (All Parishes) —</option>
+                                    {parishes.map((p) => (
+                                        <option key={p.id} value={p.id}>
+                                            {p.name} {p.city_municipality ? `(${p.city_municipality})` : ''}
+                                        </option>
+                                    ))}
+                                </select>
+
+                                {filters.parish_id && (
+                                    <button
+                                        type="button"
+                                        onClick={() => handleParishChange('')}
+                                        className="px-3 py-2 text-xs font-bold text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-xl transition-colors shrink-0"
+                                    >
+                                        Reset
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )
+                ) : (
                     <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
@@ -195,42 +315,21 @@ export default function AnalyticsIndex({
                             </div>
                             <div>
                                 <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                                    Jurisdiction Filter
+                                    Parish Jurisdiction Scope
                                 </div>
                                 <div className="text-sm font-serif font-bold text-slate-900">
-                                    {filters.parish_id && scopedParish
-                                        ? scopedParish.name
-                                        : 'Archdiocese of Lipa — All Vicariates & Parishes'}
+                                    {scopedParish
+                                        ? `${scopedParish.name} ${scopedParish.city_municipality ? `(${scopedParish.city_municipality})` : ''}`
+                                        : 'Assigned Home Parish'}
                                 </div>
                             </div>
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <label className="text-xs font-bold text-slate-600 uppercase tracking-wide shrink-0">
-                                Filter by Parish:
-                            </label>
-                            <select
-                                value={filters.parish_id || ''}
-                                onChange={(e) => handleParishChange(e.target.value)}
-                                className="px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 min-w-[240px]"
-                            >
-                                <option value="">— Entire Archdiocese (All Parishes) —</option>
-                                {parishes.map((p) => (
-                                    <option key={p.id} value={p.id}>
-                                        {p.name} {p.city_municipality ? `(${p.city_municipality})` : ''}
-                                    </option>
-                                ))}
-                            </select>
-
-                            {filters.parish_id && (
-                                <button
-                                    type="button"
-                                    onClick={() => handleParishChange('')}
-                                    className="px-3 py-2 text-xs font-bold text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-xl transition-colors shrink-0"
-                                >
-                                    Reset
-                                </button>
-                            )}
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>Parish Scoped Inscription Data</span>
+                            </span>
                         </div>
                     </div>
                 )}
@@ -248,7 +347,7 @@ export default function AnalyticsIndex({
                         <div>
                             <div className="flex flex-wrap items-center gap-2 mb-1.5">
                                 <span className="px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wide uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                                    {scopedParish ? scopedParish.name : 'Archdiocesan Curia Chancery'}
+                                    {scopedParish ? scopedParish.name : (isArchdioceseWide ? 'Archdiocesan Curia Chancery' : 'Parish Administration')}
                                 </span>
                                 <span className="text-xs text-slate-300 font-medium flex items-center gap-1.5">
                                     <Shield className="w-3.5 h-3.5 text-amber-400" />
@@ -274,6 +373,136 @@ export default function AnalyticsIndex({
                     </div>
                 </div>
 
+                {/* ── DESCRIPTIVE ANALYTICS DATE FILTER (DAY, MONTH, YEAR) ── */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                                <Calendar className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h3 className="font-serif text-base font-bold text-slate-900">
+                                        Descriptive Analytics Filter
+                                    </h3>
+                                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200">
+                                        {descriptive?.summary?.active_filter_label || 'All Time'}
+                                    </span>
+                                </div>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                    Filter descriptive folios, sacramental rite distribution, and schedule status by Day, Month, or Year.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Filter Mode Buttons & Specific Input */}
+                        <div className="flex flex-wrap items-center gap-2.5">
+                            {/* Mode Tabs */}
+                            <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200">
+                                <button
+                                    type="button"
+                                    onClick={() => handlePeriodChange('all')}
+                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                                        activePeriod === 'all'
+                                            ? 'bg-white text-slate-900 shadow-xs'
+                                            : 'text-slate-600 hover:text-slate-900'
+                                    }`}
+                                >
+                                    All Time
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handlePeriodChange('year')}
+                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                                        activePeriod === 'year'
+                                            ? 'bg-white text-slate-900 shadow-xs'
+                                            : 'text-slate-600 hover:text-slate-900'
+                                    }`}
+                                >
+                                    Year
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handlePeriodChange('month')}
+                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                                        activePeriod === 'month'
+                                            ? 'bg-white text-slate-900 shadow-xs'
+                                            : 'text-slate-600 hover:text-slate-900'
+                                    }`}
+                                >
+                                    Month
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handlePeriodChange('day')}
+                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                                        activePeriod === 'day'
+                                            ? 'bg-white text-slate-900 shadow-xs'
+                                            : 'text-slate-600 hover:text-slate-900'
+                                    }`}
+                                >
+                                    Day
+                                </button>
+                            </div>
+
+                            {/* Year Selector */}
+                            {activePeriod === 'year' && (
+                                <div className="flex items-center gap-1.5">
+                                    <select
+                                        value={filters.year || new Date().getFullYear()}
+                                        onChange={(e) => handleValueChange('year', e.target.value)}
+                                        className="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                                    >
+                                        {availableYears.map((yr) => (
+                                            <option key={yr} value={yr}>
+                                                Year {yr}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
+                            {/* Month Selector */}
+                            {activePeriod === 'month' && (
+                                <div className="flex items-center gap-1.5">
+                                    <input
+                                        type="month"
+                                        value={
+                                            filters.month ||
+                                            `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
+                                        }
+                                        onChange={(e) => handleValueChange('month', e.target.value)}
+                                        className="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                                    />
+                                </div>
+                            )}
+
+                            {/* Day Selector */}
+                            {activePeriod === 'day' && (
+                                <div className="flex items-center gap-1.5">
+                                    <input
+                                        type="date"
+                                        value={filters.date || new Date().toISOString().split('T')[0]}
+                                        onChange={(e) => handleValueChange('date', e.target.value)}
+                                        className="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                                    />
+                                </div>
+                            )}
+
+                            {/* Reset Button */}
+                            {activePeriod !== 'all' && (
+                                <button
+                                    type="button"
+                                    onClick={() => handlePeriodChange('all')}
+                                    className="px-2.5 py-1.5 text-xs font-bold text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-xl transition-colors"
+                                >
+                                    Reset
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
                 {/* ── 1. ESSENTIAL CANONICAL KPI CARDS (GRID OF 4) ── */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
                     {/* KPI 1: Inscribed Records */}
@@ -291,7 +520,7 @@ export default function AnalyticsIndex({
                         </div>
                         <p className="text-xs text-slate-600 mt-2 flex items-center gap-1.5">
                             <span className="font-semibold text-emerald-700">Can. 535 §1</span>
-                            <span>Permanent Inscribed Records</span>
+                            <span>{activePeriod !== 'all' ? `Folios (${descriptive?.summary?.active_filter_label})` : 'Permanent Inscribed Records'}</span>
                         </p>
                     </div>
 
@@ -442,7 +671,7 @@ export default function AnalyticsIndex({
                                     Sacramental Registry Mix
                                 </h3>
                                 <p className="text-xs text-slate-500 mt-0.5">
-                                    Cumulative distribution of canonical folios by sacrament rite.
+                                    Distribution of canonical folios ({descriptive?.summary?.active_filter_label || 'All Time'}).
                                 </p>
                             </div>
 
@@ -483,11 +712,25 @@ export default function AnalyticsIndex({
                             </div>
                         </div>
 
-                        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                            <span>Dominant Sacrament Rite:</span>
-                            <span className="font-bold text-slate-900">
-                                {sacramentBreakdownData[0]?.sacrament || 'Baptism'}
-                            </span>
+                        <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
+                            <div className="flex items-center gap-1.5 text-slate-500">
+                                <span>Dominant Rite:</span>
+                                <span className="font-bold text-slate-900">
+                                    {sacramentBreakdownData[0]?.sacrament || 'Baptism'}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-[11px] font-semibold text-slate-500">Schedules:</span>
+                                <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-bold text-[11px] border border-emerald-200">
+                                    {descriptive?.schedule_stats?.confirmed || descriptive?.schedule_stats?.scheduled || 0} Confirmed
+                                </span>
+                                <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 font-bold text-[11px] border border-amber-200">
+                                    {descriptive?.schedule_stats?.pending || 0} Pending
+                                </span>
+                                <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 font-bold text-[11px] border border-rose-200">
+                                    {descriptive?.schedule_stats?.cancelled || 0} Cancelled
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>

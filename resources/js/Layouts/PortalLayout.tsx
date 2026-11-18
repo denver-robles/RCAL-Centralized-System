@@ -189,17 +189,18 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
                                         <Shield className="w-4 h-4 shrink-0 text-amber-400" />
                                         <span>Audit Trail (RA 10173)</span>
                                     </Link>
-
-                                    <Link
-                                        href="/analytics"
-                                        onClick={onItemClick}
-                                        className={linkClass(activeTab === 'analytics')}
-                                    >
-                                        <BarChart3 className="w-4 h-4 shrink-0 text-amber-400" />
-                                        <span>Curia Analytics</span>
-                                    </Link>
                                 </>
                             )}
+
+                            {/* Analytics accessible to all staff: Curia Analytics for Chancery/Admin, Parish Analytics for Parish Staff */}
+                            <Link
+                                href="/analytics"
+                                onClick={onItemClick}
+                                className={linkClass(activeTab === 'analytics')}
+                            >
+                                <BarChart3 className="w-4 h-4 shrink-0 text-amber-400" />
+                                <span>{user?.is_archdiocese_wide ? 'Curia Analytics' : 'Parish Analytics'}</span>
+                            </Link>
                         </nav>
                     </div>
                 </div>
