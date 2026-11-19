@@ -11,54 +11,47 @@ use Inertia\Response;
 class AnalyticsController extends Controller
 {
     public function __construct(
-        private readonly AnalyticsService $analyticsService
+        protected AnalyticsService $analyticsService
     ) {}
 
     public function index(Request $request): Response
     {
         $user = $request->user();
+        $isArchdiocese = $user->isArchdioceseWide();
 
-        // Chancery/Admin can select any parish or view archdiocese-wide; parish staff is strictly restricted to their home parish
-        $parishId = $user->isArchdioceseWide()
+        // Security enforcement: Parish staff can ONLY access their own home parish.
+        // Even if staff manually inputs ?parish_id= in the URL, force their home_parish_id.
+        $parishId = $isArchdiocese
             ? ($request->filled('parish_id') ? $request->integer('parish_id') : null)
             : $user->home_parish_id;
 
-        $period = in_array($request->input('period'), ['all', 'year', 'month', 'day'], true)
-            ? $request->input('period')
-            : 'all';
-
-        $year = $request->filled('year') && is_numeric($request->input('year'))
-            ? (int) $request->input('year')
-            : (int) date('Y');
-
-        $month = $request->input('month', date('Y-m'));
-        $date = $request->input('date', date('Y-m-d'));
-
+        // Parse date filter parameters (all, year, month, day)
         $filters = [
-            'parish_id' => $parishId ? (string) $parishId : '',
-            'period' => $period,
-            'year' => (string) $year,
-            'month' => $month,
-            'date' => $date,
+            'parish_id' => $parishId,
+            'period' => $request->input('period', 'all'),
+            'year' => (int) $request->input('year', date('Y')),
+            'month' => $request->input('month', date('Y-m')),
+            'date' => $request->input('date', date('Y-m-d')),
         ];
 
+        // Compute both analytics tabs with applied parish and date filters
         $analytics = $this->analyticsService->getFullAnalytics($parishId, $filters);
 
-        $parishes = $user->isArchdioceseWide()
-            ? Parish::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'municipality', 'city_municipality'])
-            : ($user->homeParish ? collect([$user->homeParish]) : collect());
-
-        $scopedParish = $parishId ? Parish::find($parishId) : null;
+        // For archdiocese leaders, supply all parishes for selection.
+        // For parish staff, supply only their home parish so they cannot view or switch to others.
+        $parishes = $isArchdiocese
+            ? Parish::query()->orderBy('name')->get(['id', 'name'])
+            : ($user->homeParish ? collect([['id' => $user->homeParish->id, 'name' => $user->homeParish->name]]) : collect());
 
         $currentYear = (int) date('Y');
         $availableYears = range($currentYear, $currentYear - 5);
 
         return Inertia::render('Analytics/Index', [
-            'descriptive' => $analytics['descriptive'],
-            'predictive' => $analytics['predictive'],
-            'prescriptive' => $analytics['prescriptive'],
+            'sacraments' => $analytics['sacraments'],
+            'finance' => $analytics['finance'],
             'parishes' => $parishes,
-            'scopedParish' => $scopedParish,
+            'isArchdioceseWide' => $isArchdiocese,
+            'userHomeParish' => $user->homeParish ? ['id' => $user->homeParish->id, 'name' => $user->homeParish->name] : null,
             'availableYears' => $availableYears,
             'filters' => $filters,
         ]);

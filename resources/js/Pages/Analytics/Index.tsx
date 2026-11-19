@@ -1,29 +1,6 @@
-import React, { useMemo } from 'react';
-import { Head, router, usePage } from '@inertiajs/react';
-import { PortalLayout } from '@/Layouts/PortalLayout';
-import { PageProps, Parish } from '@/types';
-import {
-    BarChart3,
-    TrendingUp,
-    TrendingDown,
-    BookOpen,
-    FileCheck,
-    Calendar,
-    Church,
-    Clock,
-    Shield,
-    Sparkles,
-    AlertCircle,
-    CheckCircle2,
-    Filter,
-    ArrowUpRight,
-    ArrowDownRight,
-    Minus,
-    Layers,
-    Activity,
-    Lightbulb,
-    FileText,
-} from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { router } from '@inertiajs/react';
+import PortalLayout from '@/Layouts/PortalLayout';
 import {
     ResponsiveContainer,
     LineChart,
@@ -37,77 +14,171 @@ import {
     Legend,
 } from 'recharts';
 
-interface AnalyticsProps extends PageProps {
-    descriptive: {
-        records_by_type: Record<string, number>;
-        schedule_stats: Record<string, number>;
-        monthly_trends: { month: string; count: number; is_forecast: boolean }[];
-        summary: {
-            total_records: number;
-            monthly_average: number;
-            monthly_std_dev: number;
-            pending_certificates: number;
-            active_filter_label?: string;
-            filter_period?: string;
-        };
-    };
-    predictive: {
-        slope: number;
-        trend_direction: 'upward' | 'downward' | 'stable' | 'insufficient_data';
-        forecast: { month: string; predicted_count: number; is_forecast: boolean }[];
-    };
-    prescriptive: {
-        category: string;
-        priority: 'high' | 'medium' | 'low';
-        title: string;
-        insight: string;
-        action: string;
-    }[];
-    parishes?: Parish[];
-    scopedParish?: Parish | null;
-    availableYears?: number[];
-    filters?: {
-        parish_id?: string;
-        period?: 'all' | 'year' | 'month' | 'day';
-        year?: string | number;
-        month?: string;
-        date?: string;
-    };
+interface CertBreakdown {
+    total: number;
+    baptism: number;
+    confirmation: number;
 }
 
+interface AppointmentBreakdown {
+    total: number;
+    baptism: number;
+    confirmation: number;
+    marriage: number;
+    funeral: number;
+    others: number;
+}
+
+interface AccountCodeItem {
+    account_code: string;
+    account_name: string;
+    label: string;
+    total: number;
+    entry_count: number;
+}
+
+interface FiltersState {
+    parish_id: number | null;
+    period: 'all' | 'year' | 'month' | 'day';
+    year: number;
+    month: string;
+    date: string;
+}
+
+interface AnalyticsProps {
+    sacraments: {
+        certificates: {
+            pending: CertBreakdown;
+            processed: CertBreakdown;
+        };
+        appointments: {
+            pending: AppointmentBreakdown;
+            completed: AppointmentBreakdown;
+        };
+        descriptive: {
+            records_by_type: Record<string, number>;
+            schedule_stats: Record<string, number>;
+            monthly_trends: Array<{ month: string; count: number; is_forecast: boolean }>;
+            summary: {
+                total_records: number;
+                monthly_average: number;
+                monthly_std_dev: number;
+                pending_certificates: number;
+            };
+        };
+        predictive: {
+            slope: number;
+            trend_direction: string;
+            forecast: Array<{ month: string; predicted_count: number; is_forecast: boolean }>;
+        };
+        prescriptive: Array<{
+            priority: string;
+            title: string;
+            insight: string;
+            action: string;
+        }>;
+    };
+    finance: {
+        summary: {
+            total_cash_in: number;
+            total_cash_out: number;
+            net_total: number;
+            is_surplus: boolean;
+        };
+        inflow_by_account: AccountCodeItem[];
+        outflow_by_account: AccountCodeItem[];
+        monthly_cashflow: Array<{
+            month: string;
+            cash_in: number;
+            cash_out: number;
+        }>;
+    };
+    parishes: Array<{ id: number; name: string }>;
+    isArchdioceseWide: boolean;
+    userHomeParish?: { id: number; name: string } | null;
+    availableYears: number[];
+    filters: FiltersState;
+}
+
+const formatPeso = (amount: number) =>
+    new Intl.NumberFormat('en-PH', {
+        style: 'currency',
+        currency: 'PHP',
+    }).format(amount);
+
 export default function AnalyticsIndex({
-    descriptive,
-    predictive,
-    prescriptive,
-    parishes = [],
-    scopedParish = null,
-    availableYears = [2026, 2025, 2024, 2023, 2022],
-    filters = {},
+    sacraments,
+    finance,
+    parishes,
+    isArchdioceseWide,
+    userHomeParish,
+    availableYears,
+    filters,
 }: AnalyticsProps) {
-    const { auth } = usePage<PageProps>().props;
-    const user = auth?.user;
+    const [activeTab, setActiveTab] = useState<'sacraments' | 'finance'>('sacraments');
 
-    const priorityBadge = {
-        high: 'bg-rose-50 text-rose-800 border-rose-300 ring-rose-200',
-        medium: 'bg-amber-50 text-amber-800 border-amber-300 ring-amber-200',
-        low: 'bg-emerald-50 text-emerald-800 border-emerald-300 ring-emerald-200',
+    // Filter update handler (preserves other filter fields)
+    const updateFilter = (newParams: Partial<FiltersState>) => {
+        const next = { ...filters, ...newParams };
+        const query: Record<string, any> = {};
+
+        // Only archdiocese wide users can filter by parish
+        if (isArchdioceseWide && next.parish_id) {
+            query.parish_id = next.parish_id;
+        }
+
+        if (next.period && next.period !== 'all') {
+            query.period = next.period;
+        }
+
+        if (next.period === 'year' && next.year) {
+            query.year = next.year;
+        }
+
+        if (next.period === 'month' && next.month) {
+            query.month = next.month;
+        }
+
+        if (next.period === 'day' && next.date) {
+            query.date = next.date;
+        }
+
+        router.get('/analytics', query, { preserveState: true, preserveScroll: true });
     };
 
-    const priorityBorder = {
-        high: 'border-l-rose-500',
-        medium: 'border-l-amber-500',
-        low: 'border-l-emerald-500',
+    const resetFilters = () => {
+        const query: Record<string, any> = {};
+        if (isArchdioceseWide && filters.parish_id) {
+            query.parish_id = filters.parish_id;
+        }
+        router.get('/analytics', query, { preserveState: true, preserveScroll: true });
     };
 
-    const priorityIcon = {
-        high: AlertCircle,
-        medium: Clock,
-        low: CheckCircle2,
-    };
+    // Human-friendly description of active time filter
+    const activeFilterDescription = useMemo(() => {
+        if (filters.period === 'year') {
+            return `Calendar Year ${filters.year}`;
+        }
+        if (filters.period === 'month') {
+            const [y, m] = (filters.month || '').split('-');
+            if (y && m) {
+                const dateObj = new Date(parseInt(y, 10), parseInt(m, 10) - 1, 1);
+                return dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
+            }
+            return filters.month;
+        }
+        if (filters.period === 'day') {
+            const d = new Date(filters.date);
+            return isNaN(d.getTime())
+                ? filters.date
+                : d.toLocaleDateString('default', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+        return 'All Time';
+    }, [filters.period, filters.year, filters.month, filters.date]);
 
-    // Prepare chronological timeline combining actual records and 3-month forecast
+    // Historical + 3-Month Forecast Line Chart Data (with bridge month)
     const timelineData = useMemo(() => {
-        const actuals = (descriptive?.monthly_trends || []).map((item, idx, arr) => {
+        const actuals = (sacraments.descriptive?.monthly_trends || []).map((item, idx, arr) => {
             const isLastActual = idx === arr.length - 1;
             return {
                 month: item.month,
@@ -116,581 +187,494 @@ export default function AnalyticsIndex({
             };
         });
 
-        const forecasts = (predictive?.forecast || []).map((item) => ({
+        const forecasts = (sacraments.predictive?.forecast || []).map((item) => ({
             month: item.month,
             actual: null,
             predicted: item.predicted_count,
         }));
 
         return [...actuals, ...forecasts];
-    }, [descriptive?.monthly_trends, predictive?.forecast]);
+    }, [sacraments.descriptive?.monthly_trends, sacraments.predictive?.forecast]);
 
-    // Prepare distribution by sacrament type
-    const sacramentBreakdownData = useMemo(() => {
-        const entries = Object.entries(descriptive?.records_by_type || {});
-        if (entries.length === 0) {
-            return [
-                { sacrament: 'Baptism', total: 0 },
-                { sacrament: 'Confirmation', total: 0 },
-                { sacrament: 'Marriage', total: 0 },
-                { sacrament: 'Death', total: 0 },
-            ];
-        }
-        return entries.map(([type, total]) => ({
-            sacrament: type.charAt(0).toUpperCase() + type.slice(1),
-            total,
-        }));
-    }, [descriptive?.records_by_type]);
-
-    // Format trend direction badge
-    const trendConfig = useMemo(() => {
-        const dir = predictive?.trend_direction || 'stable';
-        switch (dir) {
-            case 'upward':
-                return {
-                    label: 'Upward Trajectory',
-                    bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-                    icon: ArrowUpRight,
-                    color: 'text-emerald-400',
-                };
-            case 'downward':
-                return {
-                    label: 'Downward Trend',
-                    bg: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
-                    icon: ArrowDownRight,
-                    color: 'text-rose-400',
-                };
-            case 'stable':
-                return {
-                    label: 'Stable Volume',
-                    bg: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-                    icon: Minus,
-                    color: 'text-amber-400',
-                };
-            default:
-                return {
-                    label: 'Baseline Gathering',
-                    bg: 'bg-slate-500/20 text-slate-300 border-slate-500/30',
-                    icon: Activity,
-                    color: 'text-slate-400',
-                };
-        }
-    }, [predictive?.trend_direction]);
-
-    const activePeriod = filters.period || 'all';
-
-    const handlePeriodChange = (newPeriod: 'all' | 'year' | 'month' | 'day') => {
-        const query: Record<string, any> = {
-            ...filters,
-            period: newPeriod,
-        };
-
-        if (newPeriod === 'all') {
-            delete query.year;
-            delete query.month;
-            delete query.date;
-        } else if (newPeriod === 'year' && !query.year) {
-            query.year = new Date().getFullYear();
-        } else if (newPeriod === 'month' && !query.month) {
-            const now = new Date();
-            query.month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-        } else if (newPeriod === 'day' && !query.date) {
-            query.date = new Date().toISOString().split('T')[0];
-        }
-
-        Object.keys(query).forEach((key) => {
-            if (!query[key]) delete query[key];
-        });
-
-        router.get('/analytics', query, {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-        });
-    };
-
-    const handleValueChange = (field: 'year' | 'month' | 'date', val: string) => {
-        const query: Record<string, any> = {
-            ...filters,
-            [field]: val,
-        };
-
-        Object.keys(query).forEach((key) => {
-            if (!query[key]) delete query[key];
-        });
-
-        router.get('/analytics', query, {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-        });
-    };
-
-    const handleParishChange = (newParishId: string) => {
-        const query: Record<string, any> = {
-            ...filters,
-            parish_id: newParishId || undefined,
-        };
-
-        Object.keys(query).forEach((key) => {
-            if (!query[key]) delete query[key];
-        });
-
-        router.get('/analytics', query, {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-        });
-    };
-
-    const isArchdioceseWide = user?.is_archdiocese_wide ?? false;
+    // Data for Pending vs. Completed Sacraments Bar Chart
+    const sacramentChartData = [
+        {
+            type: 'Baptism',
+            Pending: sacraments.appointments.pending.baptism,
+            Completed: sacraments.appointments.completed.baptism,
+        },
+        {
+            type: 'Confirmation',
+            Pending: sacraments.appointments.pending.confirmation,
+            Completed: sacraments.appointments.completed.confirmation,
+        },
+        {
+            type: 'Marriage',
+            Pending: sacraments.appointments.pending.marriage,
+            Completed: sacraments.appointments.completed.marriage,
+        },
+        {
+            type: 'Funeral',
+            Pending: sacraments.appointments.pending.funeral,
+            Completed: sacraments.appointments.completed.funeral,
+        },
+        {
+            type: 'Others',
+            Pending: sacraments.appointments.pending.others,
+            Completed: sacraments.appointments.completed.others,
+        },
+    ];
 
     return (
         <PortalLayout
-            title={isArchdioceseWide ? 'Curia Decision Support & Analytics' : 'Parish Analytics & Capacity Intelligence'}
-            subtitle={
-                isArchdioceseWide
-                    ? 'Descriptive canonical metrics, predictive sacrament forecasting, and prescriptive administrative guidance'
-                    : `Descriptive canonical folios, sacrament demand modeling, and operational capacity metrics for ${scopedParish?.name || 'your parish'}`
-            }
+            title="Parish & Curia Analytics"
+            subtitle="Descriptive metrics, predictive sacrament forecasting, and financial account breakdowns."
             activeTab="analytics"
         >
-            <Head title={isArchdioceseWide ? 'Curia Analytics — RCAL PIMS' : 'Parish Analytics — RCAL PIMS'} />
-
-            <div className="space-y-6">
-                {/* ── PARISH JURISDICTION SCOPE (ARCHDIOCESE-WIDE OR PARISH-SCOPED) ── */}
-                {isArchdioceseWide ? (
-                    parishes.length > 0 && (
-                        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                                    <Church className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                                        Jurisdiction Filter
-                                    </div>
-                                    <div className="text-sm font-serif font-bold text-slate-900">
-                                        {filters.parish_id && scopedParish
-                                            ? scopedParish.name
-                                            : 'Archdiocese of Lipa — All Vicariates & Parishes'}
-                                    </div>
-                                </div>
+            {/* ============================================================== */}
+            {/* FILTER TOOLBAR: PARISH FILTER + DAY, MONTH, YEAR TIME FILTERS   */}
+            {/* ============================================================== */}
+            <div className="mb-6 bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    {/* Left: Parish Filter (Admin can choose, Staff is locked to their parish) */}
+                    <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                            Parish Filter
+                        </label>
+                        {isArchdioceseWide ? (
+                            <select
+                                value={filters.parish_id ?? ''}
+                                onChange={(e) => updateFilter({ parish_id: e.target.value ? Number(e.target.value) : null })}
+                                className="rounded-xl border-slate-300 text-sm font-medium text-slate-800 focus:border-amber-600 focus:ring-amber-600 min-w-[260px]"
+                            >
+                                <option value="">All Parishes (Archdiocese-Wide)</option>
+                                {parishes.map((parish) => (
+                                    <option key={parish.id} value={parish.id}>
+                                        {parish.name}
+                                    </option>
+                                ))}
+                            </select>
+                        ) : (
+                            <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 min-w-[240px]">
+                                <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
+                                <span className="font-bold">{userHomeParish?.name || 'Assigned Parish'}</span>
+                                <span className="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-medium">
+                                    Staff Scoped
+                                </span>
                             </div>
+                        )}
+                    </div>
 
-                            <div className="flex items-center gap-2">
-                                <label className="text-xs font-bold text-slate-600 uppercase tracking-wide shrink-0">
-                                    Filter by Parish:
+                    {/* Right: Time Filters (Day, Month, Year, All) */}
+                    <div className="flex flex-wrap items-center gap-2">
+                        <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                                Time Period
+                            </label>
+                            <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200">
+                                {(['all', 'year', 'month', 'day'] as const).map((period) => (
+                                    <button
+                                        key={period}
+                                        type="button"
+                                        onClick={() => updateFilter({ period })}
+                                        className={`px-3 py-1 text-xs font-bold rounded-lg transition-all capitalize ${filters.period === period
+                                            ? 'bg-white text-slate-900 shadow-sm'
+                                            : 'text-slate-600 hover:text-slate-900'
+                                            }`}
+                                    >
+                                        {period === 'all' ? 'All' : period}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Year Selector */}
+                        {filters.period === 'year' && (
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                                    Year
                                 </label>
                                 <select
-                                    value={filters.parish_id || ''}
-                                    onChange={(e) => handleParishChange(e.target.value)}
-                                    className="px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 min-w-[240px]"
+                                    value={filters.year}
+                                    onChange={(e) => updateFilter({ year: Number(e.target.value) })}
+                                    className="rounded-xl border-slate-300 text-sm font-medium text-slate-800 focus:border-amber-600 focus:ring-amber-600 py-1"
                                 >
-                                    <option value="">— Entire Archdiocese (All Parishes) —</option>
-                                    {parishes.map((p) => (
-                                        <option key={p.id} value={p.id}>
-                                            {p.name} {p.city_municipality ? `(${p.city_municipality})` : ''}
+                                    {availableYears.map((yr) => (
+                                        <option key={yr} value={yr}>
+                                            {yr}
                                         </option>
                                     ))}
                                 </select>
+                            </div>
+                        )}
 
-                                {filters.parish_id && (
-                                    <button
-                                        type="button"
-                                        onClick={() => handleParishChange('')}
-                                        className="px-3 py-2 text-xs font-bold text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-xl transition-colors shrink-0"
-                                    >
-                                        Reset
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    )
-                ) : (
-                    <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                                <Church className="w-5 h-5" />
-                            </div>
+                        {/* Month Picker */}
+                        {filters.period === 'month' && (
                             <div>
-                                <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                                    Parish Jurisdiction Scope
-                                </div>
-                                <div className="text-sm font-serif font-bold text-slate-900">
-                                    {scopedParish
-                                        ? `${scopedParish.name} ${scopedParish.city_municipality ? `(${scopedParish.city_municipality})` : ''}`
-                                        : 'Assigned Home Parish'}
-                                </div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                                    Month
+                                </label>
+                                <input
+                                    type="month"
+                                    value={filters.month}
+                                    onChange={(e) => updateFilter({ month: e.target.value })}
+                                    className="rounded-xl border-slate-300 text-sm font-medium text-slate-800 focus:border-amber-600 focus:ring-amber-600 py-1"
+                                />
                             </div>
-                        </div>
+                        )}
 
-                        <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                <CheckCircle2 className="w-3.5 h-3.5" />
-                                <span>Parish Scoped Inscription Data</span>
-                            </span>
-                        </div>
+                        {/* Day / Date Picker */}
+                        {filters.period === 'day' && (
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                                    Date
+                                </label>
+                                <input
+                                    type="date"
+                                    value={filters.date}
+                                    onChange={(e) => updateFilter({ date: e.target.value })}
+                                    className="rounded-xl border-slate-300 text-sm font-medium text-slate-800 focus:border-amber-600 focus:ring-amber-600 py-1"
+                                />
+                            </div>
+                        )}
+
+                        {filters.period !== 'all' && (
+                            <div className="self-end">
+                                <button
+                                    type="button"
+                                    onClick={resetFilters}
+                                    className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition"
+                                >
+                                    Clear Time Filter
+                                </button>
+                            </div>
+                        )}
                     </div>
-                )}
+                </div>
 
-                {/* ── HERO COMMAND BANNER (MATCHING SYSTEM STYLE) ── */}
-                <div className="bg-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    {/* Background Decorative Glow */}
-                    <div className="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
-                    <div className="absolute -left-20 -bottom-20 w-80 h-80 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
+                {/* Subtitle feedback on active filters */}
+                <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between text-xs text-slate-500 gap-2">
+                    <div>
+                        Active Time Window: <strong className="text-slate-800">{activeFilterDescription}</strong>
+                    </div>
+                    <div>
+                        Parish Scope:{' '}
+                        <strong className="text-slate-800">
+                            {isArchdioceseWide
+                                ? filters.parish_id
+                                    ? parishes.find((p) => p.id === filters.parish_id)?.name || 'Specific Parish'
+                                    : 'All Parishes (Archdiocese-Wide)'
+                                : userHomeParish?.name || 'Your Parish'}
+                        </strong>
+                    </div>
+                </div>
+            </div>
 
-                    <div className="relative z-10 flex items-start sm:items-center gap-4 max-w-3xl">
-                        <div className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 shadow-inner">
-                            <BarChart3 className="w-7 h-7" />
-                        </div>
-                        <div>
-                            <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wide uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                                    {scopedParish ? scopedParish.name : (isArchdioceseWide ? 'Archdiocesan Curia Chancery' : 'Parish Administration')}
-                                </span>
-                                <span className="text-xs text-slate-300 font-medium flex items-center gap-1.5">
-                                    <Shield className="w-3.5 h-3.5 text-amber-400" />
-                                    <span>Predictive &amp; Prescriptive Analytics Engine</span>
-                                </span>
-                            </div>
-                            <h2 className="text-xl sm:text-2xl font-serif font-black text-white tracking-tight">
-                                Sacramental Demand Modeling &amp; Capacity Intelligence
+            {/* ============================================================== */}
+            {/* 2-TAB NAVIGATION BAR                                           */}
+            {/* ============================================================== */}
+            <div className="mb-6 border-b border-slate-200">
+                <nav className="flex space-x-2" aria-label="Analytics Navigation Tabs">
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('sacraments')}
+                        className={`px-5 py-3 text-sm font-semibold rounded-t-xl border-b-2 transition-all ${activeTab === 'sacraments'
+                            ? 'border-amber-600 text-slate-900 bg-amber-50/70'
+                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                            }`}
+                    >
+                        Sacraments & Forecasting
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('finance')}
+                        className={`px-5 py-3 text-sm font-semibold rounded-t-xl border-b-2 transition-all ${activeTab === 'finance'
+                            ? 'border-amber-600 text-slate-900 bg-amber-50/70'
+                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                            }`}
+                    >
+                        Finance & Account Codes
+                    </button>
+                </nav>
+            </div>
+
+            {/* ============================================================== */}
+            {/* TAB 1: SACRAMENTS ANALYTICS                                    */}
+            {/* ============================================================== */}
+            {activeTab === 'sacraments' && (
+                <div className="space-y-8">
+                    {/* --- SECTION A: CERTIFICATE REQUESTS --- */}
+                    <section>
+                        <div className="mb-4">
+                            <h2 className="text-lg font-bold text-slate-900">
+                                Certificate Requests (Baptism & Confirmation)
                             </h2>
-                            <p className="text-xs sm:text-sm text-slate-300 mt-1 leading-relaxed">
-                                Real-time Ordinary Least Squares (OLS) regression modeling across canonical folios, seasonal variance analysis, and prescriptive pastoral recommendations.
+                            <p className="text-sm text-slate-500">
+                                Tracks requested copies of Baptism and Confirmation certificates in the selected time window.
                             </p>
                         </div>
-                    </div>
 
-                    <div className="relative z-10 flex flex-wrap items-center gap-3 shrink-0">
-                        <div className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-bold uppercase tracking-wider ${trendConfig.bg}`}>
-                            <trendConfig.icon className="w-4 h-4 shrink-0" />
-                            <span>
-                                {trendConfig.label} ({predictive?.slope > 0 ? `+${predictive.slope}` : predictive?.slope || 0}/mo)
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* ── DESCRIPTIVE ANALYTICS DATE FILTER (DAY, MONTH, YEAR) ── */}
-                <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs">
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                                <Calendar className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <h3 className="font-serif text-base font-bold text-slate-900">
-                                        Descriptive Analytics Filter
-                                    </h3>
-                                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200">
-                                        {descriptive?.summary?.active_filter_label || 'All Time'}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Total Pending Certificate Requests */}
+                            <div className="bg-white rounded-2xl border border-amber-200 p-6 shadow-sm">
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <span className="inline-block px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-800">
+                                            Pending Queue
+                                        </span>
+                                        <h3 className="mt-2 text-base font-bold text-slate-800">
+                                            Total Pending Certificate Requests
+                                        </h3>
+                                        <p className="text-xs text-slate-500 mt-1">
+                                            Requests awaiting record verification, printing, or priest signature.
+                                        </p>
+                                    </div>
+                                    <span className="text-3xl font-extrabold text-amber-600">
+                                        {sacraments.certificates.pending.total}
                                     </span>
                                 </div>
-                                <p className="text-xs text-slate-500 mt-0.5">
-                                    Filter descriptive folios, sacramental rite distribution, and schedule status by Day, Month, or Year.
-                                </p>
-                            </div>
-                        </div>
 
-                        {/* Filter Mode Buttons & Specific Input */}
-                        <div className="flex flex-wrap items-center gap-2.5">
-                            {/* Mode Tabs */}
-                            <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200">
-                                <button
-                                    type="button"
-                                    onClick={() => handlePeriodChange('all')}
-                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                                        activePeriod === 'all'
-                                            ? 'bg-white text-slate-900 shadow-xs'
-                                            : 'text-slate-600 hover:text-slate-900'
-                                    }`}
-                                >
-                                    All Time
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => handlePeriodChange('year')}
-                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                                        activePeriod === 'year'
-                                            ? 'bg-white text-slate-900 shadow-xs'
-                                            : 'text-slate-600 hover:text-slate-900'
-                                    }`}
-                                >
-                                    Year
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => handlePeriodChange('month')}
-                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                                        activePeriod === 'month'
-                                            ? 'bg-white text-slate-900 shadow-xs'
-                                            : 'text-slate-600 hover:text-slate-900'
-                                    }`}
-                                >
-                                    Month
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => handlePeriodChange('day')}
-                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                                        activePeriod === 'day'
-                                            ? 'bg-white text-slate-900 shadow-xs'
-                                            : 'text-slate-600 hover:text-slate-900'
-                                    }`}
-                                >
-                                    Day
-                                </button>
-                            </div>
-
-                            {/* Year Selector */}
-                            {activePeriod === 'year' && (
-                                <div className="flex items-center gap-1.5">
-                                    <select
-                                        value={filters.year || new Date().getFullYear()}
-                                        onChange={(e) => handleValueChange('year', e.target.value)}
-                                        className="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
-                                    >
-                                        {availableYears.map((yr) => (
-                                            <option key={yr} value={yr}>
-                                                Year {yr}
-                                            </option>
-                                        ))}
-                                    </select>
+                                <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-2 gap-3">
+                                    <div className="bg-slate-50 rounded-xl p-3">
+                                        <p className="text-xs text-slate-500">Baptism</p>
+                                        <p className="text-xl font-bold text-slate-900">
+                                            {sacraments.certificates.pending.baptism}
+                                        </p>
+                                    </div>
+                                    <div className="bg-slate-50 rounded-xl p-3">
+                                        <p className="text-xs text-slate-500">Confirmation</p>
+                                        <p className="text-xl font-bold text-slate-900">
+                                            {sacraments.certificates.pending.confirmation}
+                                        </p>
+                                    </div>
                                 </div>
-                            )}
+                            </div>
 
-                            {/* Month Selector */}
-                            {activePeriod === 'month' && (
-                                <div className="flex items-center gap-1.5">
-                                    <input
-                                        type="month"
-                                        value={
-                                            filters.month ||
-                                            `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
-                                        }
-                                        onChange={(e) => handleValueChange('month', e.target.value)}
-                                        className="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
-                                    />
+                            {/* Total Certificates Processed */}
+                            <div className="bg-white rounded-2xl border border-emerald-200 p-6 shadow-sm">
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <span className="inline-block px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800">
+                                            Completed & Released
+                                        </span>
+                                        <h3 className="mt-2 text-base font-bold text-slate-800">
+                                            Total Certificates Processed
+                                        </h3>
+                                        <p className="text-xs text-slate-500 mt-1">
+                                            Official certificates verified, printed, signed, and released.
+                                        </p>
+                                    </div>
+                                    <span className="text-3xl font-extrabold text-emerald-600">
+                                        {sacraments.certificates.processed.total}
+                                    </span>
                                 </div>
-                            )}
 
-                            {/* Day Selector */}
-                            {activePeriod === 'day' && (
-                                <div className="flex items-center gap-1.5">
-                                    <input
-                                        type="date"
-                                        value={filters.date || new Date().toISOString().split('T')[0]}
-                                        onChange={(e) => handleValueChange('date', e.target.value)}
-                                        className="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
-                                    />
+                                <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-2 gap-3">
+                                    <div className="bg-slate-50 rounded-xl p-3">
+                                        <p className="text-xs text-slate-500">Baptism</p>
+                                        <p className="text-xl font-bold text-slate-900">
+                                            {sacraments.certificates.processed.baptism}
+                                        </p>
+                                    </div>
+                                    <div className="bg-slate-50 rounded-xl p-3">
+                                        <p className="text-xs text-slate-500">Confirmation</p>
+                                        <p className="text-xl font-bold text-slate-900">
+                                            {sacraments.certificates.processed.confirmation}
+                                        </p>
+                                    </div>
                                 </div>
-                            )}
-
-                            {/* Reset Button */}
-                            {activePeriod !== 'all' && (
-                                <button
-                                    type="button"
-                                    onClick={() => handlePeriodChange('all')}
-                                    className="px-2.5 py-1.5 text-xs font-bold text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-xl transition-colors"
-                                >
-                                    Reset
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* ── 1. ESSENTIAL CANONICAL KPI CARDS (GRID OF 4) ── */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-                    {/* KPI 1: Inscribed Records */}
-                    <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs hover:border-amber-400 transition-all duration-200">
-                        <div className="flex items-center justify-between mb-3">
-                            <span className="text-xs font-bold uppercase tracking-wide text-slate-600">
-                                Inscribed Folios
-                            </span>
-                            <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600">
-                                <BookOpen className="w-5 h-5" />
                             </div>
                         </div>
-                        <div className="text-3xl font-serif font-black text-slate-900">
-                            {(descriptive?.summary?.total_records || 0).toLocaleString()}
-                        </div>
-                        <p className="text-xs text-slate-600 mt-2 flex items-center gap-1.5">
-                            <span className="font-semibold text-emerald-700">Can. 535 §1</span>
-                            <span>{activePeriod !== 'all' ? `Folios (${descriptive?.summary?.active_filter_label})` : 'Permanent Inscribed Records'}</span>
-                        </p>
-                    </div>
+                    </section>
 
-                    {/* KPI 2: Monthly Average */}
-                    <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs hover:border-amber-400 transition-all duration-200">
-                        <div className="flex items-center justify-between mb-3">
-                            <span className="text-xs font-bold uppercase tracking-wide text-slate-600">
-                                Monthly Average
-                            </span>
-                            <div className="p-2.5 rounded-xl bg-sky-50 text-sky-600">
-                                <Activity className="w-5 h-5" />
-                            </div>
-                        </div>
-                        <div className="text-3xl font-serif font-black text-slate-900">
-                            {descriptive?.summary?.monthly_average || 0}
-                        </div>
-                        <p className="text-xs text-slate-600 mt-2 flex items-center gap-1.5">
-                            <span className="font-semibold text-sky-700">12-Month Mean</span>
-                            <span>Sacraments / Month</span>
-                        </p>
-                    </div>
-
-                    {/* KPI 3: Seasonal Volatility */}
-                    <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs hover:border-amber-400 transition-all duration-200">
-                        <div className="flex items-center justify-between mb-3">
-                            <span className="text-xs font-bold uppercase tracking-wide text-slate-600">
-                                Seasonal Volatility
-                            </span>
-                            <div className="p-2.5 rounded-xl bg-purple-50 text-purple-600">
-                                <TrendingUp className="w-5 h-5" />
-                            </div>
-                        </div>
-                        <div className="text-3xl font-serif font-black text-slate-900">
-                            ±{descriptive?.summary?.monthly_std_dev || 0}
-                        </div>
-                        <p className="text-xs text-slate-600 mt-2 flex items-center gap-1.5">
-                            <span className="font-semibold text-purple-700">Std. Deviation</span>
-                            <span>Seasonal variance spread</span>
-                        </p>
-                    </div>
-
-                    {/* KPI 4: Certificate Orders Pending */}
-                    <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs hover:border-amber-400 transition-all duration-200">
-                        <div className="flex items-center justify-between mb-3">
-                            <span className="text-xs font-bold uppercase tracking-wide text-slate-600">
-                                Certificate Queue
-                            </span>
-                            <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600">
-                                <FileCheck className="w-5 h-5" />
-                            </div>
-                        </div>
-                        <div className="text-3xl font-serif font-black text-slate-900">
-                            {(descriptive?.summary?.pending_certificates || 0).toLocaleString()}
-                        </div>
-                        <p className="text-xs text-slate-600 mt-2 flex items-center gap-1.5">
-                            <span className="font-semibold text-amber-700">Pending Release</span>
-                            <span>Awaiting signature &amp; seal</span>
-                        </p>
-                    </div>
-                </div>
-
-                {/* ── 2. PREDICTIVE TIMELINE & SACRAMENTAL MIX CHARTS ── */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Left: 3-Month Linear Regression Forecast */}
-                    <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5 pb-3 border-b border-slate-100">
-                            <div>
-                                <h3 className="font-serif text-lg font-bold text-slate-900 flex items-center gap-2">
-                                    <Sparkles className="w-4 h-4 text-amber-500" />
-                                    Sacrament Inscriptions &amp; 3-Month Forecast
-                                </h3>
-                                <p className="text-xs text-slate-500 mt-0.5">
-                                    Solid navy line represents historical canonical records; dashed gold line represents linear regression prediction.
-                                </p>
-                            </div>
-                            <div className="flex items-center gap-3 text-2xs font-semibold uppercase tracking-wider shrink-0">
-                                <span className="flex items-center gap-1.5 text-slate-700">
-                                    <span className="w-3 h-1 bg-slate-900 rounded-full" />
-                                    Actual
-                                </span>
-                                <span className="flex items-center gap-1.5 text-amber-700">
-                                    <span className="w-3 h-1 bg-amber-500 border-dashed border-t border-amber-600" />
-                                    Forecast
-                                </span>
-                            </div>
+                    {/* --- SECTION B: SACRAMENT APPOINTMENTS --- */}
+                    <section>
+                        <div className="mb-4">
+                            <h2 className="text-lg font-bold text-slate-900">
+                                Sacrament Appointments by Type
+                            </h2>
+                            <p className="text-sm text-slate-500">
+                                Organizes bookings and completed celebrations across Baptism, Confirmation, Marriage, Funeral, and other services.
+                            </p>
                         </div>
 
-                        <div className="h-72 sm:h-80 w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={timelineData} margin={{ top: 10, right: 20, left: -10, bottom: 5 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                                    <XAxis
-                                        dataKey="month"
-                                        tick={{ fontSize: 11, fill: '#64748b' }}
-                                        tickLine={false}
-                                        axisLine={{ stroke: '#cbd5e1' }}
-                                    />
-                                    <YAxis
-                                        allowDecimals={false}
-                                        tick={{ fontSize: 11, fill: '#64748b' }}
-                                        tickLine={false}
-                                        axisLine={{ stroke: '#cbd5e1' }}
-                                    />
-                                    <Tooltip
-                                        contentStyle={{
-                                            backgroundColor: '#0f172a',
-                                            borderRadius: '12px',
-                                            border: '1px solid #334155',
-                                            color: '#ffffff',
-                                            fontSize: '12px',
-                                            padding: '8px 12px',
-                                        }}
-                                        itemStyle={{ color: '#ffffff' }}
-                                    />
-                                    <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }} />
-                                    <Line
-                                        type="monotone"
-                                        dataKey="actual"
-                                        name="Historical Records"
-                                        stroke="#0f172a"
-                                        strokeWidth={2.5}
-                                        dot={{ r: 4, fill: '#0f172a' }}
-                                        activeDot={{ r: 6 }}
-                                        connectNulls={false}
-                                    />
-                                    <Line
-                                        type="monotone"
-                                        dataKey="predicted"
-                                        name="Projected Forecast"
-                                        stroke="#d97706"
-                                        strokeWidth={2.5}
-                                        strokeDasharray="5 5"
-                                        dot={{ r: 4, fill: '#d97706' }}
-                                        activeDot={{ r: 6 }}
-                                        connectNulls={false}
-                                    />
-                                </LineChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Total Pending Sacrament Appointments */}
+                            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <span className="inline-block px-2.5 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                            Upcoming Schedule
+                                        </span>
+                                        <h3 className="mt-2 text-base font-bold text-slate-800">
+                                            Total Pending Sacrament Appointments
+                                        </h3>
+                                        <p className="text-xs text-slate-500 mt-1">
+                                            Scheduled sacraments awaiting celebration or final canonical requirements.
+                                        </p>
+                                    </div>
+                                    <span className="text-3xl font-extrabold text-blue-600">
+                                        {sacraments.appointments.pending.total}
+                                    </span>
+                                </div>
 
-                    {/* Right: Sacramental Mix Distribution */}
-                    <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs flex flex-col justify-between">
-                        <div>
-                            <div className="mb-5 pb-3 border-b border-slate-100">
-                                <h3 className="font-serif text-lg font-bold text-slate-900 flex items-center gap-2">
-                                    <Layers className="w-4 h-4 text-amber-500" />
-                                    Sacramental Registry Mix
-                                </h3>
-                                <p className="text-xs text-slate-500 mt-0.5">
-                                    Distribution of canonical folios ({descriptive?.summary?.active_filter_label || 'All Time'}).
-                                </p>
+                                <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-3 sm:grid-cols-5 gap-2 text-center">
+                                    <div className="bg-slate-50 rounded-xl p-2.5">
+                                        <p className="text-[11px] text-slate-500">Baptism</p>
+                                        <p className="text-lg font-bold text-slate-900">
+                                            {sacraments.appointments.pending.baptism}
+                                        </p>
+                                    </div>
+                                    <div className="bg-slate-50 rounded-xl p-2.5">
+                                        <p className="text-[11px] text-slate-500">Confirmation</p>
+                                        <p className="text-lg font-bold text-slate-900">
+                                            {sacraments.appointments.pending.confirmation}
+                                        </p>
+                                    </div>
+                                    <div className="bg-slate-50 rounded-xl p-2.5">
+                                        <p className="text-[11px] text-slate-500">Marriage</p>
+                                        <p className="text-lg font-bold text-slate-900">
+                                            {sacraments.appointments.pending.marriage}
+                                        </p>
+                                    </div>
+                                    <div className="bg-slate-50 rounded-xl p-2.5">
+                                        <p className="text-[11px] text-slate-500">Funeral</p>
+                                        <p className="text-lg font-bold text-slate-900">
+                                            {sacraments.appointments.pending.funeral}
+                                        </p>
+                                    </div>
+                                    <div className="bg-slate-50 rounded-xl p-2.5">
+                                        <p className="text-[11px] text-slate-500">Others</p>
+                                        <p className="text-lg font-bold text-slate-900">
+                                            {sacraments.appointments.pending.others}
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div className="h-64 sm:h-72 w-full">
+                            {/* Total Sacraments Completed */}
+                            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <span className="inline-block px-2.5 py-1 text-xs font-semibold rounded-full bg-slate-900 text-white">
+                                            Celebrated & Recorded
+                                        </span>
+                                        <h3 className="mt-2 text-base font-bold text-slate-800">
+                                            Total Sacraments Completed
+                                        </h3>
+                                        <p className="text-xs text-slate-500 mt-1">
+                                            Sacraments already celebrated and recorded in parish registers.
+                                        </p>
+                                    </div>
+                                    <span className="text-3xl font-extrabold text-slate-900">
+                                        {sacraments.appointments.completed.total}
+                                    </span>
+                                </div>
+
+                                <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-3 sm:grid-cols-5 gap-2 text-center">
+                                    <div className="bg-slate-50 rounded-xl p-2.5">
+                                        <p className="text-[11px] text-slate-500">Baptism</p>
+                                        <p className="text-lg font-bold text-slate-900">
+                                            {sacraments.appointments.completed.baptism}
+                                        </p>
+                                    </div>
+                                    <div className="bg-slate-50 rounded-xl p-2.5">
+                                        <p className="text-[11px] text-slate-500">Confirmation</p>
+                                        <p className="text-lg font-bold text-slate-900">
+                                            {sacraments.appointments.completed.confirmation}
+                                        </p>
+                                    </div>
+                                    <div className="bg-slate-50 rounded-xl p-2.5">
+                                        <p className="text-[11px] text-slate-500">Marriage</p>
+                                        <p className="text-lg font-bold text-slate-900">
+                                            {sacraments.appointments.completed.marriage}
+                                        </p>
+                                    </div>
+                                    <div className="bg-slate-50 rounded-xl p-2.5">
+                                        <p className="text-[11px] text-slate-500">Funeral</p>
+                                        <p className="text-lg font-bold text-slate-900">
+                                            {sacraments.appointments.completed.funeral}
+                                        </p>
+                                    </div>
+                                    <div className="bg-slate-50 rounded-xl p-2.5">
+                                        <p className="text-[11px] text-slate-500">Others</p>
+                                        <p className="text-lg font-bold text-slate-900">
+                                            {sacraments.appointments.completed.others}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Bar Chart: Pending vs. Completed Sacraments */}
+                        <div className="mt-6 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                            <h3 className="text-base font-bold text-slate-900">
+                                Pending vs. Completed Sacraments by Type
+                            </h3>
+                            <p className="text-xs text-slate-500 mb-4">
+                                Compares upcoming scheduled sacraments against completed celebrations for each sacrament category.
+                            </p>
+                            <div className="h-72 w-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={sacramentBreakdownData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
+                                    <BarChart data={sacramentChartData}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                                        <XAxis
-                                            dataKey="sacrament"
-                                            tick={{ fontSize: 11, fill: '#64748b' }}
-                                            tickLine={false}
-                                            axisLine={{ stroke: '#cbd5e1' }}
-                                        />
-                                        <YAxis
-                                            allowDecimals={false}
-                                            tick={{ fontSize: 11, fill: '#64748b' }}
-                                            tickLine={false}
-                                            axisLine={{ stroke: '#cbd5e1' }}
-                                        />
+                                        <XAxis dataKey="type" tick={{ fontSize: 11 }} />
+                                        <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                                        <Tooltip />
+                                        <Legend />
+                                        <Bar dataKey="Pending" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+                                        <Bar dataKey="Completed" fill="#0f172a" radius={[6, 6, 0, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* --- SECTION C: HISTORICAL & PREDICTIVE FORECASTING --- */}
+                    <section>
+                        <div className="mb-4">
+                            <h2 className="text-lg font-bold text-slate-900">
+                                Canonical Trends & 3-Month Predictive Forecast
+                            </h2>
+                            <p className="text-sm text-slate-500">
+                                Analyzes inscribed canonical records and projects demand for the next 3 months using linear regression.
+                            </p>
+                        </div>
+
+                        {/* Statistical Summary Cards */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                                <p className="text-xs font-semibold text-slate-500 uppercase">Total Canonical Records</p>
+                                <p className="mt-1 text-2xl font-extrabold text-slate-900">
+                                    {sacraments.descriptive.summary.total_records}
+                                </p>
+                                <p className="text-xs text-slate-500 mt-1">Inscribed records in registry books.</p>
+                            </div>
+                            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                                <p className="text-xs font-semibold text-slate-500 uppercase">Monthly Average (Mean)</p>
+                                <p className="mt-1 text-2xl font-extrabold text-slate-900">
+                                    {sacraments.descriptive.summary.monthly_average} / mo
+                                </p>
+                                <p className="text-xs text-slate-500 mt-1">Average records per monthly period.</p>
+                            </div>
+
+                        </div>
+
+                        {/* Historical + 3-Month Forecast Line Chart */}
+                        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                            <h3 className="text-base font-bold text-slate-900">
+                                Historical Volume & 3-Month Forecast
+                            </h3>
+                            <p className="text-xs text-slate-500 mb-4">
+                                Solid navy line shows actual historical records; dashed gold line shows linear regression projections.
+                            </p>
+                            <div className="h-72 sm:h-80 w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={timelineData} margin={{ top: 10, right: 20, left: -10, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                                        <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} />
+                                        <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} />
                                         <Tooltip
                                             contentStyle={{
                                                 backgroundColor: '#0f172a',
@@ -701,100 +685,203 @@ export default function AnalyticsIndex({
                                             }}
                                             itemStyle={{ color: '#ffffff' }}
                                         />
-                                        <Bar
-                                            dataKey="total"
-                                            name="Inscribed Records"
-                                            fill="#d97706"
-                                            radius={[6, 6, 0, 0]}
+                                        <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }} />
+                                        <Line
+                                            type="monotone"
+                                            dataKey="actual"
+                                            name="Historical Records"
+                                            stroke="#0f172a"
+                                            strokeWidth={2.5}
+                                            dot={{ r: 4, fill: '#0f172a' }}
+                                            activeDot={{ r: 6 }}
+                                            connectNulls={false}
                                         />
-                                    </BarChart>
+                                        <Line
+                                            type="monotone"
+                                            dataKey="predicted"
+                                            name="Projected Forecast"
+                                            stroke="#d97706"
+                                            strokeWidth={2.5}
+                                            strokeDasharray="5 5"
+                                            dot={{ r: 4, fill: '#d97706' }}
+                                            activeDot={{ r: 6 }}
+                                            connectNulls={false}
+                                        />
+                                    </LineChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
 
-                        <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
-                            <div className="flex items-center gap-1.5 text-slate-500">
-                                <span>Dominant Rite:</span>
-                                <span className="font-bold text-slate-900">
-                                    {sacramentBreakdownData[0]?.sacrament || 'Baptism'}
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="text-[11px] font-semibold text-slate-500">Schedules:</span>
-                                <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-bold text-[11px] border border-emerald-200">
-                                    {descriptive?.schedule_stats?.confirmed || descriptive?.schedule_stats?.scheduled || 0} Confirmed
-                                </span>
-                                <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 font-bold text-[11px] border border-amber-200">
-                                    {descriptive?.schedule_stats?.pending || 0} Pending
-                                </span>
-                                <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 font-bold text-[11px] border border-rose-200">
-                                    {descriptive?.schedule_stats?.cancelled || 0} Cancelled
-                                </span>
-                            </div>
+                        {/* Prescriptive Recommendations */}
+                        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {sacraments.prescriptive.map((rec, index) => (
+                                <div key={index} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                                    <span className="inline-block px-2.5 py-0.5 text-[11px] font-bold uppercase rounded-full bg-slate-100 text-slate-700">
+                                        {rec.priority} Priority
+                                    </span>
+                                    <h4 className="mt-2 text-sm font-bold text-slate-900">{rec.title}</h4>
+                                    <p className="text-xs text-slate-600 mt-1">{rec.insight}</p>
+                                    <p className="text-xs font-semibold text-amber-700 mt-2">Action: {rec.action}</p>
+                                </div>
+                            ))}
                         </div>
-                    </div>
+                    </section>
                 </div>
+            )}
 
-                {/* ── 3. PRESCRIPTIVE OPERATIONAL ACTION PLAN ── */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5 pb-3 border-b border-slate-100">
-                        <div>
-                            <h3 className="font-serif text-lg font-bold text-slate-900 flex items-center gap-2">
-                                <Lightbulb className="w-5 h-5 text-amber-500" />
-                                Prescriptive Pastoral &amp; Administrative Recommendations
-                            </h3>
-                            <p className="text-xs text-slate-500 mt-0.5">
-                                Automated operational directives generated from archival demand patterns, clergy allocation ratios, and certificate queue health.
+            {/* ============================================================== */}
+            {/* TAB 2: FINANCE ANALYTICS                                       */}
+            {/* ============================================================== */}
+            {activeTab === 'finance' && (
+                <div className="space-y-8">
+                    {/* --- 3 SUMMARY CARDS: TOTAL CASH IN, TOTAL CASH OUT, NET TOTAL --- */}
+                    <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="bg-white rounded-2xl border border-emerald-200 p-6 shadow-sm">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                                Total Cash In (Incoming Funds)
+                            </p>
+                            <p className="mt-2 text-3xl font-extrabold text-emerald-600">
+                                {formatPeso(finance.summary.total_cash_in)}
+                            </p>
+                            <p className="mt-2 text-xs text-slate-500">
+                                Total money received from Official Receipts, arancel fees, mass offerings, and donations.
                             </p>
                         </div>
-                        <span className="text-xs font-bold uppercase tracking-wider px-3 py-1 bg-amber-50 text-amber-800 rounded-full border border-amber-200 shrink-0">
-                            {prescriptive.length} Guidance Directive{prescriptive.length !== 1 ? 's' : ''}
-                        </span>
-                    </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {prescriptive.map((rec, index) => {
-                            const IconComponent = priorityIcon[rec.priority] || AlertCircle;
-                            return (
-                                <div
-                                    key={index}
-                                    className={`p-5 rounded-2xl border border-slate-200 border-l-4 bg-slate-50/70 hover:bg-white hover:shadow-xs transition-all duration-200 flex flex-col justify-between ${priorityBorder[rec.priority]}`}
+                        <div className="bg-white rounded-2xl border border-rose-200 p-6 shadow-sm">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-rose-700">
+                                Total Cash Out (Outgoing Expenses)
+                            </p>
+                            <p className="mt-2 text-3xl font-extrabold text-rose-600">
+                                {formatPeso(finance.summary.total_cash_out)}
+                            </p>
+                            <p className="mt-2 text-xs text-slate-500">
+                                Total money disbursed via Check Vouchers for utilities, supplies, and maintenance.
+                            </p>
+                        </div>
+
+                        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                            <div className="flex items-center justify-between">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                                    Net Total (Remaining Balance)
+                                </p>
+                                <span
+                                    className={`px-2 py-0.5 text-[11px] font-bold rounded-full ${finance.summary.is_surplus
+                                        ? 'bg-emerald-100 text-emerald-800'
+                                        : 'bg-rose-100 text-rose-800'
+                                        }`}
                                 >
-                                    <div>
-                                        <div className="flex items-center justify-between gap-2 mb-2.5">
-                                            <span className="text-2xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                                                <IconComponent className="w-3.5 h-3.5 text-slate-400" />
-                                                <span>{rec.category}</span>
-                                            </span>
-                                            <span
-                                                className={`text-3xs font-extrabold px-2.5 py-0.5 rounded-full border uppercase tracking-wider ring-1 ${priorityBadge[rec.priority]}`}
-                                            >
-                                                {rec.priority} Priority
-                                            </span>
-                                        </div>
+                                    {finance.summary.is_surplus ? 'Surplus (+)' : 'Deficit (-)'}
+                                </span>
+                            </div>
+                            <p className="mt-2 text-3xl font-extrabold text-slate-900">
+                                {formatPeso(finance.summary.net_total)}
+                            </p>
+                            <p className="mt-2 text-xs text-slate-500">
+                                Net parish standing calculated by subtracting Total Cash Out from Total Cash In.
+                            </p>
+                        </div>
+                    </section>
 
-                                        <h4 className="font-serif font-bold text-slate-900 text-base leading-snug">
-                                            {rec.title}
-                                        </h4>
-                                        <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                                            {rec.insight}
-                                        </p>
-                                    </div>
+                    {/* --- MONTHLY CASH FLOW VISUAL --- */}
+                    <section className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                        <h3 className="text-base font-bold text-slate-900">
+                            Monthly Cash Flow (Cash In vs. Cash Out)
+                        </h3>
+                        <p className="text-xs text-slate-500 mb-4">
+                            Compares monthly incoming receipts (green) against outgoing expenses (red).
+                        </p>
+                        <div className="h-72 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={finance.monthly_cashflow}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                                    <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                                    <YAxis tick={{ fontSize: 12 }} />
+                                    <Tooltip formatter={(value: number) => formatPeso(value)} />
+                                    <Legend />
+                                    <Bar dataKey="cash_in" name="Total Cash In" fill="#10b981" radius={[6, 6, 0, 0]} />
+                                    <Bar dataKey="cash_out" name="Total Cash Out" fill="#f43f5e" radius={[6, 6, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </section>
 
-                                    <div className="mt-4 pt-3.5 border-t border-slate-200/80 bg-white/80 p-3 rounded-xl border border-slate-200/60">
-                                        <div className="text-xs font-medium text-slate-800 leading-relaxed">
-                                            <span className="text-amber-800 font-bold uppercase tracking-wide text-2xs block mb-0.5">
-                                                Recommended Action:
+                    {/* --- ACCOUNT CODE BREAKDOWNS --- */}
+                    <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Income Account Codes */}
+                        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                            <h3 className="text-base font-bold text-slate-900">
+                                Where Funds Come From (Income Account Codes)
+                            </h3>
+                            <p className="text-xs text-slate-500 mb-4">
+                                Breakdown of incoming collections grouped by Chart of Accounts code.
+                            </p>
+
+                            <div className="h-56 w-full mb-4">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={finance.inflow_by_account} layout="vertical" margin={{ left: 10 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                                        <XAxis type="number" hide />
+                                        <YAxis type="category" dataKey="account_code" width={75} tick={{ fontSize: 11 }} />
+                                        <Tooltip formatter={(value: number) => formatPeso(value)} />
+                                        <Bar dataKey="total" name="Cash In" fill="#10b981" radius={[0, 6, 6, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+
+                            <div className="divide-y divide-slate-100">
+                                {finance.inflow_by_account.map((item) => (
+                                    <div key={item.account_code} className="py-2.5 flex items-center justify-between text-sm">
+                                        <div>
+                                            <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 mr-2">
+                                                {item.account_code}
                                             </span>
-                                            {rec.action}
+                                            <span className="text-slate-700 font-medium">{item.account_name}</span>
                                         </div>
+                                        <span className="font-bold text-slate-900">{formatPeso(item.total)}</span>
                                     </div>
-                                </div>
-                            );
-                        })}
-                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Expense Account Codes */}
+                        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                            <h3 className="text-base font-bold text-slate-900">
+                                Where Funds Are Spent (Expense Account Codes)
+                            </h3>
+                            <p className="text-xs text-slate-500 mb-4">
+                                Breakdown of parish disbursements grouped by Chart of Accounts code.
+                            </p>
+
+                            <div className="h-56 w-full mb-4">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={finance.outflow_by_account} layout="vertical" margin={{ left: 10 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                                        <XAxis type="number" hide />
+                                        <YAxis type="category" dataKey="account_code" width={75} tick={{ fontSize: 11 }} />
+                                        <Tooltip formatter={(value: number) => formatPeso(value)} />
+                                        <Bar dataKey="total" name="Cash Out" fill="#f43f5e" radius={[0, 6, 6, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+
+                            <div className="divide-y divide-slate-100">
+                                {finance.outflow_by_account.map((item) => (
+                                    <div key={item.account_code} className="py-2.5 flex items-center justify-between text-sm">
+                                        <div>
+                                            <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-rose-50 text-rose-700 mr-2">
+                                                {item.account_code}
+                                            </span>
+                                            <span className="text-slate-700 font-medium">{item.account_name}</span>
+                                        </div>
+                                        <span className="font-bold text-slate-900">{formatPeso(item.total)}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
                 </div>
-            </div>
+            )}
         </PortalLayout>
     );
 }
