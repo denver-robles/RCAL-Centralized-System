@@ -89,4 +89,15 @@ class CertificateTemplatePreviewTest extends TestCase
             'error' => 'Carbone PDF generation failed: Carbone API unreachable',
         ]);
     }
+
+    public function test_search_records_returns_matching_sacramental_records(): void
+    {
+        $response = $this->actingAs($this->staff)
+            ->getJson('/certificate-templates/search-records?sacrament_type=baptism&q=Test');
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'records',
+        ]);
+    }
 }

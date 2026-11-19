@@ -8,11 +8,11 @@ use App\Models\CertificateTemplate;
 use App\Models\Parish;
 use App\Models\SacramentalRecord;
 use App\Services\AuditService;
+use App\Services\CarboneCertificateService;
 use App\Services\CertificateAutoPopulatorService;
 use App\Services\CertificateFileParserService;
 use App\Services\ParishScopingService;
-use App\Services\CarboneCertificateService;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -315,6 +315,49 @@ class CertificateTemplateController extends Controller
     }
 
     /**
+     * Search sacramental records for auto-population and batch selection.
+     */
+    public function searchRecords(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $parishId = $user?->home_parish_id ?? Parish::first()?->id ?? 1;
+        $sacramentType = (string) $request->input('sacrament_type', 'baptism');
+        $query = trim((string) $request->input('query', $request->input('q', '')));
+
+        $recordsQuery = SacramentalRecord::query()
+            ->with(['person', 'originatingParish', 'performedByClergy'])
+            ->where('sacrament_type', $sacramentType);
+
+        if (! $user?->isArchdioceseWide()) {
+            $recordsQuery->where('originating_parish_id', $parishId);
+        }
+
+        if ($query !== '') {
+            $recordsQuery->where(function ($q) use ($query) {
+                $q->whereHas('person', function ($pq) use ($query) {
+                    $pq->where('first_name', 'like', "%{$query}%")
+                        ->orWhere('last_name', 'like', "%{$query}%")
+                        ->orWhere('middle_name', 'like', "%{$query}%")
+                        ->orWhere('father_name', 'like', "%{$query}%")
+                        ->orWhere('mother_name', 'like', "%{$query}%");
+                })
+                    ->orWhere('citation', 'like', "%{$query}%")
+                    ->orWhere('book_number', 'like', "%{$query}%")
+                    ->orWhere('page_number', 'like', "%{$query}%")
+                    ->orWhere('line_number', 'like', "%{$query}%")
+                    ->orWhere('registry_number', 'like', "%{$query}%")
+                    ->orWhere('certificate_number', 'like', "%{$query}%");
+            });
+        }
+
+        $records = $recordsQuery->orderByDesc('event_date')->limit(50)->get();
+
+        return response()->json([
+            'records' => $records,
+        ]);
+    }
+
+    /**
      * Generate action from preview.
      */
     public function generate(Request $request, CertificateTemplate $certificateTemplate): RedirectResponse
@@ -412,6 +455,7 @@ class CertificateTemplateController extends Controller
             'purpose',
         ];
     }
+
     /**
      * Provide realistic sample data for template preview when no record is selected.
      *

@@ -153,6 +153,7 @@ Route::middleware(['auth', 'staff'])->group(function () {
     Route::get('/certificate-templates', [CertificateTemplateController::class, 'index'])->name('certificate-templates.index');
     Route::get('/certificate-templates/create', [CertificateTemplateController::class, 'create'])->name('certificate-templates.create');
     Route::get('/certificate-templates/preview', [CertificateTemplateController::class, 'preview'])->name('certificate-templates.preview');
+    Route::get('/certificate-templates/search-records', [CertificateTemplateController::class, 'searchRecords'])->name('certificate-templates.search-records');
     Route::post('/certificate-templates/preview-pdf', [CertificateTemplateController::class, 'previewPdf'])->name('certificate-templates.preview-pdf');
     Route::post('/certificate-templates', [CertificateTemplateController::class, 'store'])->name('certificate-templates.store');
     Route::get('/certificate-templates/{certificateTemplate}/preview', [CertificateTemplateController::class, 'preview'])->name('certificate-templates.template-preview')->whereNumber('certificateTemplate');
