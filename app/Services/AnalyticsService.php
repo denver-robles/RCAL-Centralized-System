@@ -44,9 +44,7 @@ class AnalyticsService
             'requested', 'on_hold', 'processing', 'scheduled', 'confirmed',
         ], $filters);
 
-        $completedAppointments = $this->countSchedulesByType($parishId, [
-            'completed',
-        ], $filters);
+        $completedAppointments = $this->countCompletedSacraments($parishId, $filters);
 
         // 3. Descriptive Historical Metrics
         $descriptive = $this->getDescriptiveMetrics($parishId, $filters);
@@ -159,6 +157,83 @@ class AnalyticsService
                 default => $others += $value,
             };
         }
+
+        return [
+            'total' => $baptism + $confirmation + $marriage + $funeral + $others,
+            'baptism' => $baptism,
+            'confirmation' => $confirmation,
+            'marriage' => $marriage,
+            'funeral' => $funeral,
+            'others' => $others,
+        ];
+    }
+
+    /**
+     * Counts completed sacraments from canonical registry records (Baptism, Confirmation,
+     * Marriage, Funeral) and completed non-registry liturgical services (Others).
+     */
+    private function countCompletedSacraments(?int $parishId, array $filters = []): array
+    {
+        // 1. Inscribed canonical records (Baptism, Confirmation, Marriage, Death/Funeral)
+        $recordsQuery = SacramentalRecord::query()
+            ->when($parishId, fn ($q) => $q->where('originating_parish_id', $parishId));
+
+        $this->applyDateFilter($recordsQuery, $filters, 'event_date');
+
+        $rawRecords = $recordsQuery
+            ->select('sacrament_type', DB::raw('COUNT(*) as total'))
+            ->groupBy('sacrament_type')
+            ->pluck('total', 'sacrament_type')
+            ->toArray();
+
+        $baptism = 0;
+        $confirmation = 0;
+        $marriage = 0;
+        $funeral = 0;
+
+        foreach ($rawRecords as $type => $count) {
+            $key = strtolower(trim((string) $type));
+            $value = (int) $count;
+
+            match (true) {
+                in_array($key, ['baptism', 'binyag']) => $baptism += $value,
+                in_array($key, ['confirmation', 'kumpil']) => $confirmation += $value,
+                in_array($key, ['marriage', 'wedding', 'kasal']) => $marriage += $value,
+                in_array($key, ['death', 'funeral', 'patay']) => $funeral += $value,
+                default => null,
+            };
+        }
+
+        // 2. Completed non-registry services (Blessings, Bone Transfers, Sponsored Masses, etc.)
+        $nonRegistryTypes = [
+            'blessing',
+            'sponsored_mass',
+            'bone_transfer',
+            'eucharist',
+            'anointing',
+            'reconciliation',
+            'meeting',
+            'office_activity',
+            'other',
+        ];
+
+        $schedulesQuery = SacramentSchedule::query()
+            ->when($parishId, fn ($q) => $q->where('parish_id', $parishId))
+            ->where('status', 'completed')
+            ->where(function ($q) use ($nonRegistryTypes) {
+                $q->whereIn('sacrament_type', $nonRegistryTypes)
+                    ->orWhere(function ($sub) {
+                        $sub->whereNotIn('sacrament_type', [
+                            'baptism', 'binyag',
+                            'confirmation', 'kumpil',
+                            'wedding', 'matrimony', 'marriage', 'kasal',
+                            'funeral', 'death', 'patay',
+                        ])->whereNull('record_id');
+                    });
+            });
+
+        $this->applyDateFilter($schedulesQuery, $filters, 'starts_at');
+        $others = (int) $schedulesQuery->count();
 
         return [
             'total' => $baptism + $confirmation + $marriage + $funeral + $others,
