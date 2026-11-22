@@ -247,8 +247,8 @@ export default function LedgerIndex({
 
                 {/* ── ACTIVE FORM AREA (SLIDE-OVER / MODAL HOUSING) ── */}
                 {activeForm === 'receipt' && (
-                    <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-                        <div className="relative w-full max-w-4xl my-8">
+                    <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs overflow-y-auto p-3 sm:p-6 flex justify-center items-start">
+                        <div className="relative w-full max-w-4xl my-3 sm:my-8">
                             <OfficialReceiptForm
                                 accounts={accounts}
                                 initialReferenceNo={suggestedOr}
@@ -261,8 +261,8 @@ export default function LedgerIndex({
                 )}
 
                 {activeForm === 'check' && (
-                    <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-                        <div className="relative w-full max-w-4xl my-8">
+                    <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs overflow-y-auto p-3 sm:p-6 flex justify-center items-start">
+                        <div className="relative w-full max-w-4xl my-3 sm:my-8">
                             <CheckVoucherForm
                                 accounts={accounts}
                                 initialReferenceNo={suggestedCv}
