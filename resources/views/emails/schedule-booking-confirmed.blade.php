@@ -31,7 +31,7 @@
                 Dear <strong>{{ $schedule->requester_name }}</strong>,
             </p>
             <p style="font-size: 14px; line-height: 1.6; color: #334155;">
-                Your appointment for the Holy Sacrament of <strong>{{ ucfirst($schedule->sacrament_type) }}</strong> has been officially confirmed on the parish liturgical calendar.
+                Your appointment for the Holy Sacrament of <strong>{{ $schedule->sacrament_type?->label() ?? 'Sacrament' }}</strong> has been officially confirmed on the parish liturgical calendar.
             </p>
 
             <!-- Appointment Details -->
@@ -39,12 +39,12 @@
                 <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
                     <tr>
                         <td style="padding: 8px 0; color: #64748b; font-weight: bold;">Sacrament:</td>
-                        <td style="padding: 8px 0; text-align: right; font-weight: bold; color: #1e293b;">{{ ucfirst($schedule->sacrament_type) }}</td>
+                        <td style="padding: 8px 0; text-align: right; font-weight: bold; color: #1e293b;">{{ $schedule->sacrament_type?->label() ?? 'Sacrament' }}</td>
                     </tr>
                     <tr>
                         <td style="padding: 8px 0; color: #64748b; font-weight: bold;">Date &amp; Time:</td>
                         <td style="padding: 8px 0; text-align: right; font-weight: bold; color: #0f172a;">
-                            {{ $schedule->scheduled_date?->format('l, F j, Y') ?? 'TBA' }} at {{ $schedule->scheduled_time ?? 'TBA' }}
+                            {{ $schedule->starts_at?->format('l, F j, Y') ?? 'TBA' }} at {{ $schedule->formatted_time }}
                         </td>
                     </tr>
                     <tr>

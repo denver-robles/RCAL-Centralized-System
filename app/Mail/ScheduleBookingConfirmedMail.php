@@ -20,9 +20,12 @@ class ScheduleBookingConfirmedMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        $sacrament = ucfirst($this->schedule->sacrament_type?->value ?? (string) $this->schedule->sacrament_type);
+        $sacrament = $this->schedule->sacrament_type?->label() ?? 'Sacrament';
+        $parishEmail = $this->schedule->parish?->email;
+
         return new Envelope(
             subject: "Sacrament Ceremony Confirmed: {$sacrament} - RCAL PIMS",
+            replyTo: $parishEmail ? [$parishEmail] : [],
         );
     }
 

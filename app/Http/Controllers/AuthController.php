@@ -105,11 +105,31 @@ class AuthController extends Controller
             "User {$user->username} authenticated as {$user->role?->value}"
         );
 
+        return $this->redirectAfterLogin($request, $user);
+    }
+
+        /**
+     * Redirect authenticated users to their role-appropriate destination,
+     * ignoring stale intended URLs belonging to a different role's area.
+     */
+    protected function redirectAfterLogin(Request $request, User $user): RedirectResponse
+    {
+        $intended = $request->session()->pull('url.intended');
+        $intendedPath = $intended ? (parse_url($intended, PHP_URL_PATH) ?? '') : '';
+
         if ($user->isParishioner()) {
-            return redirect()->intended(route('portal.dashboard'));
+            if ($intendedPath !== '' && (str_starts_with($intendedPath, '/portal') || str_starts_with($intendedPath, '/identity'))) {
+                return redirect()->to($intended);
+            }
+
+            return redirect()->route('portal.dashboard');
         }
 
-        return redirect()->intended(route('dashboard'));
+        if ($intendedPath !== '' && ! str_starts_with($intendedPath, '/portal') && ! str_starts_with($intendedPath, '/identity')) {
+            return redirect()->to($intended);
+        }
+
+        return redirect()->route('dashboard');
     }
 
     /**
@@ -240,11 +260,7 @@ class AuthController extends Controller
                 "User {$user->username} authenticated via biometric match."
             );
 
-            if ($user->isParishioner()) {
-                return redirect()->intended(route('portal.dashboard'));
-            }
-
-            return redirect()->intended(route('dashboard'));
+            return $this->redirectAfterLogin($request, $user);
         }
 
         AuditService::log(

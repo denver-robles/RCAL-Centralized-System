@@ -20,8 +20,11 @@ class CertificateReadyForPickupMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
+        $parishEmail = $this->documentRequest->targetedParish?->email;
+
         return new Envelope(
             subject: "Certificate Ready for Pickup: Claim [{$this->documentRequest->tracking_code}] - RCAL PIMS",
+            replyTo: $parishEmail ? [$parishEmail] : [],
         );
     }
 

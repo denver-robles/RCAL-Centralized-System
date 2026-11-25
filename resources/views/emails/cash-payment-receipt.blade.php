@@ -31,7 +31,7 @@
                 Dear <strong>{{ $schedule->requester_name }}</strong>,
             </p>
             <p style="font-size: 14px; line-height: 1.6; color: #334155;">
-                This confirms that your cash payment for the <strong>{{ ucfirst($schedule->sacrament_type) }}</strong> ceremony has been successfully recorded in the parish financial ledger.
+                This confirms that your cash payment for the <strong>{{ $schedule->sacrament_type?->label() ?? 'Sacrament' }}</strong> ceremony has been successfully recorded in the parish financial ledger.
             </p>
 
             <!-- Receipt Card -->
@@ -47,17 +47,19 @@
                     </tr>
                     <tr>
                         <td style="padding: 8px 0; color: #64748b; font-weight: bold;">Sacrament:</td>
-                        <td style="padding: 8px 0; text-align: right; font-weight: bold; color: #1e293b;">{{ ucfirst($schedule->sacrament_type) }}</td>
+                        <td style="padding: 8px 0; text-align: right; font-weight: bold; color: #1e293b;">{{ $schedule->sacrament_type?->label() ?? 'Sacrament' }}</td>
                     </tr>
                     <tr>
                         <td style="padding: 8px 0; color: #64748b; font-weight: bold;">Scheduled Date:</td>
-                        <td style="padding: 8px 0; text-align: right; color: #1e293b;">{{ $schedule->scheduled_date?->format('F j, Y') ?? 'TBA' }} ({{ $schedule->scheduled_time ?? 'TBA' }})</td>
+                        <td style="padding: 8px 0; text-align: right; color: #1e293b;">{{ $schedule->starts_at?->format('F j, Y') ?? 'TBA' }} ({{ $schedule->formatted_time }})</td>
                     </tr>
                     <tr>
                         <td style="padding: 8px 0; color: #64748b; font-weight: bold;">Received By:</td>
                         <td style="padding: 8px 0; text-align: right; color: #1e293b;">
                             {{ $schedule->paymentRecorder?->display_name ?? $schedule->paymentRecorder?->username ?? 'Parish Staff' }}
-                            ({{ $schedule->parish?->code ?? 'SJWP' }})
+                            @if($schedule->parish?->name)
+                                ({{ $schedule->parish->name }})
+                            @endif
                         </td>
                     </tr>
                     @if($schedule->payment_notes)

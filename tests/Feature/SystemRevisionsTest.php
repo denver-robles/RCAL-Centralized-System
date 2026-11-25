@@ -491,8 +491,12 @@ class SystemRevisionsTest extends TestCase
         $response->assertSessionHasNoErrors();
 
         Mail::assertQueued(CashPaymentReceiptMail::class, function ($mail) {
+            $html = $mail->render();
+
             return $mail->schedule->payment_reference === 'OR-2026-9999'
-                && (float) $mail->schedule->payment_amount === 1500.00;
+                && (float) $mail->schedule->payment_amount === 1500.00
+                && str_contains($html, 'OR-2026-9999')
+                && str_contains($html, 'Baptism');
         });
     }
 
@@ -519,7 +523,11 @@ class SystemRevisionsTest extends TestCase
         $response->assertSessionHasNoErrors();
 
         Mail::assertQueued(ScheduleBookingConfirmedMail::class, function ($mail) use ($schedule) {
-            return $mail->schedule->id === $schedule->id;
+            $html = $mail->render();
+
+            return $mail->schedule->id === $schedule->id
+                && str_contains($html, 'Baptism')
+                && str_contains($html, 'Sacrament Appointment Confirmed');
         });
     }
 
@@ -574,7 +582,11 @@ class SystemRevisionsTest extends TestCase
         ]);
 
         Mail::assertQueued(CertificateReadyForPickupMail::class, function ($mail) use ($claim) {
-            return $mail->documentRequest->tracking_code === $claim->tracking_code;
+            $html = $mail->render();
+
+            return $mail->documentRequest->tracking_code === $claim->tracking_code
+                && str_contains($html, $claim->tracking_code)
+                && str_contains($html, 'Baptism');
         });
     }
 }
