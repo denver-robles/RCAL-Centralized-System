@@ -108,7 +108,7 @@ class AuthController extends Controller
         return $this->redirectAfterLogin($request, $user);
     }
 
-        /**
+    /**
      * Redirect authenticated users to their role-appropriate destination,
      * ignoring stale intended URLs belonging to a different role's area.
      */

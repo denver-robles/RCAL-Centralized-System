@@ -136,9 +136,11 @@ class StaffInterfaceTest extends TestCase
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page
             ->component('Analytics/Index')
-            ->has('archdioceseCounts')
-            ->has('sacramentCounts')
-            ->has('requestStats')
+            ->has('sacraments')
+            ->has('finance')
+            ->has('parishes')
+            ->has('filters')
+            ->where('isArchdioceseWide', true)
         );
     }
 }
