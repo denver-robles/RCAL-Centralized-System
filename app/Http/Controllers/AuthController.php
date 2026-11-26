@@ -121,14 +121,11 @@ class AuthController extends Controller
             if ($intendedPath !== '' && (str_starts_with($intendedPath, '/portal') || str_starts_with($intendedPath, '/identity'))) {
                 return redirect()->to($intended);
             }
-
             return redirect()->route('portal.dashboard');
         }
-
         if ($intendedPath !== '' && ! str_starts_with($intendedPath, '/portal') && ! str_starts_with($intendedPath, '/identity')) {
             return redirect()->to($intended);
         }
-
         return redirect()->route('dashboard');
     }
 
