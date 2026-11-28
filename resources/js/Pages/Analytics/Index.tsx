@@ -771,7 +771,7 @@ export default function AnalyticsIndex({
                         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
                             <div className="flex items-center justify-between">
                                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
-                                    Net Total (Remaining Balance)
+                                    Net Total 
                                 </p>
                                 <span
                                     className={`px-2 py-0.5 text-[11px] font-bold rounded-full ${finance.summary.is_surplus
