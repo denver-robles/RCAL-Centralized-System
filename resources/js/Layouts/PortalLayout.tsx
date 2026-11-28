@@ -88,7 +88,7 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
                                 className={linkClass(activeTab === 'dashboard')}
                             >
                                 <LayoutDashboard className="w-4 h-4 shrink-0 text-amber-400" />
-                                <span>Curia Dashboard</span>
+                                <span>Dashboard</span>
                             </Link>
 
                             <Link
@@ -97,7 +97,7 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
                                 className={linkClass(activeTab === 'records')}
                             >
                                 <BookOpen className="w-4 h-4 shrink-0 text-amber-400" />
-                                <span>Canonical Registers</span>
+                                <span>Canonical Records</span>
                             </Link>
 
                             <Link
@@ -115,7 +115,7 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
                                 className={linkClass(activeTab === 'certificate_templates')}
                             >
                                 <FileText className="w-4 h-4 shrink-0 text-amber-400" />
-                                <span>Certificate Templates</span>
+                                <span>Certificate Generation</span>
                             </Link>
 
                             <Link
@@ -133,7 +133,7 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
                                 className={linkClass(activeTab === 'schedules_calendar')}
                             >
                                 <CalendarDays className="w-4 h-4 shrink-0 text-amber-400" />
-                                <span>Calendar View</span>
+                                <span>Pasrish Calendar</span>
                             </Link>
 
                             <Link
@@ -153,6 +153,18 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
                                 <Receipt className="w-4 h-4 shrink-0 text-amber-400" />
                                 <span>Parish Ledger</span>
                             </Link>
+    
+                            {/* Show Parish Analytics only for Parish Staff */}
+                            {!user?.is_archdiocese_wide && (
+                                <Link
+                                    href="/analytics"
+                                    onClick={onItemClick}
+                                    className={linkClass(activeTab === 'analytics')}
+                                >
+                                    <BarChart3 className="w-4 h-4 shrink-0 text-amber-400" />
+                                    <span>Parish Analytics</span>
+                                </Link>
+                            )}
                         </nav>
                     </div>
 
@@ -170,7 +182,7 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
                                 <span>Clergy Directory</span>
                             </Link>
 
-                            {user?.is_archdiocese_wide && (
+                             {user?.is_archdiocese_wide && (
                                 <>
                                     <Link
                                         href="/users"
@@ -180,7 +192,6 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
                                         <UserCheck className="w-4 h-4 shrink-0 text-amber-400" />
                                         <span>Account Directory</span>
                                     </Link>
-
                                     <Link
                                         href="/audit"
                                         onClick={onItemClick}
@@ -189,18 +200,17 @@ export const PortalLayout: React.FC<PortalLayoutProps> = ({ children, title, sub
                                         <Shield className="w-4 h-4 shrink-0 text-amber-400" />
                                         <span>Audit Trail (RA 10173)</span>
                                     </Link>
+                                    {/* Curia Analytics only for Chancery / Admin */}
+                                    <Link
+                                        href="/analytics"
+                                        onClick={onItemClick}
+                                        className={linkClass(activeTab === 'analytics')}
+                                    >
+                                        <BarChart3 className="w-4 h-4 shrink-0 text-amber-400" />
+                                        <span>Curia Analytics</span>
+                                    </Link>
                                 </>
                             )}
-
-                            {/* Analytics accessible to all staff: Curia Analytics for Chancery/Admin, Parish Analytics for Parish Staff */}
-                            <Link
-                                href="/analytics"
-                                onClick={onItemClick}
-                                className={linkClass(activeTab === 'analytics')}
-                            >
-                                <BarChart3 className="w-4 h-4 shrink-0 text-amber-400" />
-                                <span>{user?.is_archdiocese_wide ? 'Curia Analytics' : 'Parish Analytics'}</span>
-                            </Link>
                         </nav>
                     </div>
                 </div>

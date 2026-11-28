@@ -10,11 +10,10 @@ import {
     User,
     FileText,
     Coins,
-    ArrowDownRight,
-    ArrowUpRight,
-    Sparkles,
     ShieldAlert,
     X,
+    Building2,
+    SlidersHorizontal,
 } from 'lucide-react';
 import { ChartOfAccount } from '@/types';
 import SearchableAccountSelect from './SearchableAccountSelect';
@@ -51,8 +50,16 @@ export const getSacramentDefaultPricing = (code: string): number | null => {
     return SACRAMENT_PRICING_MAP[code] ?? null;
 };
 
+// Safe unique ID generator for environments without crypto.randomUUID
+const generateUniqueId = (): string => {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+    return 'line-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 9);
+};
+
 export interface LineItem {
-    id: string; // Temporary unique ID for frontend tracking
+    id: string;
     account_id: number | '';
     amount: number | '';
     notes: string;
@@ -75,36 +82,33 @@ export default function OfficialReceiptForm({
     onSuccess,
     className = '',
 }: Props) {
-    // 1. Separate accounts by category to enforce correct double-entry selection
-    const { revenueAccounts, assetAccounts, otherAccounts } = useMemo(() => {
+    // 1. Categorize accounts for fast lookup
+    const { revenueAccounts, assetAccounts } = useMemo(() => {
         const revenues: ChartOfAccount[] = [];
         const assets: ChartOfAccount[] = [];
-        const others: ChartOfAccount[] = [];
 
         accounts.forEach(acc => {
             if (acc.type === 'revenue' || acc.type === 'liability') {
                 revenues.push(acc);
             } else if (acc.type === 'asset') {
                 assets.push(acc);
-            } else {
-                others.push(acc);
             }
         });
 
-        return {
-            revenueAccounts: revenues,
-            assetAccounts: assets,
-            otherAccounts: others,
-        };
+        return { revenueAccounts: revenues, assetAccounts: assets };
     }, [accounts]);
 
+    // Preferred default accounts
     const defaultRevenueAccountId = revenueAccounts[0]?.id ?? '';
-    const defaultAssetAccountId =
-        assetAccounts.find(a => a.code.startsWith('1102') || a.code.startsWith('101') || a.title.toLowerCase().includes('cash'))?.id ??
+    const defaultCashAccountId =
+        assetAccounts.find(a => a.code === '1102' || a.code.startsWith('101') || a.title.toLowerCase().includes('cash'))?.id ??
         assetAccounts[0]?.id ??
         '';
 
-    // 2. Inertia Form State for the Header & Payload
+    // 2. Primary Header Form State
+    const [destinationAccountId, setDestinationAccountId] = useState<number | ''>(defaultCashAccountId);
+    const [paymentMethodNote, setPaymentMethodNote] = useState('Cash');
+    const [isSplitPaymentMode, setIsSplitPaymentMode] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
 
     const { data, setData, post, processing, errors, transform, clearErrors } = useForm({
@@ -116,37 +120,45 @@ export default function OfficialReceiptForm({
         status: 'posted' as const,
     });
 
-    // 3. Dynamic Grids: Credits (Revenues/Payment For) & Debits (Assets/Payment Mode)
-    const [creditLines, setCreditLines] = useState<LineItem[]>([
-        { id: crypto.randomUUID(), account_id: defaultRevenueAccountId, amount: '', notes: '' },
-    ]);
-
-    const [debitLines, setDebitLines] = useState<LineItem[]>([
-        { id: crypto.randomUUID(), account_id: defaultAssetAccountId, amount: '', notes: 'Cash' },
-    ]);
-
     useEffect(() => {
         if (initialReferenceNo && !data.reference_no) {
             setData('reference_no', initialReferenceNo);
         }
     }, [initialReferenceNo]);
 
-    // 4. Auto-Calculating Totals & Double-Entry Equality
-    const totalCredits = useMemo(
-        () => creditLines.reduce((sum, line) => sum + (Number(line.amount) || 0), 0),
-        [creditLines]
+    useEffect(() => {
+        if (!destinationAccountId && defaultCashAccountId) {
+            setDestinationAccountId(defaultCashAccountId);
+        }
+    }, [defaultCashAccountId]);
+
+    // 3. Revenue Items Grid (In Payment Of - Credits)
+    const [revenueLines, setRevenueLines] = useState<LineItem[]>([
+        { id: generateUniqueId(), account_id: defaultRevenueAccountId, amount: '', notes: '' },
+    ]);
+
+    // Optional Split Payment Grid (Debits) for advanced multi-tender
+    const [splitDebitLines, setSplitDebitLines] = useState<LineItem[]>([
+        { id: generateUniqueId(), account_id: defaultCashAccountId, amount: '', notes: 'Cash' },
+    ]);
+
+    // 4. Calculations
+    const totalRevenue = useMemo(
+        () => revenueLines.reduce((sum, line) => sum + (Number(line.amount) || 0), 0),
+        [revenueLines]
     );
 
-    const totalDebits = useMemo(
-        () => debitLines.reduce((sum, line) => sum + (Number(line.amount) || 0), 0),
-        [debitLines]
+    const totalSplitDebits = useMemo(
+        () => splitDebitLines.reduce((sum, line) => sum + (Number(line.amount) || 0), 0),
+        [splitDebitLines]
     );
 
-    // Floating-point safe balance comparison
-    const difference = Math.abs(totalCredits - totalDebits);
-    const isBalanced = totalCredits > 0 && difference < 0.005;
+    // If simple mode: always automatically balanced as long as revenue > 0 and destination selected
+    // If split mode: debits must equal credits
+    const isBalanced = isSplitPaymentMode
+        ? totalRevenue > 0 && Math.abs(totalRevenue - totalSplitDebits) < 0.005
+        : totalRevenue > 0 && destinationAccountId !== '';
 
-    // Currency Formatter
     const formatCurrency = (val: number) =>
         '₱ ' +
         val.toLocaleString('en-PH', {
@@ -155,36 +167,34 @@ export default function OfficialReceiptForm({
         });
 
     // 5. Grid Handlers
-    const addLine = (
-        setLines: React.Dispatch<React.SetStateAction<LineItem[]>>,
-        defaultAccountId: number | '' = '',
-        defaultNotes: string = ''
-    ) => {
-        setLines(prev => [
+    const addRevenueLine = () => {
+        setRevenueLines(prev => [
             ...prev,
-            { id: crypto.randomUUID(), account_id: defaultAccountId, amount: '', notes: defaultNotes },
+            { id: generateUniqueId(), account_id: defaultRevenueAccountId, amount: '', notes: '' },
         ]);
     };
 
-    const updateLine = (
-        setLines: React.Dispatch<React.SetStateAction<LineItem[]>>,
-        id: string,
-        field: keyof LineItem,
-        value: string | number
-    ) => {
-        setLines(prev =>
+    const updateRevenueLine = (id: string, field: keyof LineItem, value: string | number) => {
+        setRevenueLines(prev =>
             prev.map(line => (line.id === id ? { ...line, [field]: value } : line))
         );
     };
 
-    // Auto-pricing account selection handlers
-    const handleSelectCreditAccount = (lineId: string, account: ChartOfAccount | null) => {
-        setCreditLines(prev =>
+    const removeRevenueLine = (id: string) => {
+        setRevenueLines(prev => {
+            if (prev.length <= 1) {
+                return [{ id: generateUniqueId(), account_id: '', amount: '', notes: '' }];
+            }
+            return prev.filter(line => line.id !== id);
+        });
+    };
+
+    const handleSelectRevenueAccount = (lineId: string, account: ChartOfAccount | null) => {
+        setRevenueLines(prev =>
             prev.map(line => {
                 if (line.id !== lineId) return line;
                 if (!account) return { ...line, account_id: '' };
 
-                // Retrieve pricing from account.default_amount or sacrament map
                 const price =
                     account.default_amount !== undefined && account.default_amount !== null
                         ? Number(account.default_amount)
@@ -193,76 +203,65 @@ export default function OfficialReceiptForm({
                 const shouldSetAmount =
                     price !== null && (line.amount === '' || line.amount === 0 || Number(line.amount) <= 0);
 
-                const nextAmount = shouldSetAmount ? price : line.amount;
-                const nextNotes = line.notes ? line.notes : account.title;
-
                 return {
                     ...line,
                     account_id: account.id,
-                    amount: nextAmount,
-                    notes: nextNotes,
+                    amount: shouldSetAmount ? price : line.amount,
+                    notes: line.notes ? line.notes : account.title,
                 };
             })
         );
     };
 
-    const handleSelectDebitAccount = (lineId: string, account: ChartOfAccount | null) => {
-        setDebitLines(prev =>
-            prev.map(line => {
-                if (line.id !== lineId) return line;
-                if (!account) return { ...line, account_id: '' };
+    // Split Mode Handlers
+    const addSplitDebitLine = () => {
+        setSplitDebitLines(prev => [
+            ...prev,
+            { id: generateUniqueId(), account_id: defaultCashAccountId, amount: '', notes: '' },
+        ]);
+    };
 
-                const nextNotes = line.notes ? line.notes : account.title;
-                return {
-                    ...line,
-                    account_id: account.id,
-                    notes: nextNotes,
-                };
-            })
+    const updateSplitDebitLine = (id: string, field: keyof LineItem, value: string | number) => {
+        setSplitDebitLines(prev =>
+            prev.map(line => (line.id === id ? { ...line, [field]: value } : line))
         );
     };
 
-    const removeLine = (
-        setLines: React.Dispatch<React.SetStateAction<LineItem[]>>,
-        id: string
-    ) => {
-        setLines(prev => {
+    const removeSplitDebitLine = (id: string) => {
+        setSplitDebitLines(prev => {
             if (prev.length <= 1) {
-                return [{ id: crypto.randomUUID(), account_id: '', amount: '', notes: '' }];
+                return [{ id: generateUniqueId(), account_id: '', amount: '', notes: '' }];
             }
             return prev.filter(line => line.id !== id);
         });
     };
 
-    // Auto-balance helper
-    const autoBalanceDebits = () => {
-        if (totalCredits <= 0) return;
-        setDebitLines(prev => {
-            if (prev.length === 0) {
-                return [{ id: crypto.randomUUID(), account_id: defaultAssetAccountId, amount: totalCredits, notes: 'Cash' }];
-            }
-            const updated = [...prev];
-            updated[0] = { ...updated[0], amount: totalCredits };
-            return updated;
-        });
-    };
-
-    // 6. Pre-Submission Prompt & Confirmation
+    // 6. Pre-Submission Prompt & Validation
     const handlePreSubmit = (e?: React.FormEvent) => {
         if (e) e.preventDefault();
 
-        if (!isBalanced) {
-            alert('Transaction is out of balance. Total Revenues (Credits) must equal Total Payments (Debits).');
-            return;
-        }
-
         if (!data.reference_no.trim()) {
-            alert('Please provide an Official Receipt reference number.');
+            alert('Please provide an Official Receipt (O.R.) reference number.');
             return;
         }
 
         if (!data.contact_name.trim()) {
             alert('Please specify the person or entity from whom the payment was received.');
+            return;
+        }
+
+        if (totalRevenue <= 0) {
+            alert('Please enter at least one revenue item with a valid payment amount.');
+            return;
+        }
+
+        if (isSplitPaymentMode && Math.abs(totalRevenue - totalSplitDebits) >= 0.005) {
+            alert(`Split payment modes are out of balance. Total Revenues: ${formatCurrency(totalRevenue)} vs Total Payments: ${formatCurrency(totalSplitDebits)}`);
+            return;
+        }
+
+        if (!isSplitPaymentMode && !destinationAccountId) {
+            alert('Please select the receiving bank or cash account for this receipt.');
             return;
         }
 
@@ -274,11 +273,30 @@ export default function OfficialReceiptForm({
         setShowConfirmModal(false);
         clearErrors();
 
+        // Build balancing debits
+        const finalDebits = isSplitPaymentMode
+            ? splitDebitLines
+                  .filter(l => l.account_id !== '' && Number(l.amount) > 0)
+                  .map(l => ({
+                      account_id: Number(l.account_id),
+                      chart_of_account_id: Number(l.account_id),
+                      amount: Number(l.amount),
+                      notes: l.notes || 'Payment Mode',
+                  }))
+            : [
+                  {
+                      account_id: Number(destinationAccountId),
+                      chart_of_account_id: Number(destinationAccountId),
+                      amount: totalRevenue,
+                      notes: paymentMethodNote || 'Cash on Hand',
+                  },
+              ];
+
         transform((raw) => ({
             ...raw,
             status: 'posted',
             lines: {
-                credits: creditLines
+                credits: revenueLines
                     .filter(l => l.account_id !== '' && Number(l.amount) > 0)
                     .map(l => ({
                         account_id: Number(l.account_id),
@@ -286,14 +304,7 @@ export default function OfficialReceiptForm({
                         amount: Number(l.amount),
                         notes: l.notes || '',
                     })),
-                debits: debitLines
-                    .filter(l => l.account_id !== '' && Number(l.amount) > 0)
-                    .map(l => ({
-                        account_id: Number(l.account_id),
-                        chart_of_account_id: Number(l.account_id),
-                        amount: Number(l.amount),
-                        notes: l.notes || '',
-                    })),
+                debits: finalDebits,
             },
         }));
 
@@ -305,341 +316,374 @@ export default function OfficialReceiptForm({
         });
     };
 
+    const selectedDestAccount = assetAccounts.find(a => a.id === destinationAccountId);
+
     return (
         <>
             <form
                 onSubmit={handlePreSubmit}
-                className={`p-6 sm:p-8 bg-white rounded-2xl shadow-sm border border-slate-200/80 space-y-8 ${className}`}
+                className={`p-4 sm:p-7 bg-white rounded-2xl shadow-sm border border-slate-200/80 space-y-6 ${className}`}
             >
-                {/* HEADER TITLE */}
+                {/* ── HEADER TITLE & BADGE ── */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-200 gap-3">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold">
-                            <Receipt className="w-5 h-5 text-amber-600" />
+                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold">
+                            <Receipt className="w-5 h-5 text-emerald-600" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-slate-900 font-serif">Official Receipt (O.R.) Entry</h2>
-                            <p className="text-xs text-slate-500">Parish unified double-entry ledger &bull; Permanent canonical reference</p>
+                            <h2 className="text-lg sm:text-xl font-bold text-slate-900 font-serif">Official Receipt (O.R.) Entry</h2>
+                            <p className="text-xs text-slate-500">Parish unified ledger &bull; Permanent canonical reference</p>
                         </div>
                     </div>
 
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <Coins className="w-3.5 h-3.5" /> Direct Ledger Entry
-                    </span>
-                </div>
-
-                {/* HEADER SECTION: METADATA & RECIPIENT */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 bg-slate-50/70 p-5 rounded-xl border border-slate-200/70">
-                    <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
-                            <Receipt className="w-3.5 h-3.5 text-slate-500" />
-                            O.R. Reference No. <span className="text-rose-500">*</span>
-                        </label>
-                        <input
-                            type="text"
-                            placeholder="e.g. OR-2026-0001"
-                            value={data.reference_no}
-                            onChange={e => setData('reference_no', e.target.value)}
-                            className={`w-full text-sm font-mono font-medium rounded-xl border ${
-                                errors.reference_no ? 'border-rose-400 bg-rose-50/30' : 'border-slate-300'
-                            } px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500`}
-                            required
-                        />
-                        {errors.reference_no && (
-                            <p className="text-xs text-rose-600 mt-1 font-medium">{errors.reference_no}</p>
+                    <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <Coins className="w-3.5 h-3.5" /> Cash Inflow / Collection
+                        </span>
+                        {onCancel && (
+                            <button
+                                type="button"
+                                onClick={onCancel}
+                                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+                                title="Close"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
                         )}
-                    </div>
-
-                    <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                            Date <span className="text-rose-500">*</span>
-                        </label>
-                        <input
-                            type="date"
-                            value={data.transaction_date}
-                            onChange={e => setData('transaction_date', e.target.value)}
-                            className={`w-full text-sm rounded-xl border ${
-                                errors.transaction_date ? 'border-rose-400 bg-rose-50/30' : 'border-slate-300'
-                            } px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500`}
-                            required
-                        />
-                        {errors.transaction_date && (
-                            <p className="text-xs text-rose-600 mt-1 font-medium">{errors.transaction_date}</p>
-                        )}
-                    </div>
-
-                    <div className="sm:col-span-2">
-                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
-                            <User className="w-3.5 h-3.5 text-slate-500" />
-                            Received From (Payee / Parishioner) <span className="text-rose-500">*</span>
-                        </label>
-                        <input
-                            type="text"
-                            placeholder="Full Name of Parishioner / Donor / Organization"
-                            value={data.contact_name}
-                            onChange={e => setData('contact_name', e.target.value)}
-                            className={`w-full text-sm rounded-xl border ${
-                                errors.contact_name ? 'border-rose-400 bg-rose-50/30' : 'border-slate-300'
-                            } px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500`}
-                            required
-                        />
-                        {errors.contact_name && (
-                            <p className="text-xs text-rose-600 mt-1 font-medium">{errors.contact_name}</p>
-                        )}
-                    </div>
-
-                    <div className="col-span-1 sm:col-span-2 lg:col-span-4">
-                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
-                            <FileText className="w-3.5 h-3.5 text-slate-500" />
-                            Particulars / Description
-                        </label>
-                        <input
-                            type="text"
-                            placeholder="Brief summary of payment (e.g. Mass offering, baptismal stole fee, donation for chapel renovation)"
-                            value={data.description}
-                            onChange={e => setData('description', e.target.value)}
-                            className="w-full text-sm rounded-xl border border-slate-300 px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                        />
                     </div>
                 </div>
 
-                {/* DUAL-GRID LAYOUT */}
-                <div className="space-y-8">
-                    {/* GRID 1: IN PAYMENT OF (REVENUES / CREDITS) */}
-                    <div className="bg-slate-50/50 rounded-2xl p-5 sm:p-6 border border-slate-200">
-                        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                            <div className="flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center">
-                                    <ArrowDownRight className="w-4 h-4 text-emerald-700" />
+                {/* ── TOP SECTION: RECEIPT HEADER DETAILS ── */}
+                <div className="bg-slate-50/80 p-4 sm:p-5 rounded-2xl border border-slate-200 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {/* OR Reference Number */}
+                        <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
+                                <Receipt className="w-3.5 h-3.5 text-slate-500" />
+                                O.R. Reference No. <span className="text-rose-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                placeholder="e.g. OR-2026-0001"
+                                value={data.reference_no}
+                                onChange={e => setData('reference_no', e.target.value)}
+                                className={`w-full text-xs sm:text-sm font-mono font-medium rounded-xl border ${
+                                    errors.reference_no ? 'border-rose-400 bg-rose-50/30' : 'border-slate-300'
+                                } px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white`}
+                                required
+                            />
+                            {errors.reference_no && (
+                                <p className="text-xs text-rose-600 mt-1 font-medium">{errors.reference_no}</p>
+                            )}
+                        </div>
+
+                        {/* Transaction Date */}
+                        <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
+                                <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                                Date <span className="text-rose-500">*</span>
+                            </label>
+                            <input
+                                type="date"
+                                value={data.transaction_date}
+                                onChange={e => setData('transaction_date', e.target.value)}
+                                className={`w-full text-xs sm:text-sm rounded-xl border ${
+                                    errors.transaction_date ? 'border-rose-400 bg-rose-50/30' : 'border-slate-300'
+                                } px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white`}
+                                required
+                            />
+                            {errors.transaction_date && (
+                                <p className="text-xs text-rose-600 mt-1 font-medium">{errors.transaction_date}</p>
+                            )}
+                        </div>
+
+                        {/* Received From */}
+                        <div className="sm:col-span-2 lg:col-span-1">
+                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
+                                <User className="w-3.5 h-3.5 text-slate-500" />
+                                Received From <span className="text-rose-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                placeholder="Name of Parishioner / Payee"
+                                value={data.contact_name}
+                                onChange={e => setData('contact_name', e.target.value)}
+                                className={`w-full text-xs sm:text-sm rounded-xl border ${
+                                    errors.contact_name ? 'border-rose-400 bg-rose-50/30' : 'border-slate-300'
+                                } px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white`}
+                                required
+                            />
+                            {errors.contact_name && (
+                                <p className="text-xs text-rose-600 mt-1 font-medium">{errors.contact_name}</p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Payment Mode / Receiving Bank Account (Single Mode Default) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-3 border-t border-slate-200/70">
+                        <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
+                                <Building2 className="w-3.5 h-3.5 text-slate-500" />
+                                Receiving Account (Payment Mode) <span className="text-rose-500">*</span>
+                            </label>
+                            <SearchableAccountSelect
+                                accounts={accounts}
+                                value={destinationAccountId}
+                                onChange={acc => setDestinationAccountId(acc ? acc.id : '')}
+                                filterTypes={['asset']}
+                                placeholder="-- Select Cash or Bank Account --"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
+                                <FileText className="w-3.5 h-3.5 text-slate-500" />
+                                Payment Reference
+                            </label>
+                            <input
+                                type="text"
+                                placeholder="e.g. Cash, Check #1042, Online Transfer"
+                                value={paymentMethodNote}
+                                onChange={e => setPaymentMethodNote(e.target.value)}
+                                className="w-full text-xs sm:text-sm rounded-xl border border-slate-300 px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
+                                <FileText className="w-3.5 h-3.5 text-slate-500" />
+                                Particulars / General Remarks
+                            </label>
+                            <input
+                                type="text"
+                                placeholder="Summary notes (e.g. Stole fee & cert)"
+                                value={data.description}
+                                onChange={e => setData('description', e.target.value)}
+                                className="w-full text-xs sm:text-sm rounded-xl border border-slate-300 px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── REVENUE BREAKDOWN GRID (IN PAYMENT OF) ── */}
+                <div className="bg-slate-50/60 rounded-2xl p-4 sm:p-5 border border-slate-200 space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+                                In Payment Of <span className="text-xs font-normal text-slate-500">(Revenues &amp; Collections)</span>
+                            </h3>
+                            <p className="text-xs text-slate-500">
+                                Select sacrament, stole fee, or collection account. Standard prices are applied automatically.
+                            </p>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={addRevenueLine}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-2xs cursor-pointer"
+                        >
+                            <Plus className="w-3.5 h-3.5" /> Add Revenue Item
+                        </button>
+                    </div>
+
+                    <div className="space-y-3">
+                        {revenueLines.map((line, idx) => (
+                            <div
+                                key={line.id}
+                                className="bg-white p-3 rounded-xl border border-slate-200/90 shadow-2xs space-y-2 sm:space-y-0 sm:flex sm:items-center sm:gap-3 hover:border-slate-300 transition-colors"
+                            >
+                                <div className="hidden sm:block w-7 text-center text-xs font-bold text-slate-400 shrink-0">
+                                    #{idx + 1}
                                 </div>
-                                <div>
-                                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                                        1. In Payment Of <span className="text-xs font-normal text-slate-500">(Revenues &amp; Credits)</span>
-                                    </h3>
-                                    <p className="text-xs text-slate-500">Select which parish revenue account or fund this payment applies to</p>
+
+                                {/* Account selector with search */}
+                                <div className="flex-1 min-w-[200px]">
+                                    <label className="sm:hidden block text-2xs font-bold text-slate-500 uppercase mb-1">
+                                        Account #{idx + 1}
+                                    </label>
+                                    <SearchableAccountSelect
+                                        accounts={accounts}
+                                        value={line.account_id}
+                                        onChange={account => handleSelectRevenueAccount(line.id, account)}
+                                        filterTypes={['revenue', 'liability', 'equity']}
+                                        placeholder="-- Search revenue account (e.g. 4201 Baptism) --"
+                                    />
                                 </div>
+
+                                {/* Particulars / notes */}
+                                <div className="flex-1 min-w-[160px]">
+                                    <label className="sm:hidden block text-2xs font-bold text-slate-500 uppercase mb-1">
+                                        Particulars / Details
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="Item particulars / names"
+                                        value={line.notes}
+                                        onChange={e => updateRevenueLine(line.id, 'notes', e.target.value)}
+                                        className="w-full text-xs sm:text-sm rounded-xl border border-slate-300 py-2 px-3 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                                    />
+                                </div>
+
+                                {/* Amount with currency */}
+                                <div className="flex items-center gap-2">
+                                    <div className="w-36 relative shrink-0">
+                                        <label className="sm:hidden block text-2xs font-bold text-slate-500 uppercase mb-1">
+                                            Amount
+                                        </label>
+                                        <div className="relative">
+                                            <span className="absolute left-2.5 top-2 text-xs text-slate-400 font-bold">₱</span>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                min="0.01"
+                                                placeholder="0.00"
+                                                value={line.amount}
+                                                onChange={e => updateRevenueLine(line.id, 'amount', e.target.value === '' ? '' : Number(e.target.value))}
+                                                className="w-full text-xs sm:text-sm font-mono font-semibold rounded-xl border border-slate-300 py-2 pl-6 pr-2.5 text-right focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Delete Button */}
+                                    <button
+                                        type="button"
+                                        onClick={() => removeRevenueLine(line.id)}
+                                        title="Remove item"
+                                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors shrink-0 mt-5 sm:mt-0"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Summary row */}
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pt-3 px-2 border-t border-slate-200/80 gap-2">
+                        <div className="flex items-center gap-3">
+                            <span className="text-xs text-slate-500">
+                                Revenue Items: {revenueLines.length} &bull; Deposited to:{' '}
+                                <strong className="text-slate-800">
+                                    {selectedDestAccount ? `${selectedDestAccount.code} - ${selectedDestAccount.title}` : 'Cash on Hand'}
+                                </strong>
+                            </span>
+
+                            <button
+                                type="button"
+                                onClick={() => setIsSplitPaymentMode(!isSplitPaymentMode)}
+                                className="inline-flex items-center gap-1 text-2xs text-slate-500 hover:text-amber-700 underline font-medium cursor-pointer"
+                            >
+                                <SlidersHorizontal className="w-3 h-3" />
+                                {isSplitPaymentMode ? 'Switch to Simple Payment' : 'Split across multiple accounts'}
+                            </button>
+                        </div>
+
+                        <div className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                            <span>Total O.R. Amount:</span>
+                            <span className="font-mono text-base text-emerald-700 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-200">
+                                {formatCurrency(totalRevenue)}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── ADVANCED SPLIT-PAYMENT GRID (OPTIONAL) ── */}
+                {isSplitPaymentMode && (
+                    <div className="bg-amber-50/40 rounded-2xl p-4 sm:p-5 border border-amber-200/80 space-y-3 animate-in fade-in duration-150">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <h4 className="text-xs font-bold uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
+                                    <Building2 className="w-3.5 h-3.5 text-amber-600" />
+                                    Split Payment Breakdown (Debits)
+                                </h4>
+                                <p className="text-2xs text-amber-700">Specify multiple bank or cash accounts receiving portions of this payment.</p>
                             </div>
 
                             <button
                                 type="button"
-                                onClick={() => addLine(setCreditLines, defaultRevenueAccountId)}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-2xs cursor-pointer"
+                                onClick={addSplitDebitLine}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition-colors"
                             >
-                                <Plus className="w-3.5 h-3.5" /> Add Revenue Item
+                                <Plus className="w-3.5 h-3.5" /> Add Mode
                             </button>
                         </div>
 
-                        <div className="space-y-3">
-                            {creditLines.map((line, idx) => (
-                                <div
-                                    key={line.id}
-                                    className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center bg-white p-3 rounded-xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-colors"
-                                >
-                                    <div className="sm:w-8 text-center text-xs font-bold text-slate-400">
-                                        #{idx + 1}
-                                    </div>
-
-                                    <div className="flex-1 min-w-[260px]">
+                        <div className="space-y-2">
+                            {splitDebitLines.map((line, idx) => (
+                                <div key={line.id} className="flex items-center gap-2 bg-white p-2.5 rounded-xl border border-amber-200/70">
+                                    <span className="text-xs font-bold text-slate-400 w-6 text-center">#{idx + 1}</span>
+                                    <div className="flex-1">
                                         <SearchableAccountSelect
                                             accounts={accounts}
                                             value={line.account_id}
-                                            onChange={account => handleSelectCreditAccount(line.id, account)}
-                                            filterTypes={['revenue', 'liability', 'equity']}
-                                            placeholder="-- Search revenue or receipt account (e.g. 4201, Baptism) --"
+                                            onChange={acc => updateSplitDebitLine(line.id, 'account_id', acc ? acc.id : '')}
+                                            filterTypes={['asset']}
+                                            placeholder="-- Select Account --"
                                         />
                                     </div>
-
                                     <div className="flex-1">
                                         <input
                                             type="text"
-                                            placeholder="Item details (e.g. Baptism certificate, 10 Mass stipends)"
+                                            placeholder="Notes / Slip #"
                                             value={line.notes}
-                                            onChange={e => updateLine(setCreditLines, line.id, 'notes', e.target.value)}
-                                            className="w-full text-sm rounded-lg border border-slate-300 py-2 px-3 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                            onChange={e => updateSplitDebitLine(line.id, 'notes', e.target.value)}
+                                            className="w-full text-xs rounded-lg border border-slate-300 py-1.5 px-2.5"
                                         />
                                     </div>
-
-                                    <div className="w-full sm:w-44 relative">
-                                        <span className="absolute left-3 top-2.5 text-xs text-slate-400 font-bold">₱</span>
+                                    <div className="w-32 relative">
+                                        <span className="absolute left-2.5 top-1.5 text-xs text-slate-400 font-bold">₱</span>
                                         <input
                                             type="number"
                                             step="0.01"
-                                            min="0"
+                                            min="0.01"
                                             placeholder="0.00"
                                             value={line.amount}
-                                            onChange={e => updateLine(setCreditLines, line.id, 'amount', e.target.value === '' ? '' : Number(e.target.value))}
-                                            className="w-full text-sm font-mono font-semibold rounded-lg border border-slate-300 py-2 pl-7 pr-3 text-right focus:outline-none focus:ring-2 focus:ring-amber-500"
-                                            required
+                                            onChange={e => updateSplitDebitLine(line.id, 'amount', e.target.value === '' ? '' : Number(e.target.value))}
+                                            className="w-full text-xs font-mono font-semibold rounded-lg border border-slate-300 py-1.5 pl-6 pr-2 text-right"
                                         />
                                     </div>
-
                                     <button
                                         type="button"
-                                        onClick={() => removeLine(setCreditLines, line.id)}
-                                        title="Remove item"
-                                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors self-end sm:self-center"
+                                        onClick={() => removeSplitDebitLine(line.id)}
+                                        className="p-1 text-slate-400 hover:text-rose-600"
                                     >
-                                        <Trash2 className="w-4 h-4" />
+                                        <Trash2 className="w-3.5 h-3.5" />
                                     </button>
                                 </div>
                             ))}
+                        </div>
 
-                            <div className="flex justify-between items-center pt-2 px-2">
-                                <span className="text-xs text-slate-500">Items: {creditLines.length}</span>
-                                <div className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                                    <span>Total Revenue:</span>
-                                    <span className="font-mono text-base text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-                                        {formatCurrency(totalCredits)}
-                                    </span>
-                                </div>
-                            </div>
+                        <div className="flex justify-between items-center text-xs text-amber-900 pt-1">
+                            <span>Total Split Payments: <strong>{formatCurrency(totalSplitDebits)}</strong></span>
+                            <span>Remaining: <strong className={Math.abs(totalRevenue - totalSplitDebits) < 0.005 ? 'text-emerald-700' : 'text-rose-700'}>{formatCurrency(totalRevenue - totalSplitDebits)}</strong></span>
                         </div>
                     </div>
+                )}
 
-                    {/* GRID 2: FORM OF PAYMENT (ASSETS / DEBITS) */}
-                    <div className="bg-slate-50/50 rounded-2xl p-5 sm:p-6 border border-slate-200">
-                        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                            <div className="flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-800 flex items-center justify-center">
-                                    <ArrowUpRight className="w-4 h-4 text-blue-700" />
-                                </div>
-                                <div>
-                                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                                        2. Form of Payment <span className="text-xs font-normal text-slate-500">(Assets &amp; Debits)</span>
-                                    </h3>
-                                    <p className="text-xs text-slate-500">Specify destination cash box or bank account receiving the funds</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                                {totalCredits > 0 && !isBalanced && (
-                                    <button
-                                        type="button"
-                                        onClick={autoBalanceDebits}
-                                        className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 transition-colors shadow-2xs cursor-pointer"
-                                        title="Set first debit amount to match total credits"
-                                    >
-                                        <Sparkles className="w-3.5 h-3.5 text-amber-600" /> Match Total ({formatCurrency(totalCredits)})
-                                    </button>
-                                )}
-
-                                <button
-                                    type="button"
-                                    onClick={() => addLine(setDebitLines, defaultAssetAccountId, 'Cash')}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors shadow-2xs cursor-pointer"
-                                >
-                                    <Plus className="w-3.5 h-3.5" /> Add Payment Mode
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="space-y-3">
-                            {debitLines.map((line, idx) => (
-                                <div
-                                    key={line.id}
-                                    className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center bg-white p-3 rounded-xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-colors"
-                                >
-                                    <div className="sm:w-8 text-center text-xs font-bold text-slate-400">
-                                        #{idx + 1}
-                                    </div>
-
-                                    <div className="flex-1 min-w-[260px]">
-                                        <SearchableAccountSelect
-                                            accounts={accounts}
-                                            value={line.account_id}
-                                            onChange={account => handleSelectDebitAccount(line.id, account)}
-                                            filterTypes={['asset', 'liability']}
-                                            placeholder="-- Search payment mode (e.g. 1102 Cash on Hand) --"
-                                        />
-                                    </div>
-
-                                    <div className="flex-1">
-                                        <input
-                                            type="text"
-                                            placeholder="Check No., Reference, or Bank Slip (e.g. Cash, BPI-Check #1092)"
-                                            value={line.notes}
-                                            onChange={e => updateLine(setDebitLines, line.id, 'notes', e.target.value)}
-                                            className="w-full text-sm rounded-lg border border-slate-300 py-2 px-3 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                                        />
-                                    </div>
-
-                                    <div className="w-full sm:w-44 relative">
-                                        <span className="absolute left-3 top-2.5 text-xs text-slate-400 font-bold">₱</span>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
-                                            placeholder="0.00"
-                                            value={line.amount}
-                                            onChange={e => updateLine(setDebitLines, line.id, 'amount', e.target.value === '' ? '' : Number(e.target.value))}
-                                            className="w-full text-sm font-mono font-semibold rounded-lg border border-slate-300 py-2 pl-7 pr-3 text-right focus:outline-none focus:ring-2 focus:ring-amber-500"
-                                            required
-                                        />
-                                    </div>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => removeLine(setDebitLines, line.id)}
-                                        title="Remove item"
-                                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors self-end sm:self-center"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            ))}
-
-                            <div className="flex justify-between items-center pt-2 px-2">
-                                <span className="text-xs text-slate-500">Items: {debitLines.length}</span>
-                                <div className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                                    <span>Total Payment:</span>
-                                    <span className="font-mono text-base text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200">
-                                        {formatCurrency(totalDebits)}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* VALIDATION STATUS BANNER & SUBMISSION */}
-                <div className="pt-6 border-t border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
+                {/* ── FOOTER ACTIONS & STATUS ── */}
+                <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-2">
                         {isBalanced ? (
-                            <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-sm font-medium">
-                                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                                <div>
-                                    <span className="font-bold">Double-Entry Balanced:</span>{' '}
-                                    <span className="font-mono font-semibold">{formatCurrency(totalCredits)}</span>
-                                </div>
-                            </div>
-                        ) : totalCredits === 0 && totalDebits === 0 ? (
-                            <div className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs">
-                                <AlertTriangle className="w-4 h-4 text-slate-400 shrink-0" />
-                                <span>Enter revenue amounts and payment details above.</span>
+                            <div className="flex items-center gap-2 px-3.5 py-2 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-medium">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                                <span>Double-entry automatically balanced: <strong>{formatCurrency(totalRevenue)}</strong></span>
                             </div>
                         ) : (
-                            <div className="flex items-center gap-2 px-4 py-2.5 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-sm">
-                                <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
-                                <div>
-                                    <span className="font-bold">Out of Balance:</span> Difference of{' '}
-                                    <span className="font-mono font-bold">{formatCurrency(difference)}</span>
-                                    <span className="text-xs block text-rose-600 mt-0.5">
-                                        Credits: {formatCurrency(totalCredits)} &bull; Debits: {formatCurrency(totalDebits)}
-                                    </span>
-                                </div>
+                            <div className="flex items-center gap-2 px-3.5 py-2 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs">
+                                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                                <span>Enter at least one revenue item with amount.</span>
                             </div>
                         )}
                     </div>
 
-                    {/* Single Direct Record Action */}
                     <div className="flex items-center justify-end gap-3">
                         {onCancel && (
                             <button
                                 type="button"
                                 onClick={onCancel}
                                 disabled={processing}
-                                className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 font-medium text-sm transition-colors shadow-2xs"
+                                className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 font-medium text-xs sm:text-sm transition-colors cursor-pointer"
                             >
                                 Cancel
                             </button>
@@ -648,7 +692,7 @@ export default function OfficialReceiptForm({
                         <button
                             type="submit"
                             disabled={!isBalanced || processing}
-                            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm transition-all shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm transition-all shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                         >
                             <CheckCircle2 className="w-4 h-4" />
                             {processing ? 'Recording...' : 'Record Official Receipt'}
@@ -657,12 +701,12 @@ export default function OfficialReceiptForm({
                 </div>
             </form>
 
-            {/* CONFIRMATION MODAL (IMMUTABILITY SAFETY PROMPT) */}
+            {/* ── CONFIRMATION MODAL (IMMUTABILITY SAFETY PROMPT) ── */}
             {showConfirmModal && (
                 <div className="fixed inset-0 z-60 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-in fade-in zoom-in-95 duration-150">
                         <div className="flex items-start gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                            <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
                                 <ShieldAlert className="w-6 h-6" />
                             </div>
                             <div className="flex-1">
@@ -678,7 +722,7 @@ export default function OfficialReceiptForm({
                                 onClick={() => setShowConfirmModal(false)}
                                 className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"
                             >
-                                <X className="w-4 h-4" />
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
 
@@ -688,12 +732,18 @@ export default function OfficialReceiptForm({
                                 <span className="font-mono font-bold text-slate-900">{data.reference_no}</span>
                             </div>
                             <div className="flex justify-between py-1 border-b border-slate-200">
-                                <span className="text-slate-500">Transaction Date:</span>
+                                <span className="text-slate-500">Date:</span>
                                 <span className="font-medium text-slate-900">{data.transaction_date}</span>
                             </div>
                             <div className="flex justify-between py-1 border-b border-slate-200">
                                 <span className="text-slate-500">Received From:</span>
                                 <span className="font-medium text-slate-900">{data.contact_name}</span>
+                            </div>
+                            <div className="flex justify-between py-1 border-b border-slate-200">
+                                <span className="text-slate-500">Receiving Account:</span>
+                                <span className="font-medium text-slate-900">
+                                    {selectedDestAccount ? `${selectedDestAccount.code} - ${selectedDestAccount.title}` : 'Cash on Hand'}
+                                </span>
                             </div>
                             {data.description && (
                                 <div className="flex justify-between py-1 border-b border-slate-200">
@@ -702,8 +752,8 @@ export default function OfficialReceiptForm({
                                 </div>
                             )}
                             <div className="flex justify-between py-1 pt-2 font-bold text-sm">
-                                <span className="text-slate-700">Total Inflow:</span>
-                                <span className="font-mono text-emerald-700">{formatCurrency(totalCredits)}</span>
+                                <span className="text-slate-700">Total O.R. Amount:</span>
+                                <span className="font-mono text-emerald-700">{formatCurrency(totalRevenue)}</span>
                             </div>
                         </div>
 
@@ -715,7 +765,7 @@ export default function OfficialReceiptForm({
                             <button
                                 type="button"
                                 onClick={() => setShowConfirmModal(false)}
-                                className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 text-xs font-semibold"
+                                className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 text-xs font-semibold cursor-pointer"
                             >
                                 Review &amp; Edit
                             </button>
@@ -724,7 +774,7 @@ export default function OfficialReceiptForm({
                                 type="button"
                                 onClick={executeSubmit}
                                 disabled={processing}
-                                className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-xs cursor-pointer"
+                                className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer"
                             >
                                 {processing ? 'Recording...' : 'Yes, Confirm & Inscribe'}
                             </button>

@@ -17,6 +17,13 @@ import {
 import { ChartOfAccount } from '@/types';
 import SearchableAccountSelect from '@/Components/SearchableAccountSelect';
 
+const generateUniqueId = (): string => {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+    return 'cv-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 9);
+};
+
 export interface LineItem {
     id: string;
     account_id: number | '';
@@ -99,7 +106,7 @@ export default function CheckVoucherForm({
 
     // 3. Expense Grid (Debits)
     const [expenseLines, setExpenseLines] = useState<LineItem[]>([
-        { id: crypto.randomUUID(), account_id: defaultExpenseId, amount: '', notes: '' },
+        { id: generateUniqueId(), account_id: defaultExpenseId, amount: '', notes: '' },
     ]);
 
     // 4. Auto-Calculating Totals
@@ -124,7 +131,7 @@ export default function CheckVoucherForm({
     const addLine = () => {
         setExpenseLines(prev => [
             ...prev,
-            { id: crypto.randomUUID(), account_id: defaultExpenseId, amount: '', notes: '' },
+            { id: generateUniqueId(), account_id: defaultExpenseId, amount: '', notes: '' },
         ]);
     };
 
@@ -164,7 +171,7 @@ export default function CheckVoucherForm({
     const removeLine = (id: string) => {
         setExpenseLines(prev => {
             if (prev.length <= 1) {
-                return [{ id: crypto.randomUUID(), account_id: '', amount: '', notes: '' }];
+                return [{ id: generateUniqueId(), account_id: '', amount: '', notes: '' }];
             }
             return prev.filter(line => line.id !== id);
         });
