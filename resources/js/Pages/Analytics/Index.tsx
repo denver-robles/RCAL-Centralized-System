@@ -143,7 +143,11 @@ export default function AnalyticsIndex({
             query.date = next.date;
         }
 
-        router.get('/analytics', query, { preserveState: true, preserveScroll: true });
+        router.get('/analytics', query, {
+            only: ['sacraments', 'finance', 'filters'],
+            preserveState: true,
+            preserveScroll: true,
+        });
     };
 
     const resetFilters = () => {
@@ -151,7 +155,11 @@ export default function AnalyticsIndex({
         if (isArchdioceseWide && filters.parish_id) {
             query.parish_id = filters.parish_id;
         }
-        router.get('/analytics', query, { preserveState: true, preserveScroll: true });
+        router.get('/analytics', query, {
+            only: ['sacraments', 'finance', 'filters'],
+            preserveState: true,
+            preserveScroll: true,
+        });
     };
 
     // Human-friendly description of active time filter

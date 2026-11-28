@@ -31,7 +31,7 @@
                 Dear <strong>{{ $documentRequest->parishioner?->display_name ?? $documentRequest->name_on_record }}</strong>,
             </p>
             <p style="font-size: 14px; line-height: 1.6; color: #334155;">
-                Great news! Your requested <strong>{{ ucfirst($documentRequest->sacrament_type) }} Certificate</strong> for <strong>{{ $documentRequest->name_on_record }}</strong> has been officially prepared, verified against the canonical registers, and embossed with the parish dry seal.
+                Great news! Your requested <strong>{{ $documentRequest->sacrament_type?->label() ?? 'Sacramental' }} Certificate</strong> for <strong>{{ $documentRequest->name_on_record }}</strong> has been officially prepared, verified against the canonical registers, and embossed with the parish dry seal.
             </p>
 
             <!-- Claim Card -->
@@ -47,7 +47,7 @@
                     </tr>
                     <tr>
                         <td style="padding: 8px 0; color: #64748b; font-weight: bold;">Sacrament:</td>
-                        <td style="padding: 8px 0; text-align: right; color: #1e293b;">{{ ucfirst($documentRequest->sacrament_type) }}</td>
+                        <td style="padding: 8px 0; text-align: right; color: #1e293b;">{{ $documentRequest->sacrament_type?->label() ?? 'Sacramental' }}</td>
                     </tr>
                     <tr>
                         <td style="padding: 8px 0; color: #64748b; font-weight: bold;">Pickup Location:</td>

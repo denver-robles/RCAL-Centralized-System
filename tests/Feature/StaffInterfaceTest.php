@@ -139,6 +139,8 @@ class StaffInterfaceTest extends TestCase
             ->has('sacraments')
             ->has('finance')
             ->has('parishes')
+            ->has('filters')
+            ->where('isArchdioceseWide', true)
         );
     }
 }

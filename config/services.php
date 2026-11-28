@@ -64,5 +64,10 @@ return [
             'confirmation' => env('CARBONE_TEMPLATE_CONFIRMATION'),
         ],
     ],
+    'gmail' => [
+        'client_id' => env('GMAIL_CLIENT_ID'),
+        'client_secret' => env('GMAIL_CLIENT_SECRET'),
+        'refresh_token' => env('GMAIL_REFRESH_TOKEN'),
+    ],
 
 ];

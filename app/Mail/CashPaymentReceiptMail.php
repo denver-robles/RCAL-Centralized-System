@@ -21,8 +21,11 @@ class CashPaymentReceiptMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         $orNum = $this->schedule->payment_reference ?: "REC-{$this->schedule->id}";
+        $parishEmail = $this->schedule->parish?->email;
+
         return new Envelope(
             subject: "Official Cash Payment Receipt [{$orNum}] - RCAL PIMS",
+            replyTo: $parishEmail ? [$parishEmail] : [],
         );
     }
 

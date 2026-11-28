@@ -287,4 +287,25 @@ class AuthTest extends TestCase
 
         $response->assertSessionHasErrors('privacy_consent');
     }
+    public function test_parishioner_ignores_stale_staff_intended_url_on_login(): void
+    {
+        $user = User::create([
+            'username' => 'juan_intended',
+            'email' => 'juan.intended@example.ph',
+            'display_name' => 'Juan Dela Cruz',
+            'role' => RoleEnum::PARISHIONER,
+            'password' => Hash::make('password123'),
+            'is_active' => true,
+        ]);
+
+        // Simulate unauthenticated visit to /dashboard setting url.intended
+        $this->get('/dashboard')->assertRedirect('/login');
+
+        $response = $this->post('/login', [
+            'identifier' => 'juan.intended@example.ph',
+            'password' => 'password123',
+        ]);
+
+        $response->assertRedirect(route('portal.dashboard'));
+    }
 }
